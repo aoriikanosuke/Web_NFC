@@ -1,4 +1,4 @@
-// UIDはタグに合わせて置き換える
+//UIDはタグに合わせて置き換える
 const DEFAULT_STAMPS = [
   { id: 1, name: "本部前",    uid: "04A2B3C1", flag: false, hint:"タグ#1のUID" },
   { id: 2, name: "体育館",    uid: "0493FE21", flag: false, hint:"タグ#2のUID" },
