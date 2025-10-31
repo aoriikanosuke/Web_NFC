@@ -11,3 +11,10 @@ https://zenn.dev/gachigachi/articles/329952348817d7
 https://localhost:3000
 https://172.20.10.2:3000
 を検索する。
+
+## ブランチ作成手順
+以下を参考にしてね
+https://qiita.com/TetsuTaka/items/5ab227a8bd2cd7106833
+
+これで作成して
+git branch -b nfc_"番号"/"branch名"
