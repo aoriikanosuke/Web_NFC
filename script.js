@@ -1,22 +1,21 @@
-//UIDはタグに合わせて置き換える
+// ====== 設定：スタンプ一覧（画像パスを追加）======
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",    uid: "04A2B3C1", flag: false, hint:"タグ#1のUID" },
-  { id: 2, name: "体育館",    uid: "0493FE21", flag: false, hint:"タグ#2のUID" },
-  { id: 3, name: "図書館",    uid: "0477AC9E", flag: false, hint:"タグ#3のUID" },
-  { id: 4, name: "中庭",      uid: "04F1D002", flag: false, hint:"タグ#4のUID" },
-  { id: 5, name: "美術室",    uid: "0455AA10", flag: false, hint:"タグ#5のUID" },
-  { id: 6, name: "屋上入口",  uid: "04C0BE77", flag: false, hint:"タグ#6のUID" },
+  { id: 1, name: "本部前",    uid: "04A2B3C1", image: "./images/computer_tokui_boy.png", flag: false },
+  { id: 2, name: "体育館",    uid: "0493FE21", image: "./images/stamp2.png", flag: false },
+  { id: 3, name: "図書館",    uid: "0477AC9E", image: "./images/stamp3.png", flag: false },
+  { id: 4, name: "中庭",      uid: "04F1D002", image: "./images/stamp4.png", flag: false },
+  { id: 5, name: "美術室",    uid: "0455AA10", image: "./images/stamp5.png", flag: false },
+  { id: 6, name: "屋上入口",  uid: "04C0BE77", image: "./images/stamp6.png", flag: false },
 ];
-const LS_KEY = "nfc_stamps_v1";
+const LS_KEY = "nfc_stamps_v2_images"; // 旧キーと区別（キャッシュ衝突回避）
 
-/** 現在の状態（stamps配列） */
 let stamps = loadStamps();
 
 const $grid = document.getElementById("stampGrid");
 const $complete = document.getElementById("completeBox");
 const $nfcSupport = document.getElementById("nfcSupport");
 
-//永続化
+// ================== 永続化 ==================
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
   if (!raw) return structuredClone(DEFAULT_STAMPS);
@@ -25,29 +24,53 @@ function loadStamps() {
     const byUid = new Map(saved.map(s => [s.uid, s]));
     return DEFAULT_STAMPS.map(def => {
       const hit = byUid.get(def.uid);
-      return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
+      return hit
+        ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name }
+        : { ...def };
     });
   } catch { return structuredClone(DEFAULT_STAMPS); }
 }
-
 function saveStamps() {
   localStorage.setItem(LS_KEY, JSON.stringify(stamps));
 }
 
-//表示
-function render() {
-  $grid.innerHTML = stamps.map(s => `
-    <div class="card">
+// ================== 表示 ==================
+function cardHTML(s) {
+  const on = s.flag ? "stamp-on" : "";
+  // 画像プリロード用に loading="lazy" を使用
+  return `
+    <div class="card ${on}">
+      <div class="stamp-img-wrap skel">
+        <img class="stamp-img" src="${s.image}" alt="${s.name}のスタンプ"
+             loading="lazy" decoding="async"
+             onload="this.parentElement.classList.remove('skel')"
+             onerror="this.parentElement.classList.remove('skel'); this.replaceWith(fallbackImg())">
+        ${s.flag ? `<div class="checkmark">✅ GET</div>` : ``}
+      </div>
       <h3>${s.name}</h3>
       <div class="uid mono muted">UID: ${s.uid}</div>
-      <div style="margin-top:8px">
+      <div>
         <span class="badge ${s.flag ? 'ok':''}">${s.flag ? '押されました ✅' : '未取得 ⬜'}</span>
       </div>
     </div>
-  `).join("");
+  `;
+}
 
-  const done = stamps.every(s => s.flag);
-  $complete.style.display = done ? "block" : "none";
+function fallbackImg() {
+  const img = document.createElement('div');
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.display = "grid";
+  img.style.placeItems = "center";
+  img.style.color = "#9fb2d6";
+  img.style.fontSize = ".9rem";
+  img.textContent = "画像が見つかりません";
+  return img;
+}
+
+function render() {
+  $grid.innerHTML = stamps.map(cardHTML).join("");
+  $complete.style.display = stamps.every(s => s.flag) ? "block" : "none";
 }
 
 function applyUid(uid) {
@@ -64,13 +87,10 @@ function applyUid(uid) {
   }
 }
 
-function vibrate(ms) {
-  if (navigator.vibrate) navigator.vibrate(ms);
-}
-
+function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 function toast(msg) { console.log(msg); }
 
-//Web NFC
+// ================== Web NFC ==================
 async function startScan() {
   if (!('NDEFReader' in window)) {
     alert("このブラウザは Web NFC に対応していません。HTTPSまたはlocalhost、端末/Chrome/flags設定を確認してください。");
@@ -78,7 +98,7 @@ async function startScan() {
   }
   try {
     const reader = new NDEFReader();
-    await reader.scan(); // HTTPS or localhost 必須、ユーザー操作から呼び出し
+    await reader.scan();
     toast("NFCスキャンを開始しました。タグをかざしてください。");
     reader.onreading = (event) => {
       const uid = event.serialNumber || "";
@@ -93,7 +113,7 @@ async function startScan() {
   }
 }
 
-//事件簿：UIイベント
+// ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("進捗をリセットしてもよいですか？")) return;
@@ -106,7 +126,7 @@ document.getElementById("testBtn").addEventListener("click", () => {
   applyUid(v);
 });
 
-//書き出し / 読み込み
+// ================== 書き出し / 読み込み ==================
 document.getElementById("exportBtn").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(stamps, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -144,7 +164,7 @@ document.getElementById("importFile").addEventListener("change", (e) => {
   e.target.value = "";
 });
 
-//初期化
+// ================== 初期化 ==================
 (function init(){
   document.getElementById("nfcSupport").textContent =
     ('NDEFReader' in window) ? "利用可能 ✅" : "未対応 ❌";

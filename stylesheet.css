@@ -38,12 +38,12 @@ h1{
     gap:12px
 }
 
-.card{
+/* .card{
     background:var(--card);
     border:1px solid #1e2a44;
     border-radius:14px;
     padding:14px
-}
+} */
 
 .card h3{
     margin:.1rem 0 .4rem;
@@ -171,4 +171,66 @@ details{
     position:absolute;
     inset:0;opacity:0;
     cursor:pointer
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid #1e2a44;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 画像の見栄え */
+.stamp-img-wrap {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #223154;
+  background: #0c1426;
+}
+
+.stamp-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;         /* 正方形にトリミング */
+  display: block;
+  filter: grayscale(100%) contrast(0.9) brightness(0.9);
+  transition: filter .25s ease, transform .2s ease;
+}
+
+/* 取得済みでカラーに */
+.stamp-on .stamp-img {
+  filter: none;
+}
+
+/* 取得済みのチェック・キラッ演出 */
+.stamp-on .checkmark {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: #16a34a;
+  color: #031522;
+  font-weight: 900;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #0b5a31;
+  box-shadow: 0 0 12px rgba(22,163,74,.35);
+}
+
+/* 画像の読み込み中フォールバック */
+.skel {
+  background: linear-gradient(90deg,#0d1730,#0f1c39 40%,#0d1730);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
