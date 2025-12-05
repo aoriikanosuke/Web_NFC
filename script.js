@@ -215,11 +215,11 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps(); render();
 });
-document.getElementById("testBtn").addEventListener("click", () => {
-  const v = document.getElementById("testUid").value.trim();
-  if (!v) return alert("UIDを入力してください。");
-  applyUid(v);
-});
+// document.getElementById("testBtn").addEventListener("click", () => {
+//   const v = document.getElementById("testUid").value.trim();
+//   if (!v) return alert("UIDを入力してください。");
+//   applyUid(v);
+// });
 
 // ================== 書き出し / 読み込み ==================
 // document.getElementById("exportBtn").addEventListener("click", () => {
