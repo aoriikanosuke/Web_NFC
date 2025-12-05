@@ -9,7 +9,7 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* 縦スクロールを潰す */
+  overflow-x: hidden; /* 縦スクロールを潰す */
 }
 
 body{
@@ -24,7 +24,7 @@ body{
   max-width:820px;
   margin:0 auto;
   padding:20px 16px 24px;
-  height:100%;
+  height:auto;
   display:flex;
   flex-direction:column;
 }
@@ -44,7 +44,7 @@ h1{
 #grid {
   flex: 1;              /* 余った高さを全部ここに */
   margin-top: 12px;
-  overflow: hidden;     /* 横スクロールバーも出さない */
+  /* overflow: hidden;     横スクロールバーも出さない */
   position: relative;
 }
 
