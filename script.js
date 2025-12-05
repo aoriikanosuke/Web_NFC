@@ -13,7 +13,7 @@ let stamps = loadStamps();
 
 const $grid = document.getElementById("stampGrid");
 const $complete = document.getElementById("completeBox");
-const $nfcSupport = document.getElementById("nfcSupport");
+// const $nfcSupport = document.getElementById("nfcSupport");
 let currentIndex = 0;   // 今表示しているカードのインデックス
 let $track = null;      // スライド全体を動かす要素
 let swipeBound = false; // スワイプイベントを一度だけ紐づける用
