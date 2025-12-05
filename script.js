@@ -110,10 +110,16 @@ function applyUid(uid) {
   if (!hit.flag) {
     hit.flag = true;
     saveStamps();
+
+    // 新しく押したスタンプの位置へ移動
+    currentIndex = stamps.indexOf(hit);
+    if (currentIndex < 0) currentIndex = 0;
+
     render();
     vibrate(50);
   }
 }
+
 
 function bindSwipeEvents() {
   let startX = 0;
