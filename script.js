@@ -268,3 +268,51 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   }
   render();
 })();
+
+
+async function fetchBalance(userId) {
+  const res = await fetch(`/api/balance?userId=${encodeURIComponent(userId)}`);
+  const data = await res.json();
+  console.log('現在ポイント残高:', data.balance);
+  // ここで画面に表示したりする
+}
+
+//スタンプ押し API 呼び出し（sendStamp）
+async function sendStamp(cardUid, tagUid) {
+  const res = await fetch('/api/stamp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardUid, tagUid }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert('スタンプ取得エラー: ' + data.error);
+    return;
+  }
+
+  alert(`スタンプ取得！ ${data.added} ポイント追加。現在 ${data.balance} ポイント`);
+}
+
+//残高表示 API 呼び出し（showBalance）
+async function showBalance(cardUid) {
+  const res = await fetch(`/api/balance?cardUid=${encodeURIComponent(cardUid)}`);
+  const data = await res.json();
+  alert(`現在のポイント残高: ${data.balance} ポイント`);
+}
+
+async function payWithPoints(cardUid, amount) {
+  const res = await fetch('/api/pay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardUid, amount }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(`支払い失敗: ${data.error}（現在残高: ${data.balance ?? '不明'}）`);
+    return;
+  }
+
+  alert(`支払い完了！ ${data.used} ポイント使用。残り ${data.balance} ポイント`);
+}

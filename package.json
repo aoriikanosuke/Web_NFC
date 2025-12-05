@@ -1,0 +1,24 @@
+{
+  "name": "web_nfc",
+  "version": "1.0.0",
+  "description": "クローンするとき以下を参考にして\r https://zenn.dev/gachigachi/articles/329952348817d7",
+  "main": "script.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aoriikanosuke/Web_NFC.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aoriikanosuke/Web_NFC/issues"
+  },
+  "homepage": "https://github.com/aoriikanosuke/Web_NFC#readme",
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
