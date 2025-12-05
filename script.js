@@ -261,7 +261,10 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 
 // ================== 初期化 ==================
 (function init(){
-  document.getElementById("nfcSupport").textContent =
-    ('NDEFReader' in window) ? "利用可能 ✅" : "未対応 ❌";
+  const nfcEl = document.getElementById("nfcSupport");
+  if (nfcEl) {
+    nfcEl.textContent =
+      ('NDEFReader' in window) ? "利用可能 ✅" : "未対応 ❌";
+  }
   render();
 })();
