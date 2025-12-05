@@ -5,7 +5,7 @@ const DEFAULT_STAMPS = [
   { id: 3, name: "図書館",    uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false },
   { id: 4, name: "中庭",      uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false },
   { id: 5, name: "100コイン決済",    uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false },
-  { id: 6, name: "200コイン決済",  uid: "04:18:b9:aa:96:20:9", image: "./images/stamp6.png", flag: false },
+  { id: 6, name: "200コイン決済",  uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false },
 ];
 const LS_KEY = "nfc_stamps_v2_images"; // 旧キーと区別（キャッシュ衝突回避）
 
