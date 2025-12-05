@@ -222,42 +222,42 @@ document.getElementById("testBtn").addEventListener("click", () => {
 });
 
 // ================== 書き出し / 読み込み ==================
-document.getElementById("exportBtn").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(stamps, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "stamps-state.json";
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
+// document.getElementById("exportBtn").addEventListener("click", () => {
+//   const blob = new Blob([JSON.stringify(stamps, null, 2)], { type: "application/json" });
+//   const a = document.createElement("a");
+//   a.href = URL.createObjectURL(blob);
+//   a.download = "stamps-state.json";
+//   a.click();
+//   URL.revokeObjectURL(a.href);
+// });
 
-document.getElementById("importFile").addEventListener("change", (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const imported = JSON.parse(reader.result);
-      if (!Array.isArray(imported)) throw new Error("配列ではありません");
-      for (const it of imported) {
-        if (typeof it.uid !== "string" || typeof it.flag !== "boolean") {
-          throw new Error("形式が不正です");
-        }
-      }
-      const byUid = new Map(imported.map(s => [s.uid, s]));
-      stamps = DEFAULT_STAMPS.map(def => {
-        const hit = byUid.get(def.uid);
-        return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
-      });
-      saveStamps(); render();
-      alert("読み込みました。");
-    } catch (e) {
-      alert("読み込みに失敗しました。JSON形式を確認してください。");
-    }
-  };
-  reader.readAsText(file, "utf-8");
-  e.target.value = "";
-});
+// document.getElementById("importFile").addEventListener("change", (e) => {
+//   const file = e.target.files?.[0];
+//   if (!file) return;
+//   const reader = new FileReader();
+//   reader.onload = () => {
+//     try {
+//       const imported = JSON.parse(reader.result);
+//       if (!Array.isArray(imported)) throw new Error("配列ではありません");
+//       for (const it of imported) {
+//         if (typeof it.uid !== "string" || typeof it.flag !== "boolean") {
+//           throw new Error("形式が不正です");
+//         }
+//       }
+//       const byUid = new Map(imported.map(s => [s.uid, s]));
+//       stamps = DEFAULT_STAMPS.map(def => {
+//         const hit = byUid.get(def.uid);
+//         return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
+//       });
+//       saveStamps(); render();
+//       alert("読み込みました。");
+//     } catch (e) {
+//       alert("読み込みに失敗しました。JSON形式を確認してください。");
+//     }
+//   };
+//   reader.readAsText(file, "utf-8");
+//   e.target.value = "";
+// });
 
 // ================== 初期化 ==================
 (function init(){
