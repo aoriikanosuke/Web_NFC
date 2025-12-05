@@ -9,7 +9,6 @@ html, body {
   height: auto;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* 縦スクロールを潰す */
 }
 
 body{
