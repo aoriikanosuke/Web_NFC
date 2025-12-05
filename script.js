@@ -1,6 +1,6 @@
 // ====== 設定：スタンプ一覧（画像パスを追加）======
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",    uid: "0418B7AA962090", image: "./images/computer_tokui_boy.png", flag: false },
+  { id: 1, name: "本部前",    uid: "0418BEAA962090", image: "./images/computer_tokui_boy.png", flag: false },
   { id: 2, name: "体育館",    uid: "0493FE21", image: "./images/stamp2.png", flag: false },
   { id: 3, name: "図書館",    uid: "0477AC9E", image: "./images/stamp3.png", flag: false },
   { id: 4, name: "中庭",      uid: "04F1D002", image: "./images/stamp4.png", flag: false },
