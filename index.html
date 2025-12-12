@@ -8,43 +8,20 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>📍 NFCスタンプラリー（ブラウザ完結デモ）EGG</h1>
+    <h1>📍 NFCスタンプラリー（ブラウザ完結デモ）</h1>
     <div class="sub">Android + Chrome（Web NFC）で動作。タグをタッチすると該当スタンプが“押されました✅”になります。</div>
 
     <div class="row">
       <button id="scanBtn" class="btn primary">NFCスキャン開始</button>
       <button id="resetBtn" class="btn warn">進捗リセット</button>
-      <!-- <button id="exportBtn" class="btn">状態を書き出し（JSON）</button>
-      <label class="btn file-label" for="importFile">
-        状態を読み込み<input id="importFile" type="file" accept="application/json">
-      </label> -->
     </div>
 
-    <!-- <details>
-      <summary>⚙️ テスト用（Web NFCが使えない環境向け）</summary>
-      <div class="row">
-        <input id="testUid" type="text" class="mono" placeholder="UID を入力（例：04A2B3C1）" />
-        <button id="testBtn" class="btn">このUIDで“タッチ”</button>
-      </div>
-      <div class="small muted">※ ここに入力するUIDは、下のカードに表示している想定UIDに合わせてください。</div>
-    </details> -->
-
     <h2>スタンプ一覧</h2>
+
+    <!-- ★ここが横スワイプ対象 -->
     <div id="stampGrid" class="grid"></div>
 
     <div id="completeBox" class="complete">🎉 コンプリート！ 全て集まりました！</div>
-
-    <!-- <div class="footer">
-      <p class="muted">
-        ヒント：Android + Chrome + HTTPS（または <span class="kbd mono">http://localhost</span>）でご利用ください。  
-        Web NFC: <span id="nfcSupport" class="mono"></span>
-      </p>
-      <ul class="list muted small">
-        <li>データは端末の <span class="mono">localStorage</span> に保存されます（サーバー不要）</li>
-        <li>UID一致で該当スタンプのフラグをONにします</li>
-        <li>UIDは <span class="mono">script.js</span> の <span class="mono">DEFAULT_STAMPS</span> の <span class="mono">uid</span> を編集すれば変更可能</li>
-      </ul>
-    </div> -->
   </div>
 
   <script src="./script.js" defer></script>
