@@ -1,11 +1,17 @@
 # Web_NFC
 
+ここの環境で
+```npx http-server . -p 5173```
+を実行し、目標達成したら
+```git push```
+
 クローンするとき以下を参考にして
 https://zenn.dev/gachigachi/articles/329952348817d7
 
 ## サーバー起動方法
 コマンドプロンプトで以下を入力
 ```npx serve .```
+
 
 デバックするときは使用しているPCと同じネットワークにつなぎ、
 https://localhost:3000
