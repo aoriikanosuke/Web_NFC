@@ -3,25 +3,97 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NFCスタンプラリー デモ</title>
+  <title>NFCスタンプラリー</title>
   <link rel="stylesheet" href="./stylesheet.css" />
 </head>
 <body>
-  <div class="wrap">
-    <h1>📍 NFCスタンプラリー（ブラウザ完結デモ）</h1>
-    <div class="sub">Android + Chrome（Web NFC）で動作。タグをタッチすると該当スタンプが“押されました✅”になります。</div>
+  <div class="app">
 
-    <div class="row">
-      <button id="scanBtn" class="btn primary">NFCスキャン開始</button>
-      <button id="resetBtn" class="btn warn">進捗リセット</button>
+    <!-- Header -->
+    <header class="header">
+      <div class="title">
+        <div class="title-big">NFC</div>
+        <div class="title-sub">スタンプラリー</div>
+      </div>
+
+      <div class="oop-pill" aria-label="現在のポイント">
+        <span class="oop-label">OOP</span>
+        <span id="oopValue" class="oop-value">0</span>
+      </div>
+    </header>
+
+    <!-- Pages (no reload) -->
+    <main class="main">
+      <!-- ===== Stamp Page ===== -->
+      <section id="page-stamp" class="page is-active" aria-label="スタンプ">
+        <div class="stamp-card">
+          <!-- swipe target -->
+          <div id="stampCarousel" class="stamp-carousel" aria-label="スタンプ押印エリア">
+            <div class="stamp-track"></div>
+
+            <!-- optional swipe hint -->
+            <div class="swipe-arrow" aria-hidden="true"></div>
+          </div>
+
+          <!-- indicator -->
+          <div id="indicator" class="indicator" aria-label="ページインジケータ"></div>
+        </div>
+
+        <div class="below-row">
+          <button id="chipsBtn" class="chips-btn" type="button">Chips</button>
+
+          <!-- Web NFC needs user gesture -->
+          <button id="scanBtn" class="scan-mini" type="button">SCAN</button>
+        </div>
+
+        <!-- debug reset (UI上は目立たせない) -->
+        <button id="resetBtn" class="reset-hidden" type="button">RESET</button>
+      </section>
+
+      <!-- ===== Pay Page ===== -->
+      <section id="page-pay" class="page" aria-label="決済">
+        <div class="page-center">
+          <h2 class="page-title">決済</h2>
+          <p class="page-desc">ここに決済UI（100 / 200 など）を実装できます。<br>（ページ切替はリロードなし）</p>
+        </div>
+      </section>
+
+      <!-- ===== Profile Page ===== -->
+      <section id="page-profile" class="page" aria-label="プロフィール">
+        <div class="page-center">
+          <h2 class="page-title">プロフィール</h2>
+          <p class="page-desc">ここにユーザー情報・履歴などを表示できます。</p>
+
+          <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" aria-label="ボトムナビゲーション">
+      <button class="nav-btn is-active" data-target="stamp" aria-label="スタンプ">
+        <span class="nav-ico">🏷️</span>
+      </button>
+      <button class="nav-btn" data-target="pay" aria-label="決済">
+        <span class="nav-ico">💲</span>
+      </button>
+      <button class="nav-btn" data-target="profile" aria-label="プロフィール">
+        <span class="nav-ico">👤</span>
+      </button>
+    </nav>
+
+    <!-- Modal (Chips) -->
+    <div id="modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close="1"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-label="location情報">
+        <div class="modal-head">
+          <div id="modalTitle" class="modal-title">location</div>
+          <button class="modal-close" type="button" data-close="1">✕</button>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
     </div>
 
-    <h2>スタンプ一覧</h2>
-
-    <!-- ★ここが横スワイプ対象 -->
-    <div id="stampGrid" class="grid"></div>
-
-    <div id="completeBox" class="complete">🎉 コンプリート！ 全て集まりました！</div>
   </div>
 
   <script src="./script.js" defer></script>
