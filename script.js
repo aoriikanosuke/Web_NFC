@@ -1,28 +1,26 @@
-// ====== 設定：スタンプ一覧（UI要件に合わせて拡張：points/location）======
+// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 const DEFAULT_STAMPS = [
   { id: 1, name: "本部前", uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
   { id: 2, name: "体育館", uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false, points: 10, location: "体育館：正面入口" },
   { id: 3, name: "図書館", uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false, points: 15, location: "図書館：受付横" },
   { id: 4, name: "中庭", uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false, points: 15, location: "中庭：ベンチ付近" },
-  // 決済スタンプ（※バックグラウンド処理を変えず、points=0 で扱う）
-  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コインメニュー" },
-  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コインメニュー" },
+  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コイン" },
+  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コイン" },
 ];
 
-const LS_KEY = "nfc_stamps_v2_images"; // 旧キーと区別（キャッシュ衝突回避）
+const LS_KEY = "nfc_stamps_v2_images";
 
 let stamps = loadStamps();
-
-let currentIndex = 0;   // 今表示しているインデックス
+let currentIndex = 0;
 let $track = null;
 let swipeBound = false;
 
-// ===== DOM =====
+// DOM
 const $oopValue = document.getElementById("oopValue");
 const $carousel = document.getElementById("stampCarousel");
 const $indicator = document.getElementById("indicator");
-
 const $chipsBtn = document.getElementById("chipsBtn");
+
 const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
 const $modalBody = document.getElementById("modalBody");
@@ -36,13 +34,7 @@ function loadStamps() {
     const byUid = new Map(saved.map(s => [s.uid, s]));
     return DEFAULT_STAMPS.map(def => {
       const hit = byUid.get(def.uid);
-      return hit
-        ? {
-            ...def,
-            flag: !!hit.flag,
-            name: hit.name ?? def.name
-          }
-        : { ...def };
+      return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
     });
   } catch {
     return structuredClone(DEFAULT_STAMPS);
@@ -54,20 +46,16 @@ function saveStamps() {
 
 // ================== UI helpers ==================
 function calcPoints() {
-  // 取得済みスタンプの合計ポイント（バックグラウンド処理を壊さないため計算で出す）
   return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
 }
-
 function updateOOP() {
   $oopValue.textContent = String(calcPoints());
 }
 
 function stampPageHTML(s) {
-  // “取得したらイラスト表示”要件
   const inner = s.flag
     ? `<img class="stamp-img" src="${s.image}" alt="${s.name}">`
     : `<div class="stamp-empty">STAMP</div>`;
-
   return `
     <div class="stamp-page">
       <div class="stamp-frame">
@@ -80,13 +68,11 @@ function stampPageHTML(s) {
 }
 
 function renderIndicator() {
-  const dots = stamps.map((_, i) => {
+  $indicator.innerHTML = stamps.map((_, i) => {
     const active = i === currentIndex ? "is-active" : "";
     return `<div class="dot ${active}" data-i="${i}"></div>`;
   }).join("");
-  $indicator.innerHTML = dots;
 
-  // クリックでも移動できる（PC用）
   $indicator.querySelectorAll(".dot").forEach(dot => {
     dot.addEventListener("click", () => {
       const i = Number(dot.dataset.i);
@@ -105,7 +91,6 @@ function syncChipsModalContent() {
 }
 
 function render() {
-  // track を作り直す
   const track = $carousel.querySelector(".stamp-track");
   track.innerHTML = stamps.map(stampPageHTML).join("");
   $track = track;
@@ -127,7 +112,6 @@ function updateSlidePosition(withAnim) {
   $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
   $track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
-  // indicator active 更新
   $indicator.querySelectorAll(".dot").forEach((d, i) => {
     d.classList.toggle("is-active", i === currentIndex);
   });
@@ -144,7 +128,6 @@ function applyUid(uid) {
     hit.flag = true;
     saveStamps();
 
-    // 新しく押したスタンプの位置へ移動
     currentIndex = stamps.indexOf(hit);
     if (currentIndex < 0) currentIndex = 0;
 
@@ -153,27 +136,24 @@ function applyUid(uid) {
   }
 }
 
-// ================== スワイプ（スマホ＋PC） ==================
+// ================== スワイプ（維持） ==================
 function bindSwipeEvents() {
   let startX = 0;
   let deltaX = 0;
   let isDragging = false;
   let activePointerId = null;
 
-  const getClientX = (e) => e.clientX;
-
   const onPointerDown = (e) => {
     if (!$track) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
 
     activePointerId = e.pointerId;
-    startX = getClientX(e);
+    startX = e.clientX;
     deltaX = 0;
     isDragging = true;
 
     $track.style.transition = "none";
     try { $carousel.setPointerCapture(activePointerId); } catch {}
-
     e.preventDefault();
     $carousel.classList.add("dragging");
   };
@@ -182,12 +162,9 @@ function bindSwipeEvents() {
     if (!isDragging || !$track) return;
     if (activePointerId !== null && e.pointerId !== activePointerId) return;
 
-    const x = getClientX(e);
-    deltaX = x - startX;
-
+    deltaX = e.clientX - startX;
     const width = $carousel.clientWidth || 1;
     const percent = (deltaX / width) * 100;
-
     $track.style.transform = `translateX(calc(-${currentIndex * 100}% + ${percent}%))`;
     e.preventDefault();
   };
@@ -206,38 +183,24 @@ function bindSwipeEvents() {
 
     updateSlidePosition(true);
     syncChipsModalContent();
-
     $carousel.classList.remove("dragging");
     activePointerId = null;
   };
 
-  const onPointerUp = (e) => {
-    if (activePointerId !== null && e.pointerId !== activePointerId) return;
-    finishDrag();
-  };
-
-  const onPointerCancel = (e) => {
-    if (activePointerId !== null && e.pointerId !== activePointerId) return;
-    finishDrag();
-  };
-
   $carousel.addEventListener("pointerdown", onPointerDown, { passive: false });
   $carousel.addEventListener("pointermove", onPointerMove, { passive: false });
-  $carousel.addEventListener("pointerup", onPointerUp, { passive: true });
-  $carousel.addEventListener("pointercancel", onPointerCancel, { passive: true });
+  $carousel.addEventListener("pointerup", finishDrag, { passive: true });
+  $carousel.addEventListener("pointercancel", finishDrag, { passive: true });
 
-  // PC: 矢印キー
   window.addEventListener("keydown", (e) => {
     if (!$track) return;
     if (e.key === "ArrowRight") {
       if (currentIndex < stamps.length - 1) currentIndex++;
-      updateSlidePosition(true);
-      syncChipsModalContent();
+      updateSlidePosition(true); syncChipsModalContent();
     }
     if (e.key === "ArrowLeft") {
       if (currentIndex > 0) currentIndex--;
-      updateSlidePosition(true);
-      syncChipsModalContent();
+      updateSlidePosition(true); syncChipsModalContent();
     }
   });
 }
@@ -246,34 +209,27 @@ function bindWheelSwipe() {
   let wheelAccum = 0;
   let wheelTimeout = null;
 
-  $carousel.addEventListener(
-    "wheel",
-    (e) => {
-      const absX = Math.abs(e.deltaX);
-      const absY = Math.abs(e.deltaY);
+  $carousel.addEventListener("wheel", (e) => {
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
+    if (absX < absY) return;
 
-      // 縦方向は無効化したいが、誤爆防止で横成分が強いときだけ反応
-      if (absX < absY) return;
+    e.preventDefault();
+    wheelAccum += e.deltaX;
 
-      e.preventDefault();
+    const THRESHOLD = 80;
+    if (Math.abs(wheelAccum) > THRESHOLD) {
+      if (wheelAccum > 0 && currentIndex < stamps.length - 1) currentIndex++;
+      else if (wheelAccum < 0 && currentIndex > 0) currentIndex--;
 
-      wheelAccum += e.deltaX;
-      const THRESHOLD = 80;
+      updateSlidePosition(true);
+      syncChipsModalContent();
+      wheelAccum = 0;
+    }
 
-      if (Math.abs(wheelAccum) > THRESHOLD) {
-        if (wheelAccum > 0 && currentIndex < stamps.length - 1) currentIndex++;
-        else if (wheelAccum < 0 && currentIndex > 0) currentIndex--;
-
-        updateSlidePosition(true);
-        syncChipsModalContent();
-        wheelAccum = 0;
-      }
-
-      clearTimeout(wheelTimeout);
-      wheelTimeout = setTimeout(() => (wheelAccum = 0), 120);
-    },
-    { passive: false }
-  );
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => (wheelAccum = 0), 120);
+  }, { passive: false });
 }
 
 // ================== Web NFC（維持） ==================
@@ -299,7 +255,7 @@ async function startScan() {
   }
 }
 
-// ================== Modal (Chips) ==================
+// ================== Modal ==================
 function openModal() {
   syncChipsModalContent();
   $modal.classList.add("is-open");
@@ -310,15 +266,40 @@ function closeModal() {
   $modal.setAttribute("aria-hidden", "true");
 }
 
-// ================== Bottom nav (no reload) ==================
+// ================== Bottom nav ==================
 function setPage(name) {
-  const pages = ["stamp", "pay", "profile"];
-  pages.forEach(p => {
+  ["stamp","pay","profile"].forEach(p => {
     document.getElementById(`page-${p}`).classList.toggle("is-active", p === name);
   });
-
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("is-active", btn.dataset.target === name);
+  });
+}
+
+// ================== Liquid Glass interaction（UIのみ）  ==================
+function initLiquidGlass(){
+  const ok = CSS.supports("backdrop-filter", "blur(10px)") || CSS.supports("-webkit-backdrop-filter", "blur(10px)");
+  if (!ok) document.documentElement.classList.add("no-backdrop");
+
+  // 反射位置は nav全体で管理（子にも継承される）
+  const targets = document.querySelectorAll(".glass, .glass-nav");
+  let raf = 0;
+
+  const setXY = (el, x, y) => {
+    const r = el.getBoundingClientRect();
+    const gx = ((x - r.left) / r.width) * 100;
+    const gy = ((y - r.top) / r.height) * 100;
+    el.style.setProperty("--gx", `${Math.max(0, Math.min(100, gx))}%`);
+    el.style.setProperty("--gy", `${Math.max(0, Math.min(100, gy))}%`);
+  };
+
+  targets.forEach(el => {
+    el.style.setProperty("--gx", "35%");
+    el.style.setProperty("--gy", "15%");
+    el.addEventListener("pointermove", (e) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setXY(el, e.clientX, e.clientY));
+    }, { passive: true });
   });
 }
 
@@ -363,4 +344,6 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 (function init() {
   setPage("stamp");
   render();
+  initLiquidGlass();
+
 })();
