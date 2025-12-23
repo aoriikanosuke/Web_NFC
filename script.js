@@ -1,24 +1,31 @@
-// ====== 設定：スタンプ一覧（画像パスを追加）======
+// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",    uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false },
-  { id: 2, name: "体育館",    uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false },
-  { id: 3, name: "図書館",    uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false },
-  { id: 4, name: "中庭",      uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false },
-  { id: 5, name: "100コイン決済",    uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false },
-  { id: 6, name: "200コイン決済",  uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false },
+  { id: 1, name: "本部前", uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
+  { id: 2, name: "体育館", uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false, points: 10, location: "体育館：正面入口" },
+  { id: 3, name: "図書館", uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false, points: 15, location: "図書館：受付横" },
+  { id: 4, name: "中庭", uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false, points: 15, location: "中庭：ベンチ付近" },
+  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コイン" },
+  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コイン" },
 ];
-const LS_KEY = "nfc_stamps_v2_images"; // 旧キーと区別（キャッシュ衝突回避）
+
+const LS_KEY = "nfc_stamps_v2_images";
 
 let stamps = loadStamps();
+let currentIndex = 0;
+let $track = null;
+let swipeBound = false;
 
-const $grid = document.getElementById("stampGrid");
-const $complete = document.getElementById("completeBox");
-// const $nfcSupport = document.getElementById("nfcSupport");
-let currentIndex = 0;   // 今表示しているカードのインデックス
-let $track = null;      // スライド全体を動かす要素
-let swipeBound = false; // スワイプイベントを一度だけ紐づける用
+// DOM
+const $oopValue = document.getElementById("oopValue");
+const $carousel = document.getElementById("stampCarousel");
+const $indicator = document.getElementById("indicator");
+const $chipsBtn = document.getElementById("chipsBtn");
 
-// ================== 永続化 ==================
+const $modal = document.getElementById("modal");
+const $modalTitle = document.getElementById("modalTitle");
+const $modalBody = document.getElementById("modalBody");
+
+// ================== 永続化（維持） ==================
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
   if (!raw) return structuredClone(DEFAULT_STAMPS);
@@ -27,80 +34,90 @@ function loadStamps() {
     const byUid = new Map(saved.map(s => [s.uid, s]));
     return DEFAULT_STAMPS.map(def => {
       const hit = byUid.get(def.uid);
-      return hit
-        ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name }
-        : { ...def };
+      return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
     });
-  } catch { return structuredClone(DEFAULT_STAMPS); }
+  } catch {
+    return structuredClone(DEFAULT_STAMPS);
+  }
 }
 function saveStamps() {
   localStorage.setItem(LS_KEY, JSON.stringify(stamps));
 }
 
-// ================== 表示 ==================
-function cardHTML(s) {
-  const on = s.flag ? "stamp-on" : "";
-  // 画像プリロード用に loading="lazy" を使用
+// ================== UI helpers ==================
+function calcPoints() {
+  return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
+}
+function updateOOP() {
+  $oopValue.textContent = String(calcPoints());
+}
+
+function stampPageHTML(s) {
+  const inner = s.flag
+    ? `<img class="stamp-img" src="${s.image}" alt="${s.name}">`
+    : `<div class="stamp-empty">STAMP</div>`;
   return `
-    <div class="card ${on}">
-      <div class="stamp-img-wrap skel">
-        <img class="stamp-img" src="${s.image}" alt="${s.name}のスタンプ"
-             loading="lazy" decoding="async"
-             onload="this.parentElement.classList.remove('skel')"
-             onerror="this.parentElement.classList.remove('skel'); this.replaceWith(fallbackImg())">
-        ${s.flag ? `<div class="checkmark">✅ GET</div>` : ``}
-      </div>
-      <h3>${s.name}</h3>
-      <div class="uid mono muted">UID: ${s.uid}</div>
-      <div>
-        <span class="badge ${s.flag ? 'ok':''}">${s.flag ? '押されました ✅' : '未取得 ⬜'}</span>
+    <div class="stamp-page">
+      <div class="stamp-frame">
+        <div class="stamp-inner">
+          ${inner}
+        </div>
       </div>
     </div>
   `;
 }
 
-function fallbackImg() {
-  const img = document.createElement('div');
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.display = "grid";
-  img.style.placeItems = "center";
-  img.style.color = "#9fb2d6";
-  img.style.fontSize = ".9rem";
-  img.textContent = "画像が見つかりません";
-  return img;
+function renderIndicator() {
+  $indicator.innerHTML = stamps.map((_, i) => {
+    const active = i === currentIndex ? "is-active" : "";
+    return `<div class="dot ${active}" data-i="${i}"></div>`;
+  }).join("");
+
+  $indicator.querySelectorAll(".dot").forEach(dot => {
+    dot.addEventListener("click", () => {
+      const i = Number(dot.dataset.i);
+      if (!Number.isFinite(i)) return;
+      currentIndex = Math.max(0, Math.min(stamps.length - 1, i));
+      updateSlidePosition(true);
+      syncChipsModalContent();
+    });
+  });
+}
+
+function syncChipsModalContent() {
+  const s = stamps[currentIndex];
+  $modalTitle.textContent = `${s.name} の location`;
+  $modalBody.textContent = s.location || "location情報が未設定です。";
 }
 
 function render() {
-  // 横に並べるための track を作る
-  $grid.innerHTML = `
-    <div class="carousel-track">
-      ${stamps.map(cardHTML).join("")}
-    </div>
-  `;
+  const track = $carousel.querySelector(".stamp-track");
+  track.innerHTML = stamps.map(stampPageHTML).join("");
+  $track = track;
 
-  $track = $grid.querySelector('.carousel-track');
+  updateSlidePosition(false);
+  renderIndicator();
+  updateOOP();
+  syncChipsModalContent();
 
-  // 位置を反映
-  updateSlidePosition();
-
-  // コンプリート表示
-  $complete.style.display = stamps.every(s => s.flag) ? "block" : "none";
-
-  // スワイプイベントは一回だけバインド
   if (!swipeBound) {
     bindSwipeEvents();
+    bindWheelSwipe();
     swipeBound = true;
   }
 }
 
-function updateSlidePosition() {
+function updateSlidePosition(withAnim) {
   if (!$track) return;
-  // 1ページずつカクッと動く「手動感」重視
+  $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
   $track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+  $indicator.querySelectorAll(".dot").forEach((d, i) => {
+    d.classList.toggle("is-active", i === currentIndex);
+  });
 }
 
-
+// ================== UID適用（維持） ==================
 function applyUid(uid) {
   const hit = stamps.find(s => s.uid.toUpperCase() === uid.toUpperCase());
   if (!hit) {
@@ -111,7 +128,6 @@ function applyUid(uid) {
     hit.flag = true;
     saveStamps();
 
-    // 新しく押したスタンプの位置へ移動
     currentIndex = stamps.indexOf(hit);
     if (currentIndex < 0) currentIndex = 0;
 
@@ -120,74 +136,105 @@ function applyUid(uid) {
   }
 }
 
-
+// ================== スワイプ（維持） ==================
 function bindSwipeEvents() {
   let startX = 0;
   let deltaX = 0;
   let isDragging = false;
+  let activePointerId = null;
 
-  $grid.addEventListener('touchstart', (e) => {
+  const onPointerDown = (e) => {
     if (!$track) return;
-    if (e.touches.length !== 1) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
 
-    startX = e.touches[0].clientX;
+    activePointerId = e.pointerId;
+    startX = e.clientX;
     deltaX = 0;
     isDragging = true;
 
-    // ドラッグ中はアニメーションを切って「手動感」
-    $track.style.transition = 'none';
-  }, { passive: true });
+    $track.style.transition = "none";
+    try { $carousel.setPointerCapture(activePointerId); } catch {}
+    e.preventDefault();
+    $carousel.classList.add("dragging");
+  };
 
-  $grid.addEventListener('touchmove', (e) => {
+  const onPointerMove = (e) => {
     if (!isDragging || !$track) return;
+    if (activePointerId !== null && e.pointerId !== activePointerId) return;
 
-    const x = e.touches[0].clientX;
-    deltaX = x - startX;
-
-    const width = $grid.clientWidth || 1;
+    deltaX = e.clientX - startX;
+    const width = $carousel.clientWidth || 1;
     const percent = (deltaX / width) * 100;
-
-    // 現在位置 + 指の移動量分だけ、リアルタイムに追従
     $track.style.transform = `translateX(calc(-${currentIndex * 100}% + ${percent}%))`;
-  }, { passive: true });
+    e.preventDefault();
+  };
 
-  $grid.addEventListener('touchend', () => {
+  const finishDrag = () => {
     if (!isDragging || !$track) return;
     isDragging = false;
 
-    const width = $grid.clientWidth || 1;
-    const threshold = width * 0.2; // 画面の2割以上動いたらページ送り
+    const width = $carousel.clientWidth || 1;
+    const threshold = width * 0.2;
 
-    // スライドを進める / 戻す
     if (Math.abs(deltaX) > threshold) {
-      if (deltaX < 0 && currentIndex < stamps.length - 1) {
-        currentIndex++;
-      } else if (deltaX > 0 && currentIndex > 0) {
-        currentIndex--;
-      }
+      if (deltaX < 0 && currentIndex < stamps.length - 1) currentIndex++;
+      else if (deltaX > 0 && currentIndex > 0) currentIndex--;
     }
 
-    // カクッと戻る or 進む感じのアニメーション
-    $track.style.transition = 'transform 0.25s ease-out';
-    updateSlidePosition();
-  });
+    updateSlidePosition(true);
+    syncChipsModalContent();
+    $carousel.classList.remove("dragging");
+    activePointerId = null;
+  };
 
-  // 指が離れずにキャンセルされたときの保険
-  $grid.addEventListener('touchcancel', () => {
-    if (!isDragging || !$track) return;
-    isDragging = false;
-    $track.style.transition = 'transform 0.25s ease-out';
-    updateSlidePosition();
+  $carousel.addEventListener("pointerdown", onPointerDown, { passive: false });
+  $carousel.addEventListener("pointermove", onPointerMove, { passive: false });
+  $carousel.addEventListener("pointerup", finishDrag, { passive: true });
+  $carousel.addEventListener("pointercancel", finishDrag, { passive: true });
+
+  window.addEventListener("keydown", (e) => {
+    if (!$track) return;
+    if (e.key === "ArrowRight") {
+      if (currentIndex < stamps.length - 1) currentIndex++;
+      updateSlidePosition(true); syncChipsModalContent();
+    }
+    if (e.key === "ArrowLeft") {
+      if (currentIndex > 0) currentIndex--;
+      updateSlidePosition(true); syncChipsModalContent();
+    }
   });
 }
 
+function bindWheelSwipe() {
+  let wheelAccum = 0;
+  let wheelTimeout = null;
 
-function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
-function toast(msg) { console.log(msg); }
+  $carousel.addEventListener("wheel", (e) => {
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
+    if (absX < absY) return;
 
-// ================== Web NFC ==================
+    e.preventDefault();
+    wheelAccum += e.deltaX;
+
+    const THRESHOLD = 80;
+    if (Math.abs(wheelAccum) > THRESHOLD) {
+      if (wheelAccum > 0 && currentIndex < stamps.length - 1) currentIndex++;
+      else if (wheelAccum < 0 && currentIndex > 0) currentIndex--;
+
+      updateSlidePosition(true);
+      syncChipsModalContent();
+      wheelAccum = 0;
+    }
+
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => (wheelAccum = 0), 120);
+  }, { passive: false });
+}
+
+// ================== Web NFC（維持） ==================
 async function startScan() {
-  if (!('NDEFReader' in window)) {
+  if (!("NDEFReader" in window)) {
     alert("このブラウザは Web NFC に対応していません。HTTPSまたはlocalhost、端末/Chrome/flags設定を確認してください。");
     return;
   }
@@ -208,111 +255,95 @@ async function startScan() {
   }
 }
 
+// ================== Modal ==================
+function openModal() {
+  syncChipsModalContent();
+  $modal.classList.add("is-open");
+  $modal.setAttribute("aria-hidden", "false");
+}
+function closeModal() {
+  $modal.classList.remove("is-open");
+  $modal.setAttribute("aria-hidden", "true");
+}
+
+// ================== Bottom nav ==================
+function setPage(name) {
+  ["stamp","pay","profile"].forEach(p => {
+    document.getElementById(`page-${p}`).classList.toggle("is-active", p === name);
+  });
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.target === name);
+  });
+}
+
+// ================== Liquid Glass interaction（UIのみ）  ==================
+function initLiquidGlass(){
+  const ok = CSS.supports("backdrop-filter", "blur(10px)") || CSS.supports("-webkit-backdrop-filter", "blur(10px)");
+  if (!ok) document.documentElement.classList.add("no-backdrop");
+
+  // 反射位置は nav全体で管理（子にも継承される）
+  const targets = document.querySelectorAll(".glass, .glass-nav");
+  let raf = 0;
+
+  const setXY = (el, x, y) => {
+    const r = el.getBoundingClientRect();
+    const gx = ((x - r.left) / r.width) * 100;
+    const gy = ((y - r.top) / r.height) * 100;
+    el.style.setProperty("--gx", `${Math.max(0, Math.min(100, gx))}%`);
+    el.style.setProperty("--gy", `${Math.max(0, Math.min(100, gy))}%`);
+  };
+
+  targets.forEach(el => {
+    el.style.setProperty("--gx", "35%");
+    el.style.setProperty("--gy", "15%");
+    el.addEventListener("pointermove", (e) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setXY(el, e.clientX, e.clientY));
+    }, { passive: true });
+  });
+}
+
+// ================== misc ==================
+function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+function toast(msg) { console.log(msg); }
+
 // ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
+
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("進捗をリセットしてもよいですか？")) return;
   stamps = structuredClone(DEFAULT_STAMPS);
-  saveStamps(); render();
+  saveStamps();
+  currentIndex = 0;
+  render();
 });
-// document.getElementById("testBtn").addEventListener("click", () => {
-//   const v = document.getElementById("testUid").value.trim();
-//   if (!v) return alert("UIDを入力してください。");
-//   applyUid(v);
-// });
 
-// ================== 書き出し / 読み込み ==================
-// document.getElementById("exportBtn").addEventListener("click", () => {
-//   const blob = new Blob([JSON.stringify(stamps, null, 2)], { type: "application/json" });
-//   const a = document.createElement("a");
-//   a.href = URL.createObjectURL(blob);
-//   a.download = "stamps-state.json";
-//   a.click();
-//   URL.revokeObjectURL(a.href);
-// });
+document.getElementById("resetBtn2").addEventListener("click", () => {
+  if (!confirm("進捗をリセットしてもよいですか？")) return;
+  stamps = structuredClone(DEFAULT_STAMPS);
+  saveStamps();
+  currentIndex = 0;
+  render();
+  setPage("stamp");
+});
 
-// document.getElementById("importFile").addEventListener("change", (e) => {
-//   const file = e.target.files?.[0];
-//   if (!file) return;
-//   const reader = new FileReader();
-//   reader.onload = () => {
-//     try {
-//       const imported = JSON.parse(reader.result);
-//       if (!Array.isArray(imported)) throw new Error("配列ではありません");
-//       for (const it of imported) {
-//         if (typeof it.uid !== "string" || typeof it.flag !== "boolean") {
-//           throw new Error("形式が不正です");
-//         }
-//       }
-//       const byUid = new Map(imported.map(s => [s.uid, s]));
-//       stamps = DEFAULT_STAMPS.map(def => {
-//         const hit = byUid.get(def.uid);
-//         return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
-//       });
-//       saveStamps(); render();
-//       alert("読み込みました。");
-//     } catch (e) {
-//       alert("読み込みに失敗しました。JSON形式を確認してください。");
-//     }
-//   };
-//   reader.readAsText(file, "utf-8");
-//   e.target.value = "";
-// });
+$chipsBtn.addEventListener("click", openModal);
+$modal.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.close) closeModal();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => setPage(btn.dataset.target));
+});
 
 // ================== 初期化 ==================
-(function init(){
-  const nfcEl = document.getElementById("nfcSupport");
-  if (nfcEl) {
-    nfcEl.textContent =
-      ('NDEFReader' in window) ? "利用可能 ✅" : "未対応 ❌";
-  }
+(function init() {
+  setPage("stamp");
   render();
+  initLiquidGlass();
+
 })();
-
-
-async function fetchBalance(userId) {
-  const res = await fetch(`/api/balance?userId=${encodeURIComponent(userId)}`);
-  const data = await res.json();
-  console.log('現在ポイント残高:', data.balance);
-  // ここで画面に表示したりする
-}
-
-//スタンプ押し API 呼び出し（sendStamp）
-async function sendStamp(cardUid, tagUid) {
-  const res = await fetch('/api/stamp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cardUid, tagUid }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    alert('スタンプ取得エラー: ' + data.error);
-    return;
-  }
-
-  alert(`スタンプ取得！ ${data.added} ポイント追加。現在 ${data.balance} ポイント`);
-}
-
-//残高表示 API 呼び出し（showBalance）
-async function showBalance(cardUid) {
-  const res = await fetch(`/api/balance?cardUid=${encodeURIComponent(cardUid)}`);
-  const data = await res.json();
-  alert(`現在のポイント残高: ${data.balance} ポイント`);
-}
-
-async function payWithPoints(cardUid, amount) {
-  const res = await fetch('/api/pay', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cardUid, amount }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    alert(`支払い失敗: ${data.error}（現在残高: ${data.balance ?? '不明'}）`);
-    return;
-  }
-
-  alert(`支払い完了！ ${data.used} ポイント使用。残り ${data.balance} ポイント`);
-}

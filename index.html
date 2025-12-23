@@ -2,51 +2,102 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NFCスタンプラリー デモ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>NFCスタンプラリー</title>
   <link rel="stylesheet" href="./stylesheet.css" />
 </head>
 <body>
-  <div class="wrap">
-    <h1>📍 NFCスタンプラリー（ブラウザ完結デモ）</h1>
-    <div class="sub">Android + Chrome（Web NFC）で動作。タグをタッチすると該当スタンプが“押されました✅”になります。</div>
-
-    <div class="row">
-      <button id="scanBtn" class="btn primary">NFCスキャン開始</button>
-      <button id="resetBtn" class="btn warn">進捗リセット</button>
-      <!-- <button id="exportBtn" class="btn">状態を書き出し（JSON）</button>
-      <label class="btn file-label" for="importFile">
-        状態を読み込み<input id="importFile" type="file" accept="application/json">
-      </label> -->
-    </div>
-
-    <!-- <details>
-      <summary>⚙️ テスト用（Web NFCが使えない環境向け）</summary>
-      <div class="row">
-        <input id="testUid" type="text" class="mono" placeholder="UID を入力（例：04A2B3C1）" />
-        <button id="testBtn" class="btn">このUIDで“タッチ”</button>
+  <div class="device">
+    <div class="phone">
+      <div class="app">
+<!-- 背景（ガラス映え用） -->
+      <div class="bg-orbs" aria-hidden="true">
+        <span class="orb o1"></span>
+        <span class="orb o2"></span>
+        <span class="orb o3"></span>
       </div>
-      <div class="small muted">※ ここに入力するUIDは、下のカードに表示している想定UIDに合わせてください。</div>
-    </details> -->
+<!-- Header -->
+      <header class="header">
+        <div class="title">
+          <div class="title-big">NFC</div>
+          <div class="title-sub">スタンプラリー</div>
+        </div>
 
-    <h2>スタンプ一覧</h2>
-    <div id="stampGrid" class="grid"></div>
+        <!-- 全体はほどほど、OOPは通常ガラス -->
+        <div class="oop-pill glass" aria-label="現在のポイント">
+          <span class="oop-label">OOP</span>
+          <span id="oopValue" class="oop-value">0</span>
+        </div>
+      </header>
 
-    <div id="completeBox" class="complete">🎉 コンプリート！ 全て集まりました！</div>
+      <!-- Pages (no reload) -->
+      <main class="main">
+        <!-- Stamp -->
+        <section id="page-stamp" class="page is-active" aria-label="スタンプ">
+          <div class="stamp-card glass">
+            <div id="stampCarousel" class="stamp-carousel" aria-label="スタンプ押印エリア">
+              <div class="stamp-track"></div>
+              <div class="swipe-arrow" aria-hidden="true"></div>
+            </div>
 
-    <!-- <div class="footer">
-      <p class="muted">
-        ヒント：Android + Chrome + HTTPS（または <span class="kbd mono">http://localhost</span>）でご利用ください。  
-        Web NFC: <span id="nfcSupport" class="mono"></span>
-      </p>
-      <ul class="list muted small">
-        <li>データは端末の <span class="mono">localStorage</span> に保存されます（サーバー不要）</li>
-        <li>UID一致で該当スタンプのフラグをONにします</li>
-        <li>UIDは <span class="mono">script.js</span> の <span class="mono">DEFAULT_STAMPS</span> の <span class="mono">uid</span> を編集すれば変更可能</li>
-      </ul>
-    </div> -->
+            <div id="indicator" class="indicator" aria-label="ページインジケータ"></div>
+          </div>
+
+          <div class="below-row">
+            <button id="chipsBtn" class="chips-btn glass" type="button">Chips</button>
+            <button id="scanBtn" class="scan-mini glass" type="button">SCAN</button>
+          </div>
+
+          <button id="resetBtn" class="reset-hidden" type="button">RESET</button>
+        </section>
+
+        <!-- Pay -->
+        <section id="page-pay" class="page" aria-label="決済">
+          <div class="page-center glass">
+            <h2 class="page-title">決済</h2>
+            <p class="page-desc">ここに決済UI（100 / 200 など）を実装できます。</p>
+          </div>
+        </section>
+
+        <!-- Profile -->
+        <section id="page-profile" class="page" aria-label="プロフィール">
+          <div class="page-center glass">
+            <h2 class="page-title">プロフィール</h2>
+            <p class="page-desc">ここにユーザー情報などを表示できます。</p>
+            <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom Nav（ここを強めのガラスに） -->
+      <nav class="bottom-nav glass-nav" aria-label="ボトムナビゲーション">
+        <button class="nav-btn is-active" data-target="stamp" aria-label="スタンプ">
+          <span class="nav-ico">🏷️</span>
+        </button>
+        <button class="nav-btn" data-target="pay" aria-label="決済">
+          <span class="nav-ico">💲</span>
+        </button>
+        <button class="nav-btn" data-target="profile" aria-label="プロフィール">
+          <span class="nav-ico">👤</span>
+        </button>
+      </nav>
+
+      <!-- Modal -->
+      <div id="modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-close="1"></div>
+        <div class="modal-panel glass" role="dialog" aria-modal="true" aria-label="location情報">
+          <div class="modal-head">
+            <div id="modalTitle" class="modal-title">location</div>
+            <button class="modal-close" type="button" data-close="1">✕</button>
+          </div>
+          <div id="modalBody" class="modal-body"></div>
+        </div>
+      </div>
+      </div>
+    </div>
   </div>
 
+  <!-- app -->
   <script src="./script.js" defer></script>
 </body>
 </html>
