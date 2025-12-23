@@ -1,22 +1,24 @@
-// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
+// ====== 設定：スタンプ一覧（UI要件に合わせて拡張：points/location）======
 const DEFAULT_STAMPS = [
   { id: 1, name: "本部前", uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
   { id: 2, name: "体育館", uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false, points: 10, location: "体育館：正面入口" },
   { id: 3, name: "図書館", uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false, points: 15, location: "図書館：受付横" },
   { id: 4, name: "中庭", uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false, points: 15, location: "中庭：ベンチ付近" },
-  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コイン" },
-  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コイン" },
+  // 決済スタンプ（※バックグラウンド処理を変えず、points=0 で扱う）
+  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コインメニュー" },
+  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コインメニュー" },
 ];
 
-const LS_KEY = "nfc_stamps_v2_images";
+const LS_KEY = "nfc_stamps_v2_images"; // 旧キーと区別（キャッシュ衝突回避）
 
 let stamps = loadStamps();
 let currentIndex = 0;
 let $track = null;
 let swipeBound = false;
 
-// DOM
-const $oopValue = document.getElementById("oopValue");
+
+// ===== DOM =====
+const $pointValue = document.getElementById("pointValue");
 const $carousel = document.getElementById("stampCarousel");
 const $indicator = document.getElementById("indicator");
 const $chipsBtn = document.getElementById("chipsBtn");
@@ -34,7 +36,13 @@ function loadStamps() {
     const byUid = new Map(saved.map(s => [s.uid, s]));
     return DEFAULT_STAMPS.map(def => {
       const hit = byUid.get(def.uid);
-      return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
+      return hit
+        ? {
+            ...def,
+            flag: !!hit.flag,
+            name: hit.name ?? def.name
+          }
+        : { ...def };
     });
   } catch {
     return structuredClone(DEFAULT_STAMPS);
@@ -46,16 +54,20 @@ function saveStamps() {
 
 // ================== UI helpers ==================
 function calcPoints() {
+  // 取得済みスタンプの合計ポイント（バックグラウンド処理を壊さないため計算で出す）
   return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
 }
-function updateOOP() {
-  $oopValue.textContent = String(calcPoints());
+
+function updatepoint() {
+  $pointValue.textContent = String(calcPoints());
 }
 
 function stampPageHTML(s) {
+  // “取得したらイラスト表示”要件
   const inner = s.flag
     ? `<img class="stamp-img" src="${s.image}" alt="${s.name}">`
     : `<div class="stamp-empty">STAMP</div>`;
+
   return `
     <div class="stamp-page">
       <div class="stamp-frame">
@@ -97,7 +109,7 @@ function render() {
 
   updateSlidePosition(false);
   renderIndicator();
-  updateOOP();
+  updatepoint();
   syncChipsModalContent();
 
   if (!swipeBound) {
@@ -136,7 +148,7 @@ function applyUid(uid) {
   }
 }
 
-// ================== スワイプ（維持） ==================
+// ================== スワイプ（スマホ＋PC） ==================
 function bindSwipeEvents() {
   let startX = 0;
   let deltaX = 0;
@@ -191,7 +203,7 @@ function bindSwipeEvents() {
   $carousel.addEventListener("pointermove", onPointerMove, { passive: false });
   $carousel.addEventListener("pointerup", finishDrag, { passive: true });
   $carousel.addEventListener("pointercancel", finishDrag, { passive: true });
-
+  
   window.addEventListener("keydown", (e) => {
     if (!$track) return;
     if (e.key === "ArrowRight") {
@@ -255,6 +267,7 @@ async function startScan() {
   }
 }
 
+
 // ================== Modal ==================
 function openModal() {
   syncChipsModalContent();
@@ -264,16 +277,6 @@ function openModal() {
 function closeModal() {
   $modal.classList.remove("is-open");
   $modal.setAttribute("aria-hidden", "true");
-}
-
-// ================== Bottom nav ==================
-function setPage(name) {
-  ["stamp","pay","profile"].forEach(p => {
-    document.getElementById(`page-${p}`).classList.toggle("is-active", p === name);
-  });
-  document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.classList.toggle("is-active", btn.dataset.target === name);
-  });
 }
 
 // ================== Liquid Glass interaction（UIのみ）  ==================
@@ -302,6 +305,163 @@ function initLiquidGlass(){
     }, { passive: true });
   });
 }
+
+// ================== Bottom nav (no reload) ==================
+// ===== 認証状態（DBなし：mock）=====
+const AUTH = {
+  user: null,
+  mode: "login", // "login" | "register"
+};
+
+function loadAuthUser() {
+  const raw = localStorage.getItem("auth_user");
+  AUTH.user = raw ? JSON.parse(raw) : null;
+}
+
+function saveAuthUser(userObj) {
+  localStorage.setItem("auth_user", JSON.stringify(userObj));
+  loadAuthUser();
+}
+
+function clearAuthUser() {
+  localStorage.removeItem("auth_user");
+  loadAuthUser();
+}
+
+// ===== UI描画 =====
+function renderProfile() {
+  const box = document.getElementById("profileBox");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (!AUTH.user) {
+    box.innerHTML = `<p>未ログインです。<br>ログインするとユーザー情報や履歴を表示できます。</p>`;
+    logoutBtn.style.display = "none";
+    return;
+  }
+
+  box.innerHTML = `
+    <div>ログイン中： <strong>${AUTH.user.username}</strong></div>
+  `;
+  logoutBtn.style.display = "inline-block";
+}
+
+// ===== モーダル制御 =====
+function openAuthModal(mode = "login") {
+  AUTH.mode = mode;
+
+  document.getElementById("authTitle").textContent = mode === "login" ? "ログイン" : "新規登録";
+  document.getElementById("authSubmitBtn").textContent = mode === "login" ? "ログイン" : "登録";
+  document.getElementById("authMsg").textContent = "";
+
+  document.querySelectorAll(".auth-tab").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.mode === mode);
+  });
+
+  const modal = document.getElementById("authModal");
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById("authModal");
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+// ===== ここがポイント：setPageでプロフィール移動時に判定 =====
+function setPage(name) {
+  const pages = ["stamp", "pay", "profile"];
+
+  pages.forEach(p => {
+    document.getElementById(`page-${p}`).classList.toggle("is-active", p === name);
+  });
+
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.target === name);
+  });
+
+  // プロフィールに来たら表示を更新し、未ログインならモーダルを出す
+  if (name === "profile") {
+    renderProfile();
+    if (!AUTH.user) openAuthModal("login");
+  }
+}
+
+// ===== 初期化（DOM読み込み後に）=====
+window.addEventListener("DOMContentLoaded", () => {
+  loadAuthUser();
+  renderProfile();
+
+  // プロフィール内ボタン
+  document.getElementById("openLoginBtn").addEventListener("click", () => openAuthModal("login"));
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    clearAuthUser();
+    renderProfile();
+    // そのままprofile表示でもOK。stampへ戻すなら↓
+    // setPage("stamp");
+    openAuthModal("login");
+  });
+
+  // モーダル閉じる
+  document.getElementById("authCloseBtn").addEventListener("click", closeAuthModal);
+  document.querySelector("#authModal .auth-backdrop").addEventListener("click", closeAuthModal);
+
+  // タブ切替
+  document.querySelectorAll(".auth-tab").forEach(btn => {
+    btn.addEventListener("click", () => openAuthModal(btn.dataset.mode));
+  });
+
+  // 送信（DBなし：mock_users）
+  document.getElementById("authForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("authUsername").value.trim();
+    const password = document.getElementById("authPassword").value;
+    const msgEl = document.getElementById("authMsg");
+
+    if (!username || !password) return (msgEl.textContent = "入力してください。");
+
+    // ============================
+    // ✅ DB/APIができたらここを有効化
+    // const endpoint = AUTH.mode === "login" ? "/api/auth/login" : "/api/auth/register";
+    // const res = await fetch(endpoint, {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ username, password }),
+    // });
+    // const data = await res.json();
+    // if (!res.ok) return (msgEl.textContent = data.message || "失敗しました");
+    // saveAuthUser(data.user); // 例: { id, username }
+    // ============================
+
+    // 🧪 DBなし：localStorageで代用
+    const users = JSON.parse(localStorage.getItem("mock_users") || "[]");
+
+    if (AUTH.mode === "register") {
+      if (users.some(u => u.username === username)) {
+        msgEl.textContent = "そのユーザー名は使用済みです。";
+        return;
+      }
+      users.push({ username, password }); // デモ用（本番は絶対平文保存しない）
+      console.log(username);
+      console.log(password);
+      localStorage.setItem("mock_users", JSON.stringify(users));
+
+      msgEl.textContent = "登録できました。ログインしてください。";
+      openAuthModal("login");
+      return;
+    }
+
+    // login
+    const found = users.find(u => u.username === username);
+    if (!found) return (msgEl.textContent = "ユーザーが見つかりません（新規登録してください）");
+    if (found.password !== password) return (msgEl.textContent = "パスワードが違います");
+
+    saveAuthUser({ username });
+    closeAuthModal();
+    renderProfile();
+  });
+});
 
 // ================== misc ==================
 function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
