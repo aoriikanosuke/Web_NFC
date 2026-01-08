@@ -19,8 +19,9 @@
 <!-- Header -->
       <header class="header">
         <div class="title">
-          <div class="title-big">NFC</div>
-          <div class="title-sub">スタンプラリー</div>
+          <img class="title-png" src="./images/title.png" width="200px" height="100px">
+          <!-- <div class="title-big">NFC</div>
+          <div class="title-sub">スタンプラリー</div> -->
         </div>
 
         <!-- 全体はほどほど、OOPは通常ガラス -->
@@ -59,20 +60,12 @@
           </div>
         </section>
 
-        <!-- ===== Profile Page ===== -->
+        <!-- Profile -->
         <section id="page-profile" class="page" aria-label="プロフィール">
-          <div class="page-center">
-            <h2 class="page-title" id="profileTitle">プロフィール</h2>
-            <p class="page-desc" id="profileDesc">ここにユーザー情報・履歴などを表示できます。</p>
-
-            <div id="profileBox" style="margin-top:12px;"></div>
-
-            <div id="profileAuthBtns">
-              <button type="button" id="openLoginBtn" class="btn-glass">ログイン / 新規登録</button>
-              <button type="button" id="logoutBtn" class="btn-glass" style="display:none;">ログアウト</button>
-            </div>
-
-            <button class="danger" type="button" id="resetBtn2" style="margin-top:12px;">進捗リセット</button>
+          <div class="page-center glass">
+            <h2 class="page-title">プロフィール</h2>
+            <p class="page-desc">ここにユーザー情報などを表示できます。</p>
+            <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
           </div>
         </section>
       </main>
@@ -104,30 +97,8 @@
       </div>
     </div>
   </div>
-  
-  <div id="authModal" class="auth-modal" aria-hidden="true">
-    <div class="auth-backdrop" data-close="1"></div>
 
-    <div class="auth-panel" role="dialog" aria-modal="true" aria-label="ログイン">
-      <div class="auth-head">
-        <h3 id="authTitle">ログイン</h3>
-        <button type="button" id="authCloseBtn">×</button>
-      </div>
-
-      <div class="auth-tabs">
-        <button type="button" class="auth-tab is-active" data-mode="login">ログイン</button>
-        <button type="button" class="auth-tab" data-mode="register">新規登録</button>
-      </div>
-
-      <form id="authForm">
-        <input id="authUsername" placeholder="ユーザー名" required />
-        <input id="authPassword" type="password" placeholder="パスワード" required />
-        <button type="submit" id="authSubmitBtn">ログイン</button>
-      </form>
-
-      <p id="authMsg" class="auth-msg"></p>
-    </div>
-  </div>
-  <script src="./script.js" defer></script>
+  <!-- app -->
+  <script src="./js/script.js" defer></script>
 </body>
 </html>
