@@ -317,13 +317,12 @@ html, body{
 
 /* Subtle golden-card placement for Profile: bottom-right tuck */
 #page-profile .golden-card{
-  position: absolute;
-  right: 12px;
-  bottom: 92px; /* move up to avoid bottom tab bar */
-  width: 160px; /* smaller */
-  max-width: 44%;
-  padding: 8px 10px;
-  border-radius: 12px;
+  position: static;
+  width: 100%;
+  max-width: 520px;
+  margin: 18px auto 0;
+  padding: 18px 16px;
+  border-radius: 18px;
   box-shadow: 0 10px 26px rgba(0,0,0,.10);
   opacity: 0.9;
   transition: transform .18s ease, opacity .12s ease;
