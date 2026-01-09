@@ -246,8 +246,6 @@ async function startScan() {
       const uid = event.serialNumber || "";
       if (!uid) { toast("UIDが取得できませんでした。"); return; }
       console.log("NFC UID:", uid);
-      // 波紋アニメーションを表示
-      try { showNfcRipple(); } catch (e) { /* ignore if function missing */ }
       applyUid(uid);
     };
     reader.onreadingerror = () => toast("読み取りに失敗しました。再度タッチしてください。");
@@ -308,17 +306,6 @@ function initLiquidGlass(){
 // ================== misc ==================
 function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 function toast(msg) { console.log(msg); }
-
-// NFC検知時の波紋表示（トップ中央に一時要素を出してアニメーション後に削除）
-function showNfcRipple(){
-  const el = document.createElement('div');
-  el.className = 'nfc-ripple';
-  document.body.appendChild(el);
-  const remove = () => { try{ el.remove(); }catch{} };
-  el.addEventListener('animationend', remove, { once: true });
-  // 念のため最大で1.2s後に消す
-  setTimeout(remove, 1200);
-}
 
 // ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
