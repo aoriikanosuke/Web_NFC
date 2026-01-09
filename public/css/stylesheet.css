@@ -906,9 +906,10 @@ html, body{
 @media (max-width: 899px){
   #page-profile .golden-card{
     position: static;
-    width: min(360px, 100%);
-    max-width: 100%;
-    margin: 8px auto 0;
+    width: 100%;
+    max-width: 520px;
+    margin: 18px auto;
+    align-self: center;
     right: auto;
     bottom: auto;
   }
