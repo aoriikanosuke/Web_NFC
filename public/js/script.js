@@ -73,20 +73,18 @@ function setOOPValue(value) {
 
 function spawnPointsFloat(amount) {
   if (!amount || !Number.isFinite(amount)) return;
-  const stampCard = document.querySelector(".stamp-card");
-  const target = $oopInfo || $oopValue;
-  if (!stampCard || !target) return;
+  const target = $oopValue || $oopInfo;
+  if (!target) return;
 
-  const startRect = stampCard.getBoundingClientRect();
-  const endRect = target.getBoundingClientRect();
-  const startX = startRect.right - 24;
-  const startY = startRect.top + 20;
-  const endX = endRect.left + endRect.width / 2;
-  const endY = endRect.top + endRect.height / 2;
+  const rect = target.getBoundingClientRect();
+  const startX = rect.left - 8;
+  const startY = rect.top + rect.height / 2;
+  const endX = rect.left + rect.width / 2;
+  const endY = rect.top + rect.height / 2;
 
   const el = document.createElement("div");
-  el.className = "points-float";
-  el.textContent = `+${amount}`;
+  el.className = "points-merge";
+  el.textContent = `+${amount}P`;
   el.style.left = `${startX}px`;
   el.style.top = `${startY}px`;
   document.body.appendChild(el);
@@ -94,10 +92,10 @@ function spawnPointsFloat(amount) {
   const dx = endX - startX;
   const dy = endY - startY;
   const anim = el.animate([
-    { transform: "translate(-50%, -50%) scale(0.6)", opacity: 0 },
-    { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.2 },
-    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.6)`, opacity: 0.25 }
-  ], { duration: 650, easing: "cubic-bezier(.2,.9,.2,1)" });
+    { transform: "translate(-100%, -50%)", opacity: 1, offset: 0 },
+    { transform: "translate(-100%, -50%)", opacity: 1, offset: 0.7 },
+    { transform: `translate(calc(-100% + ${dx}px), calc(-50% + ${dy}px))`, opacity: 0.15 }
+  ], { duration: 1400, easing: "cubic-bezier(.2,.9,.2,1)" });
   anim.addEventListener("finish", () => { try { el.remove(); } catch {} }, { once: true });
 }
 

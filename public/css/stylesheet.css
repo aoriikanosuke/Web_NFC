@@ -267,6 +267,19 @@ html, body{
   pointer-events: none;
   z-index: 10000;
 }
+.points-merge{
+  position: fixed;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 13px;
+  color: #d32f2f;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  pointer-events: none;
+  z-index: 10000;
+  white-space: nowrap;
+}
 /* ===== Main/pages ===== */
 .main{
   flex: 1;
