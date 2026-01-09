@@ -906,7 +906,7 @@ html, body{
   #page-profile .golden-card{
     position: static;
     width: 100%;
-    max-width: 520px;
+    max-width: 600px;
     margin: 18px auto;
     align-self: center;
     right: auto;
