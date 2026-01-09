@@ -827,7 +827,7 @@ html, body{
 @keyframes spark{
   0%{ transform: scale(0.2); opacity:0; filter: blur(0); }
   20%{ transform: scale(1.1); opacity:1; filter: blur(0); }
-
+}
 /* small ephemeral sparks appended into any .glass when golden is active */
 .gold-spark{
   position: absolute;
@@ -889,6 +889,29 @@ html, body{
   animation: sheen 2500ms linear infinite;
 }
 @keyframes sheen{ 0%{ transform: skewX(-18deg) translateX(-120%);} 100%{ transform: skewX(-18deg) translateX(120%);} }
+
+@media (max-width: 899px){
+  #page-profile .golden-card{
+    position: static;
+    width: min(360px, 100%);
+    max-width: 100%;
+    margin: 8px auto 0;
+    right: auto;
+    bottom: auto;
+  }
+  .golden-card .golden-head{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .golden-card .golden-actions{
+    width: 100%;
+    flex-direction: column;
+  }
+  .golden-card .golden-actions .chips-btn{
+    width: 100%;
+  }
+}
 
 
 root{
@@ -1276,7 +1299,7 @@ html, body{
 @keyframes stamp-pop{
   0%{ transform: scale(0.6) rotate(-4deg); opacity: 0; }
 
-
+}
 /* indicator */
 .indicator{
   display:flex;
@@ -1690,7 +1713,7 @@ html, body{
 @keyframes spark{
   0%{ transform: scale(0.2); opacity:0; filter: blur(0); }
   20%{ transform: scale(1.1); opacity:1; filter: blur(0); }
-
+}
 /* small ephemeral sparks appended into any .glass when golden is active */
 .gold-spark{
   position: absolute;

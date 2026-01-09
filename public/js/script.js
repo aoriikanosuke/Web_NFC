@@ -648,7 +648,7 @@ document.getElementById("resetBtn2").addEventListener("click", () => {
   setPage("stamp");
 });
 
-$chipsBtn.addEventListener("click", openModal);
+$chipsBtn.addEventListener("click", () => openModal());
 if ($oopInfo) {
   $oopInfo.addEventListener("click", () => {
     openModal({
