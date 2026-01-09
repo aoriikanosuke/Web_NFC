@@ -74,9 +74,12 @@ html, body{
 
   .phone{
     width: min(420px, 92vw);
-    height: min(920px, 92vh);
+    /* ビューポート高さに合わせ上限を設定（.device の上下パディング 56px ×2 を考慮） */
+    height: min(920px, calc(100dvh - 112px));
+    max-height: calc(100dvh - 112px);
     aspect-ratio: 9 / 19.5;
     padding: 14px;                 /* ベゼル厚 */
+    box-sizing: border-box;
     border-radius: 44px;
     background: transparent;
     box-shadow: 0 30px 90px rgba(0,0,0,.55);
