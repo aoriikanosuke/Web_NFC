@@ -555,30 +555,35 @@ html, body{
 /* NFC検知時のトップ中央から広がる波紋アニメーション */
 .nfc-ripple{
   position: fixed;
-  top: 28px; 
+  top: 28px;
   left: 50%;
   transform: translateX(-50%) scale(0);
-  width: 28px;
-  height: 28px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(95,183,255,0.45) 45%, rgba(127,227,198,0.08) 60%, rgba(127,227,198,0) 70%);
-  box-shadow: 0 0 60px rgba(95,183,255,0.24), 0 0 18px rgba(127,227,198,0.12);
+  /* より派手なグラデと強い光彩 */
+  background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(95,183,255,0.85) 30%, rgba(127,227,198,0.25) 55%, rgba(127,227,198,0) 70%);
+  box-shadow: 0 0 120px rgba(95,183,255,0.45), 0 0 40px rgba(127,227,198,0.25), 0 0 6px rgba(255,255,255,0.8) inset;
   pointer-events: none;
-  z-index: 60;
-  animation: nfc-ripple 900ms cubic-bezier(.22,.9,.46,1);
+  z-index: 9999;
+  animation: nfc-ripple 1200ms cubic-bezier(.22,.9,.46,1);
 }
 
 @keyframes nfc-ripple{
   0%{
-    transform: translateX(-50%) scale(0.08);
+    transform: translateX(-50%) scale(0.06);
     opacity: 1;
   }
-  60%{
-    transform: translateX(-50%) scale(6);
-    opacity: .6;
+  50%{
+    transform: translateX(-50%) scale(8);
+    opacity: .9;
+  }
+  80%{
+    transform: translateX(-50%) scale(18);
+    opacity: .45;
   }
   100%{
-    transform: translateX(-50%) scale(10);
+    transform: translateX(-50%) scale(26);
     opacity: 0;
   }
 }
