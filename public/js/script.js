@@ -346,16 +346,4 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
   render();
   initLiquidGlass();
 
-  // 安全下余白（Android のソフトナビゲーションバー対策）
-  (function setSafeBottom() {
-    // 初期値は 0
-    document.documentElement.style.setProperty('--safe-bottom', '0px');
-    try {
-      if (/Android/i.test(navigator.userAgent)) {
-        // 多くの端末で安全側に余裕を持たせる（調整可）
-        document.documentElement.style.setProperty('--safe-bottom', '56px');
-      }
-    } catch (e) { /* ignore */ }
-  })();
-
 })();

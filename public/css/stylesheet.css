@@ -4,7 +4,6 @@ background: linear-gradient(-45deg, #e7a996, #e9a2bd, #95cde1, #91decc);
   animation: gradient 15s ease infinite;
   height: 100vh;
   --radius: 26px;
-  --safe-bottom: 0px;
 
   /* glass */
   --glass-bg: rgba(255,255,255,.12);
@@ -405,7 +404,7 @@ html, body{
 .bottom-nav{
   position: absolute; /* ← fixedではなく app基準 */
   left: 50%;
-  bottom: calc(12px + var(--safe-bottom, env(safe-area-inset-bottom)));
+  bottom: calc(12px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 20;
 
@@ -419,6 +418,7 @@ html, body{
   padding: 8px 10px;
   border-radius: 999px;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.18));
+  margin-bottom: 60px;
 }
 
 /* nav自体をガラス強め */
