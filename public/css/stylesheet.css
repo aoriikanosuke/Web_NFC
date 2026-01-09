@@ -927,6 +927,18 @@ html, body{
   }
 }
 
+@media (max-width: 899px){
+  #page-profile .golden-card{
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
 
 root{
 background: linear-gradient(-45deg, #e7a996 0%, #e9b5c9 28%, #95cde1 52%, #8cddbe 100%);
