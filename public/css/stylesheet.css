@@ -536,9 +536,9 @@ html, body{
 }
 
 /* NFC検知時のトップ中央から広がる波紋アニメーション */
-.nfc-ripple{
+/* .nfc-ripple{
   position: fixed;
-  top: 28px; /* 画面上部の中心付近に出る */
+  top: 28px; 
   left: 50%;
   transform: translateX(-50%) scale(0);
   width: 28px;
@@ -549,7 +549,7 @@ html, body{
   pointer-events: none;
   z-index: 60;
   animation: nfc-ripple 900ms cubic-bezier(.22,.9,.46,1);
-}
+} */
 
 @keyframes nfc-ripple{
   0%{
