@@ -1,8 +1,6 @@
 :root{
-background: linear-gradient(-45deg, #e7a996, #e9a2bd, #95cde1, #91decc);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-  height: 100vh;
+  --bg1:#cccccc;
+  --bg2:#595959;
   --radius: 26px;
 
   /* glass */
@@ -10,18 +8,6 @@ background: linear-gradient(-45deg, #e7a996, #e9a2bd, #95cde1, #91decc);
   --glass-br: rgba(255,255,255,.24);
   --glass-in: rgba(255,255,255,.20);
   --glass-shadow: 0 12px 40px rgba(0,0,0,.12);
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 /* 縦スクロール不可（スマホ比率前提） */
@@ -94,6 +80,20 @@ html, body{
     pointer-events:none;
   }
 
+  /* notch */
+  .phone::after{
+    content:"";
+    position:absolute;
+    left: 50%;
+    top: 14px;
+    transform: translateX(-50%);
+    width: 130px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.55);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    pointer-events:none;
+  }
 }
 
 
@@ -143,14 +143,13 @@ html, body{
 
 /* ===== Header ===== */
 .header{
-  margin-top: 12px;
-  padding: calc(0px + env(safe-area-inset-top)) 20px 10px;
+  padding: calc(22px + env(safe-area-inset-top)) 20px 10px;
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
 }
 
-/* .title-big{
+.title-big{
   font-size: clamp(44px, 10vw, 64px);
   line-height: 1;
   font-weight: 900;
@@ -161,15 +160,7 @@ html, body{
   font-size: 36px;
   font-weight: 900;
   letter-spacing: .5px;
-} */
- .title-png{
-  width: 250px;
-  position: absolute;
-  left: 32%;
-  transform: translateX(-50%);
-  margin-top: 10px;
-  object-fit: contain;
- }
+}
 
 .oop-pill{
   border-radius: 999px;
@@ -201,11 +192,7 @@ html, body{
   justify-content:center;
   gap:14px;
 }
-
-.page.is-active{
-   display:flex;
-   flex-direction:column
-  }
+.page.is-active{ display:flex; }
 
 .page-center{
   width: 100%;
@@ -299,6 +286,18 @@ html, body{
   font-weight: 800;
 }
 
+.swipe-arrow{
+  position:absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 18px solid rgba(255,255,255,.9);
+  border-top: 16px solid transparent;
+  border-bottom: 16px solid transparent;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.12));
+  pointer-events:none;
+}
 
 /* indicator */
 .indicator{
@@ -533,35 +532,4 @@ html, body{
   background: rgba(255,255,255,.25);
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
-}
-
-/* NFC検知時のトップ中央から広がる波紋アニメーション */
-.nfc-ripple{
-  position: fixed;
-  top: 28px; /* 画面上部の中心付近に出る */
-  left: 50%;
-  transform: translateX(-50%) scale(0);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(95,183,255,0.45) 45%, rgba(127,227,198,0.08) 60%, rgba(127,227,198,0) 70%);
-  box-shadow: 0 0 60px rgba(95,183,255,0.24), 0 0 18px rgba(127,227,198,0.12);
-  pointer-events: none;
-  z-index: 60;
-  animation: nfc-ripple 900ms cubic-bezier(.22,.9,.46,1);
-}
-
-@keyframes nfc-ripple{
-  0%{
-    transform: translateX(-50%) scale(0.08);
-    opacity: 1;
-  }
-  60%{
-    transform: translateX(-50%) scale(6);
-    opacity: .6;
-  }
-  100%{
-    transform: translateX(-50%) scale(10);
-    opacity: 0;
-  }
 }
