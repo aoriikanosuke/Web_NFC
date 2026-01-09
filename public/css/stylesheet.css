@@ -234,14 +234,6 @@ html, body{
   cursor: pointer;
 }
 
-.oop-label{ font-weight: 900; opacity: .85; }
-.oop-value{
-  font-weight: 900;
-  font-size: 20px; /* 文字を少しだけ大きく */
-  font-variant-numeric: tabular-nums; /* 桁幅を揃えて4桁収まるように */
-}
-
-
 .oop-counting{
   animation: oop-counting 900ms ease-out;
 }
@@ -906,7 +898,7 @@ html, body{
   #page-profile .golden-card{
     position: static;
     width: 100%;
-    max-width: 600px;
+    max-width: 520px;
     margin: 18px auto;
     align-self: center;
     right: auto;
@@ -1163,7 +1155,7 @@ html, body{
 
 .oop-pill{
   border-radius: 999px;
-  padding: 12px 12px; /* 横パディングを少し減らして幅を小さく */
+  padding: 12px 12px;/* 横パディングを少し減らして幅を小さく */
   min-width: 120px;   /* 横幅を少し小さくに調整 */
   display:flex;
   align-items:center;
@@ -1171,10 +1163,11 @@ html, body{
   gap: 8px;
   color:#0b1c2a;
 }
-.oop-label{ font-weight: 900; opacity: .85; }
+.oop-label{ font-weight: 900; opacity: .85; font-size: 24px; }
 .oop-value{
+  color: #373542;;
   font-weight: 900;
-  font-size: 20px; /* 文字を少しだけ大きく */
+  font-size: 24px; /* 文字を少しだけ大きく */
   font-variant-numeric: tabular-nums; /* 桁幅を揃えて4桁収まるように */
 }
 
