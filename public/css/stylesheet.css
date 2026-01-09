@@ -472,15 +472,19 @@ html, body{
 }
 .bottom-nav .nav-btn.is-active{
   opacity: 1;
-  transform: translateY(-2px);
+  transform: none;
 }
 
 /* ピル本体 */
 .bottom-nav .nav-btn.is-active::before{
   content:"";
   position:absolute;
-  inset: 6px 8px;
+  /* 内側のピルをさらに広げ（外枠はそのまま）、アニメで拡大する */
+  inset: 2px 4px;
   border-radius: 999px;
+  transform-origin: center;
+  transform: scale(1.06);
+  transition: transform .18s ease, inset .18s ease;
 
   background: rgba(255,255,255,.18);
   border: 1px solid rgba(255,255,255,.28);
@@ -512,6 +516,20 @@ html, body{
   position: relative;
   z-index: 2;
   font-size: 28px;
+}
+
+/* アイコン画像のサイズ調整 */
+.bottom-nav .nav-ico-img{
+  width: 36px;
+  height: 36px;
+  display:block;
+  object-fit: contain;
+  transition: transform .18s ease;
+}
+
+/* アクティブ時に内側アイコンをさらに強調（外枠は変えない） */
+.bottom-nav .nav-btn.is-active .nav-ico-img{
+  transform: scale(1.12);
 }
 
 /* ===== Modal ===== */
