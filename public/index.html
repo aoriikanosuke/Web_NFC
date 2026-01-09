@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>NFCスタンプラリー</title>
   <link rel="stylesheet" href="./css/stylesheet.css" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#ffffff">
 </head>
 <body>
   <div class="device">
@@ -98,5 +100,10 @@
 
   <!-- app -->
   <script src="./js/script.js" defer></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
 </body>
 </html>
