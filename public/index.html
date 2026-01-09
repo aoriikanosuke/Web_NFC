@@ -31,6 +31,10 @@
           <span id="oopValue" class="oop-value">0</span>
           <span class="oop-label">P</span>
         </div>
+        <!-- SCAN をポイント下に表示 -->
+        <div class="scan-top">
+          <button id="scanBtn" class="scan-mini glass" type="button">SCAN</button>
+        </div>
       </header>
 
       <!-- Pages (no reload) -->
@@ -43,11 +47,11 @@
             </div>
 
             <div id="indicator" class="indicator" aria-label="ページインジケータ"></div>
-          </div>
 
-          <div class="below-row">
-            <button id="chipsBtn" class="chips-btn glass" type="button">Chips</button>
-            <button id="scanBtn" class="scan-mini glass" type="button">SCAN</button>
+            <!-- Chips を枠内の右下に配置 -->
+            <div class="below-row inside-card">
+              <button id="chipsBtn" class="chips-btn glass" type="button">Chips</button>
+            </div>
           </div>
 
           <button id="resetBtn" class="reset-hidden" type="button">RESET</button>

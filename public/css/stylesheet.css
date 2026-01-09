@@ -164,6 +164,7 @@ html, body{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
+  position: relative;
 }
 
 /* .title-big{
@@ -240,6 +241,7 @@ html, body{
   max-width: 680px;
   border-radius: var(--radius);
   padding: 18px 18px 10px;
+  position: relative;
 }
 
 .stamp-carousel{
@@ -342,6 +344,44 @@ html, body{
   justify-content:flex-end;
   gap: 10px;
   padding: 0 6px;
+}
+
+/* .below-row を stamp-card 内に配置した場合のオーバーレイ位置 */
+.below-row.inside-card{
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: auto;
+  width: auto;
+  max-width: none;
+  z-index: 6;
+}
+.below-row.inside-card .chips-btn,
+.below-row.inside-card .scan-mini{
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 6px 14px rgba(0,0,0,.12);
+}
+
+/* ヘッダー下に置く SCAN ボタン */
+.scan-top{
+  position: absolute;
+  right: 18px;
+  top: calc(100% + 6px);
+  z-index: 12;
+}
+.scan-top .scan-mini{
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* scan をよりコンパクトに（視認性を保ちつつ収まるように） */
+.below-row.inside-card .scan-mini{
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .chips-btn, .scan-mini{
   border: none;
