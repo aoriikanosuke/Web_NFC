@@ -20,6 +20,8 @@ const $oopValue = document.getElementById("oopValue");
 const $carousel = document.getElementById("stampCarousel");
 const $indicator = document.getElementById("indicator");
 const $chipsBtn = document.getElementById("chipsBtn");
+const $oopInfo = document.getElementById("oopInfo");
+let oopAnimating = false;
 
 const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
@@ -48,13 +50,89 @@ function saveStamps() {
 function calcPoints() {
   return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
 }
+// デバッグ用オフセットを含めて表示
+window.debugPointsOffset = 0;
+
+// persistent consumption and golden mode state
+const LS_CONSUMED = 'nfc_consumed_points';
+const LS_GOLD_UNLOCK = 'nfc_golden_unlocked';
+const LS_GOLD_ACTIVE = 'nfc_golden_active';
+let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
+let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
+let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
+
 function updateOOP() {
-  $oopValue.textContent = String(calcPoints());
+  if (oopAnimating) return;
+  const total = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  setOOPValue(total);
+}
+
+function setOOPValue(value) {
+  $oopValue.textContent = String(value);
+}
+
+function spawnPointsFloat(amount) {
+  if (!amount || !Number.isFinite(amount)) return;
+  const stampCard = document.querySelector(".stamp-card");
+  const target = $oopInfo || $oopValue;
+  if (!stampCard || !target) return;
+
+  const startRect = stampCard.getBoundingClientRect();
+  const endRect = target.getBoundingClientRect();
+  const startX = startRect.right - 24;
+  const startY = startRect.top + 20;
+  const endX = endRect.left + endRect.width / 2;
+  const endY = endRect.top + endRect.height / 2;
+
+  const el = document.createElement("div");
+  el.className = "points-float";
+  el.textContent = `+${amount}`;
+  el.style.left = `${startX}px`;
+  el.style.top = `${startY}px`;
+  document.body.appendChild(el);
+
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const anim = el.animate([
+    { transform: "translate(-50%, -50%) scale(0.6)", opacity: 0 },
+    { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.2 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.6)`, opacity: 0.25 }
+  ], { duration: 650, easing: "cubic-bezier(.2,.9,.2,1)" });
+  anim.addEventListener("finish", () => { try { el.remove(); } catch {} }, { once: true });
+}
+
+function animateOOPIncrease(from, to, delta) {
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return;
+  oopAnimating = true;
+  setOOPValue(from);
+  spawnPointsFloat(delta);
+
+  const duration = 900;
+  const steps = Math.min(Math.max(to - from, 1), 18);
+  const stepMs = Math.max(30, Math.round(duration / steps));
+
+  for (let i = 1; i <= steps; i++) {
+    const value = i === steps ? to : Math.round(from + ((to - from) * (i / steps)));
+    setTimeout(() => setOOPValue(value), stepMs * i);
+  }
+
+  if ($oopInfo) {
+    $oopInfo.classList.remove("oop-counting");
+    void $oopInfo.offsetWidth;
+    $oopInfo.classList.add("oop-counting");
+  }
+
+  setTimeout(() => {
+    oopAnimating = false;
+    setOOPValue(to);
+    if ($oopInfo) $oopInfo.classList.remove("oop-counting");
+  }, duration + 60);
 }
 
 function stampPageHTML(s) {
+  const imgClass = s.justStamped ? "stamp-img stamp-pop" : "stamp-img";
   const inner = s.flag
-    ? `<img class="stamp-img" src="${s.image}" alt="${s.name}">`
+    ? `<img class="${imgClass}" src="${s.image}" alt="${s.name}">`
     : `<div class="stamp-empty">STAMP</div>`;
   return `
     <div class="stamp-page">
@@ -105,6 +183,15 @@ function render() {
     bindWheelSwipe();
     swipeBound = true;
   }
+
+  // remove one-shot animation class after it plays
+  track.querySelectorAll(".stamp-pop").forEach(el => {
+    el.addEventListener("animationend", () => el.classList.remove("stamp-pop"), { once: true });
+    setTimeout(() => el.classList.remove("stamp-pop"), 700);
+  });
+
+  // clear one-shot animation flags
+  stamps.forEach(s => { if (s.justStamped) s.justStamped = false; });
 }
 
 function updateSlidePosition(withAnim) {
@@ -125,13 +212,17 @@ function applyUid(uid) {
     return;
   }
   if (!hit.flag) {
+    const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     hit.flag = true;
+    hit.justStamped = true;
     saveStamps();
 
     currentIndex = stamps.indexOf(hit);
     if (currentIndex < 0) currentIndex = 0;
 
     render();
+    const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+    animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
   }
 }
@@ -258,8 +349,13 @@ async function startScan() {
 }
 
 // ================== Modal ==================
-function openModal() {
-  syncChipsModalContent();
+function openModal(custom) {
+  if (custom) {
+    $modalTitle.textContent = custom.title;
+    $modalBody.textContent = custom.body;
+  } else {
+    syncChipsModalContent();
+  }
   $modal.classList.add("is-open");
   $modal.setAttribute("aria-hidden", "false");
 }
@@ -322,6 +418,198 @@ function showNfcRipple(){
   }, { once: true });
 }
 
+/* ================== Debug UI ================== */
+function simulateTouch(uid){
+  try{ showNfcRipple(); }catch(e){}
+  applyUid(uid);
+}
+
+function adjustDebugPoints(delta){
+  // Adjust relative to the currently displayed OOP value so we never mutate base data
+  const base = calcPoints() - (consumedPoints || 0);
+  const currentDisplayed = base + (window.debugPointsOffset || 0);
+  // compute new offset so that displayed value moves by delta
+  window.debugPointsOffset = (currentDisplayed + delta) - base;
+  updateOOP();
+}
+
+function populateDebugPanel(){
+  const panel = document.getElementById('debugPanel');
+  if(!panel) return;
+  panel.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.style.fontWeight = '900';
+  title.textContent = 'デバッグ操作';
+  panel.appendChild(title);
+
+  // NFC UID のシミュレーションボタン群
+  const group = document.createElement('div');
+  group.style.display = 'flex';
+  group.style.flexDirection = 'column';
+  group.style.gap = '6px';
+  DEFAULT_STAMPS.forEach(s => {
+    const b = document.createElement('button');
+    b.textContent = `Touch: ${s.name}`;
+    b.addEventListener('click', () => simulateTouch(s.uid));
+    group.appendChild(b);
+  });
+  panel.appendChild(group);
+
+  // ポイント増減
+  const controls = document.createElement('div');
+  controls.style.display = 'flex';
+  controls.style.gap = '8px';
+  controls.style.marginTop = '8px';
+
+  const inc = document.createElement('button');
+  inc.textContent = '+10P';
+  inc.addEventListener('click', () => adjustDebugPoints(10));
+  const dec = document.createElement('button');
+  dec.textContent = '-10P';
+  dec.addEventListener('click', () => adjustDebugPoints(-10));
+  const reset = document.createElement('button');
+  reset.textContent = 'リセットP';
+  reset.addEventListener('click', () => { window.debugPointsOffset = 0; updateOOP(); });
+
+  controls.appendChild(inc);
+  controls.appendChild(dec);
+  controls.appendChild(reset);
+  panel.appendChild(controls);
+}
+
+// デバッグトグルの初期化
+function initDebugUI(){
+  const toggle = document.getElementById('debugToggle');
+  const panel = document.getElementById('debugPanel');
+  if(!toggle || !panel) return;
+  toggle.addEventListener('click', () => {
+    const open = panel.classList.toggle('is-open');
+    panel.setAttribute('aria-hidden', !open);
+    document.querySelector('.debug-tools').setAttribute('aria-hidden', !open);
+  });
+  populateDebugPanel();
+}
+
+/* ===== Golden Mode: unlock / toggle ===== */
+function persistConsumed(){
+  localStorage.setItem(LS_CONSUMED, String(consumedPoints || 0));
+}
+
+function persistGolden(){
+  localStorage.setItem(LS_GOLD_UNLOCK, goldenUnlocked ? '1' : '0');
+  localStorage.setItem(LS_GOLD_ACTIVE, goldenActive ? '1' : '0');
+}
+
+function applyGoldenClass(){
+  const app = document.querySelector('.app');
+  if(!app) return;
+  if(goldenActive) app.classList.add('golden');
+  else app.classList.remove('golden');
+}
+
+// Golden sparks that appear occasionally on all .glass elements
+let _goldenSparkTimer = null;
+function startGoldenSparks(){
+  if(_goldenSparkTimer) return;
+  _goldenSparkTimer = setInterval(() => {
+    if(!goldenActive) return;
+    // Add denser sparks to random .glass elements (1-3 per element occasionally)
+    document.querySelectorAll('.app.golden .glass').forEach(el => {
+      if(Math.random() > 0.55) return; // increased chance
+      const count = 1 + Math.floor(Math.random()*3);
+      for(let i=0;i<count;i++){
+        const s = document.createElement('div');
+        s.className = 'gold-spark';
+        const rx = Math.random()*100;
+        const ry = Math.random()*100;
+        s.style.left = rx + '%';
+        s.style.top = ry + '%';
+        s.style.width = (6 + Math.random()*10) + 'px';
+        s.style.height = (6 + Math.random()*10) + 'px';
+        s.style.animationDuration = (700 + Math.random()*900) + 'ms';
+        el.appendChild(s);
+        setTimeout(()=>{ try{ s.remove(); }catch(e){} }, 1400);
+      }
+    });
+
+    // Larger background overlay sparks — spawn several for denser effect
+    const overlay = document.getElementById('goldenOverlay');
+    if(overlay){
+      const spawn = 1 + Math.floor(Math.random()*4); // 1-4 sparks
+      for(let j=0;j<spawn;j++){
+        const o = document.createElement('div');
+        o.className = 'gold-overlay-spark';
+        const lx = Math.random()*100;
+        const ly = Math.random()*70 + 5; // keep somewhat away from very top
+        o.style.left = lx + '%';
+        o.style.top = ly + '%';
+        o.style.width = (14 + Math.random()*18) + 'px';
+        o.style.height = (14 + Math.random()*18) + 'px';
+        o.style.animationDuration = (1000 + Math.random()*1600) + 'ms';
+        overlay.appendChild(o);
+        setTimeout(()=>{ try{ o.remove(); }catch(e){} }, 2600);
+      }
+    }
+  }, 220);
+}
+
+function stopGoldenSparks(){
+  if(_goldenSparkTimer){ clearInterval(_goldenSparkTimer); _goldenSparkTimer = null; }
+  // remove remaining sparks
+  document.querySelectorAll('.gold-spark').forEach(e=>e.remove());
+}
+
+function updateGoldenUI(){
+  const unlockBtn = document.getElementById('unlockGoldenBtn');
+  const toggleBtn = document.getElementById('toggleGoldenBtn');
+  const status = document.getElementById('goldenStatus');
+  if(!unlockBtn || !toggleBtn || !status) return;
+
+  if(goldenUnlocked){
+    unlockBtn.style.display = 'none';
+    toggleBtn.style.display = 'inline-block';
+    toggleBtn.textContent = `ゴールデン: ${goldenActive ? 'ON' : 'OFF'}`;
+    status.textContent = goldenActive ? 'ゴールデン有効' : '解禁済み';
+  } else {
+    unlockBtn.style.display = 'inline-block';
+    toggleBtn.style.display = 'none';
+    status.textContent = '解禁なし';
+  }
+}
+
+function availablePoints(){
+  return calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+}
+
+function unlockGolden(){
+  if(goldenUnlocked) return;
+  const need = 50;
+  if(availablePoints() < need){
+    alert('ポイントが不足しています。');
+    return;
+  }
+  if(!confirm(`本当に ${need}P を使用してゴールデンモードを解禁しますか？`)) return;
+  consumedPoints = (consumedPoints || 0) + need;
+  persistConsumed();
+  goldenUnlocked = true;
+  goldenActive = true;
+  persistGolden();
+  applyGoldenClass();
+  startGoldenSparks();
+  updateGoldenUI();
+  updateOOP();
+}
+
+function toggleGolden(){
+  if(!goldenUnlocked) return;
+  goldenActive = !goldenActive;
+  persistGolden();
+  applyGoldenClass();
+  if(goldenActive) startGoldenSparks(); else stopGoldenSparks();
+  updateGoldenUI();
+}
+
 // ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
 
@@ -330,7 +618,16 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps();
   currentIndex = 0;
+  // reset golden and consumed points
+  consumedPoints = 0;
+  goldenUnlocked = false;
+  goldenActive = false;
+  persistConsumed();
+  persistGolden();
   render();
+  applyGoldenClass();
+  updateGoldenUI();
+  updateOOP();
 });
 
 document.getElementById("resetBtn2").addEventListener("click", () => {
@@ -338,11 +635,28 @@ document.getElementById("resetBtn2").addEventListener("click", () => {
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps();
   currentIndex = 0;
+  // reset golden and consumed points
+  consumedPoints = 0;
+  goldenUnlocked = false;
+  goldenActive = false;
+  persistConsumed();
+  persistGolden();
   render();
+  applyGoldenClass();
+  updateGoldenUI();
+  updateOOP();
   setPage("stamp");
 });
 
 $chipsBtn.addEventListener("click", openModal);
+if ($oopInfo) {
+  $oopInfo.addEventListener("click", () => {
+    openModal({
+      title: "ポイントについて",
+      body: "スタンプを入手するとポイントがたまり、ショッピングなどで利用できます。",
+    });
+  });
+}
 $modal.addEventListener("click", (e) => {
   const t = e.target;
   if (t && t.dataset && t.dataset.close) closeModal();
@@ -355,10 +669,23 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setPage(btn.dataset.target));
 });
 
+// Golden buttons hookup
+const unlockBtnEl = document.getElementById('unlockGoldenBtn');
+const toggleBtnEl = document.getElementById('toggleGoldenBtn');
+if(unlockBtnEl) unlockBtnEl.addEventListener('click', unlockGolden);
+if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
+
 // ================== 初期化 ==================
 (function init() {
   setPage("stamp");
   render();
   initLiquidGlass();
+  // デバッグUIはデスクトップ向けに初期化
+  initDebugUI();
+  // golden 初期化
+  applyGoldenClass();
+  updateGoldenUI();
+  if(goldenActive) startGoldenSparks();
+  updateOOP();
 
 })();

@@ -18,6 +18,8 @@
         <span class="orb o2"></span>
         <span class="orb o3"></span>
       </div>
+      <!-- Golden overlay for full-background sparkles -->
+      <div id="goldenOverlay" class="golden-overlay" aria-hidden="true"></div>
 <!-- Header -->
       <header class="header">
         <div class="title">
@@ -27,10 +29,10 @@
         </div>
 
         <!-- 全体はほどほど、OOPは通常ガラス -->
-        <div class="oop-pill glass" aria-label="現在のポイント">
+        <button id="oopInfo" class="oop-pill glass" type="button" aria-label="ポイントの説明を表示">
           <span id="oopValue" class="oop-value">0</span>
           <span class="oop-label">P</span>
-        </div>
+        </button>
         <!-- SCAN をポイント下に表示 -->
         <div class="scan-top">
           <button id="scanBtn" class="scan-mini glass" type="button">SCAN</button>
@@ -63,6 +65,7 @@
             <h2 class="page-title">決済</h2>
             <p class="page-desc">ここに決済UI（100 / 200 など）を実装できます。</p>
           </div>
+
         </section>
 
         <!-- Profile -->
@@ -71,6 +74,23 @@
             <h2 class="page-title">プロフィール</h2>
             <p class="page-desc">ここにユーザー情報などを表示できます。</p>
             <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
+          </div>
+
+          <!-- Subtle Golden Card tucked bottom-right of profile page -->
+          <div class="golden-card glass" aria-hidden="true">
+            <div class="golden-head">
+              <h4 style="margin:0; font-weight:800; font-size:15px;">ゴールデンモード</h4>
+              <div id="goldenStatus" style="font-weight:700; font-size:13px;">解禁なし</div>
+            </div>
+            <div class="golden-body">
+              <div class="golden-actions">
+                <button id="unlockGoldenBtn" class="chips-btn glass" type="button">50Pで解禁</button>
+                <button id="toggleGoldenBtn" class="chips-btn glass" type="button" style="display:none;">ゴールデン: OFF</button>
+              </div>
+            </div>
+            <div class="golden-sparks" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
           </div>
         </section>
       </main>
@@ -99,6 +119,11 @@
           <div id="modalBody" class="modal-body"></div>
         </div>
       </div>
+    </div>
+    <!-- デバッグUI（デスクトップ時のみ表示） -->
+    <div class="debug-tools" aria-hidden="true">
+      <button id="debugToggle" class="glass debug-toggle-btn" type="button">デバッグモード</button>
+      <div id="debugPanel" class="debug-panel glass" aria-hidden="true"></div>
     </div>
   </div>
 
