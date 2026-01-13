@@ -272,6 +272,48 @@ html, body{
   z-index: 10000;
   white-space: nowrap;
 }
+
+/* ===== Kiran shine effect ===== */
+.kiran-target{
+  position: relative;
+  overflow: hidden;
+}
+.kiran-shine{
+  position: absolute;
+  top: -120px;
+  left: -60px;
+  width: 34px;
+  height: 240%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0));
+  transform: rotate(45deg) scale(1);
+}
+.kiran-target:hover .kiran-shine{
+  animation: kiran 700ms linear;
+}
+@media (hover: none){
+  .kiran-target:active .kiran-shine{
+    animation: kiran 700ms linear;
+  }
+}
+@keyframes kiran{
+  0%{ transform: translateX(-140%) rotate(45deg) scale(1); opacity: 0; }
+  20%{ opacity: .7; }
+  100%{ transform: translateX(360%) rotate(45deg) scale(1); opacity: 0; }
+}
+
+/* tighter shine bounds for the stamp card */
+.stamp-card.kiran-target{
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.stamp-card.kiran-target .kiran-shine{
+  top: -35%;
+  left: -50%;
+  height: 180%;
+  width: 46px;
+}
 /* ===== Main/pages ===== */
 .main{
   flex: 1;
@@ -492,6 +534,33 @@ html, body{
 }
 .chips-btn{ color:#4aa8ff; }
 .scan-mini{ color:#08304b; }
+
+/* Golden toggle press animation */
+#toggleGoldenBtn{
+  color: #5a4632;
+  background: #eef4ff;
+  border: 1px solid rgba(90,110,140,.22);
+  box-shadow: 0 4px 0 rgba(70,90,120,.85);
+  min-width: 160px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+#toggleGoldenBtn .toggle-label{ white-space: nowrap; }
+#toggleGoldenBtn .toggle-state{ min-width: 3ch; text-align: right; }
+#toggleGoldenBtn.is-on{
+  background: #fff7d8;
+  border-color: rgba(130,110,70,.25);
+}
+#toggleGoldenBtn:active,
+#toggleGoldenBtn.is-on{
+  transform: translateY(4px);
+  box-shadow: none;
+}
 
 .reset-hidden{ display:none; }
 
@@ -802,7 +871,7 @@ html, body{
   align-items:flex-start;
   position: relative;
   margin: 18px auto;
-  overflow: visible;
+  overflow: hidden;
 }
 .golden-card .golden-head{
   width:100%;
@@ -1702,7 +1771,7 @@ html, body{
   align-items:flex-start;
   position: relative;
   margin: 18px auto;
-  overflow: visible;
+  overflow: hidden;
 }
 .golden-card .golden-head{
   width:100%;
@@ -1793,6 +1862,34 @@ html, body{
   animation: sheen 2500ms linear infinite;
 }
 @keyframes sheen{ 0%{ transform: skewX(-18deg) translateX(-120%);} 100%{ transform: skewX(-18deg) translateX(120%);} }
+@keyframes gold-sheen{
+  0%{ transform: skewX(-18deg) translateX(-140%); opacity: 0; }
+  12%{ opacity: .65; }
+  50%{ opacity: .35; }
+  100%{ transform: skewX(-18deg) translateX(220%); opacity: 0; }
+}
+
+/* Always-on metallic sheen for the golden card (non-golden too) */
+.golden-card .golden-sheen{
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 60%;
+  height: 180%;
+  background: linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 45%, rgba(255,255,255,0) 70%);
+  transform: skewX(-18deg) translateX(-120%);
+  filter: blur(6px);
+  opacity: .55;
+  pointer-events: none;
+  animation: gold-sheen 3800ms linear infinite;
+  z-index: 2;
+}
+.golden-card .golden-head,
+.golden-card .golden-body,
+.golden-card .golden-sparks{
+  position: relative;
+  z-index: 3;
+}
 
 
 

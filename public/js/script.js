@@ -399,6 +399,29 @@ function initLiquidGlass(){
   });
 }
 
+function initKiran(){
+  const targets = document.querySelectorAll(
+    "button, .page-center, .stamp-card, .golden-card, .modal-panel, .bottom-nav, .oop-pill"
+  );
+  targets.forEach(el => {
+    if (el.classList.contains("kiran-target")) return;
+    el.classList.add("kiran-target");
+    const shine = document.createElement("span");
+    shine.className = "kiran-shine";
+    shine.setAttribute("aria-hidden", "true");
+    el.appendChild(shine);
+
+    if (el.classList.contains("golden-card")) {
+      if (!el.querySelector(".golden-sheen")) {
+        const sheen = document.createElement("span");
+        sheen.className = "golden-sheen";
+        sheen.setAttribute("aria-hidden", "true");
+        el.appendChild(sheen);
+      }
+    }
+  });
+}
+
 // ================== misc ==================
 function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 function toast(msg) { console.log(msg); }
@@ -567,12 +590,36 @@ function updateGoldenUI(){
   if(goldenUnlocked){
     unlockBtn.style.display = 'none';
     toggleBtn.style.display = 'inline-block';
-    toggleBtn.textContent = `ゴールデン: ${goldenActive ? 'ON' : 'OFF'}`;
-    status.textContent = goldenActive ? 'ゴールデン有効' : '解禁済み';
+    // remove stray text nodes to avoid duplicated labels
+    Array.from(toggleBtn.childNodes).forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE) n.remove();
+    });
+    toggleBtn.querySelectorAll('.toggle-label, .toggle-state').forEach(n => n.remove());
+    let labelEl = toggleBtn.querySelector('.toggle-label');
+    let stateEl = toggleBtn.querySelector('.toggle-state');
+    if (!labelEl || !stateEl) {
+      const shine = toggleBtn.querySelector('.kiran-shine');
+      labelEl = document.createElement('span');
+      labelEl.className = 'toggle-label';
+      labelEl.textContent = '\u30b4\u30fc\u30eb\u30c7\u30f3:';
+      stateEl = document.createElement('span');
+      stateEl.className = 'toggle-state';
+      stateEl.textContent = goldenActive ? 'ON' : 'OFF';
+      if (shine) {
+        toggleBtn.insertBefore(labelEl, shine);
+        toggleBtn.insertBefore(stateEl, shine);
+      } else {
+        toggleBtn.append(labelEl, stateEl);
+      }
+    } else {
+      stateEl.textContent = goldenActive ? 'ON' : 'OFF';
+    }
+    toggleBtn.classList.toggle('is-on', goldenActive);
+    status.textContent = goldenActive ? '解禁済み' : '解禁済み';
   } else {
     unlockBtn.style.display = 'inline-block';
     toggleBtn.style.display = 'none';
-    status.textContent = '解禁なし';
+    status.textContent = '未解禁';
   }
 }
 
@@ -680,6 +727,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   initLiquidGlass();
   // デバッグUIはデスクトップ向けに初期化
   initDebugUI();
+  initKiran();
   // golden 初期化
   applyGoldenClass();
   updateGoldenUI();
