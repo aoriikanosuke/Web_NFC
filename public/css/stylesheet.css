@@ -763,6 +763,16 @@ html, body{
   cursor:pointer;
 }
 .modal-body{ padding: 14px; line-height: 1.65; }
+.modal-text{ margin: 0; }
+.modal-actions{
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.modal-actions .modal-danger{
+  color: #d32f2f;
+}
 
 /* backdrop-filter 非対応フォールバック */
 .no-backdrop .glass,

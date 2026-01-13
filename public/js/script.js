@@ -324,12 +324,13 @@ function bindWheelSwipe() {
 // ================== Web NFC（維持） ==================
 async function startScan() {
   if (!("NDEFReader" in window)) {
-    alert("このブラウザは Web NFC に対応していません。HTTPSまたはlocalhost、端末/Chrome/flags設定を確認してください。");
+    showModalMessage("NFC", "\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u306f Web NFC \u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002HTTPS/localhost \u3068\u7aef\u672b\u8a2d\u5b9a\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
     return;
   }
   try {
     const reader = new NDEFReader();
     await reader.scan();
+    showModalMessage("NFC", "\u30b9\u30ad\u30e3\u30f3\u3092\u958b\u59cb\u3057\u307e\u3057\u305f\u3002\u30bf\u30b0\u3092\u304b\u3056\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
     toast("NFCスキャンを開始しました。タグをかざしてください。");
     reader.onreading = (event) => {
       const uid = event.serialNumber || "";
@@ -339,27 +340,68 @@ async function startScan() {
       try { showNfcRipple(); } catch (e) { /* no-op */ }
       applyUid(uid);
     };
-    reader.onreadingerror = () => toast("読み取りに失敗しました。再度タッチしてください。");
   } catch (err) {
     console.error(err);
-    alert("NFCスキャンを開始できませんでした。権限・HTTPS・端末対応を確認してください。");
+    showModalMessage("NFC", "NFC\u30b9\u30ad\u30e3\u30f3\u3092\u958b\u59cb\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u6a29\u9650/HTTPS/\u7aef\u672b\u5bfe\u5fdc\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
   }
 }
 
 // ================== Modal ==================
+let modalResolve = null;
+
 function openModal(custom) {
   if (custom) {
     $modalTitle.textContent = custom.title;
-    $modalBody.textContent = custom.body;
+    if (custom.bodyNode) {
+      $modalBody.innerHTML = "";
+      $modalBody.append(custom.bodyNode);
+    } else {
+      $modalBody.textContent = custom.body;
+    }
   } else {
     syncChipsModalContent();
   }
   $modal.classList.add("is-open");
   $modal.setAttribute("aria-hidden", "false");
 }
-function closeModal() {
+function closeModal(result) {
   $modal.classList.remove("is-open");
   $modal.setAttribute("aria-hidden", "true");
+  if (modalResolve) {
+    const resolve = modalResolve;
+    modalResolve = null;
+    resolve(Boolean(result));
+  }
+}
+
+function showModalMessage(title, body) {
+  openModal({ title, body });
+}
+
+function showModalConfirm(title, body, okText, cancelText) {
+  return new Promise(resolve => {
+    modalResolve = resolve;
+    const wrap = document.createElement("div");
+    const msg = document.createElement("p");
+    msg.className = "modal-text";
+    msg.textContent = body;
+    const actions = document.createElement("div");
+    actions.className = "modal-actions";
+    const ok = document.createElement("button");
+    ok.type = "button";
+    ok.className = "chips-btn glass";
+    ok.textContent = okText || "OK";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "chips-btn glass";
+    cancel.textContent = cancelText || "キャンセル";
+    if (okText === "リセットする") ok.classList.add("modal-danger");
+    actions.append(ok, cancel);
+    wrap.append(msg, actions);
+    openModal({ title, bodyNode: wrap });
+    ok.addEventListener("click", () => closeModal(true), { once: true });
+    cancel.addEventListener("click", () => closeModal(false), { once: true });
+  });
 }
 
 // ================== Bottom nav ==================
@@ -627,14 +669,15 @@ function availablePoints(){
   return calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
 }
 
-function unlockGolden(){
+async function unlockGolden(){
   if(goldenUnlocked) return;
   const need = 50;
   if(availablePoints() < need){
-    alert('ポイントが不足しています。');
+    showModalMessage("\u30b4\u30fc\u30eb\u30c7\u30f3\u30e2\u30fc\u30c9", "\u30dd\u30a4\u30f3\u30c8\u304c\u4e0d\u8db3\u3057\u3066\u3044\u307e\u3059\u3002");
     return;
   }
-  if(!confirm(`本当に ${need}P を使用してゴールデンモードを解禁しますか？`)) return;
+  const ok = await showModalConfirm("\u30b4\u30fc\u30eb\u30c7\u30f3\u30e2\u30fc\u30c9", `\u672c\u5f53\u306b ${need}P \u3092\u4f7f\u7528\u3057\u3066\u30b4\u30fc\u30eb\u30c7\u30f3\u30e2\u30fc\u30c9\u3092\u89e3\u7981\u3057\u307e\u3059\u304b\uFF1F`, "\u89e3\u7981\u3059\u308b", "\u30ad\u30e3\u30f3\u30bb\u30eb");
+  if(!ok) return;
   consumedPoints = (consumedPoints || 0) + need;
   persistConsumed();
   goldenUnlocked = true;
@@ -658,8 +701,9 @@ function toggleGolden(){
 // ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
 
-document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("進捗をリセットしてもよいですか？")) return;
+document.getElementById("resetBtn").addEventListener("click", async () => {
+  const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
+  if (!ok) return;
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps();
   currentIndex = 0;
@@ -675,8 +719,9 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   updateOOP();
 });
 
-document.getElementById("resetBtn2").addEventListener("click", () => {
-  if (!confirm("進捗をリセットしてもよいですか？")) return;
+document.getElementById("resetBtn2").addEventListener("click", async () => {
+  const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
+  if (!ok) return;
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps();
   currentIndex = 0;
