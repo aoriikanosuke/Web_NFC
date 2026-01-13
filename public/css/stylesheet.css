@@ -172,6 +172,72 @@ html, body{
   z-index:0;
 }
 
+/* NFC hint (non-text) */
+.nfc-hint{
+  position: absolute;
+  top: calc(env(safe-area-inset-top) - 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 110px;
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+@media (max-width: 899px){
+  .nfc-hint{
+    top: calc(env(safe-area-inset-top) - 26px);
+    width: 104px;
+    height: 104px;
+    z-index: 6;
+  }
+}
+@media (min-width: 900px){
+  .nfc-hint{
+    top: -26px;
+    width: 120px;
+    height: 120px;
+    z-index: 6;
+  }
+}
+.nfc-ring{
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.75);
+  box-shadow: 0 0 28px rgba(95,183,255,0.38);
+  opacity: 0;
+  animation: nfc-pulse 2200ms ease-out infinite;
+}
+.nfc-ring.r2{ animation-delay: 300ms; }
+.nfc-ring.r3{ animation-delay: 600ms; }
+.nfc-tag{
+  display: none;
+}
+.nfc-tag::after{
+  content:"";
+  position: absolute;
+  inset: 6px 8px;
+  border-radius: 8px;
+  border: 2px solid rgba(95,183,255,0.8);
+}
+.nfc-tag::before{
+  content:"";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,255,255,0));
+  opacity: .9;
+}
+@keyframes nfc-pulse{
+  0%{ transform: translateY(-20%) scale(0.25); opacity: 0; }
+  25%{ opacity: .75; }
+  100%{ transform: translateY(-20%) scale(1.3); opacity: 0; }
+}
+
 .orb{
   position:absolute;
   width: 520px;
@@ -784,8 +850,8 @@ html, body{
 
 /* NFC検知時のトップ中央から広がる波紋アニメーション */
 .nfc-ripple{
-  position: fixed;
-  top: 28px;
+  position: absolute;
+  top: 22px;
   left: 50%;
   transform: translate3d(-50%, 0, 0) scale(0);
   will-change: transform, opacity;
@@ -798,6 +864,11 @@ html, body{
   pointer-events: none;
   z-index: 9999;
   animation: nfc-ripple 1000ms linear;
+}
+@media (min-width: 900px){
+  .nfc-ripple{
+    top: 0;
+  }
 }
 
 @keyframes nfc-ripple{
@@ -1684,8 +1755,8 @@ html, body{
 
 /* NFC検知時のトップ中央から広がる波紋アニメーション */
 .nfc-ripple{
-  position: fixed;
-  top: 28px;
+  position: absolute;
+  top: 22px;
   left: 50%;
   transform: translate3d(-50%, 0, 0) scale(0);
   will-change: transform, opacity;
@@ -1698,6 +1769,11 @@ html, body{
   pointer-events: none;
   z-index: 9999;
   animation: nfc-ripple 1000ms linear;
+}
+@media (min-width: 900px){
+  .nfc-ripple{
+    top: 0;
+  }
 }
 
 @keyframes nfc-ripple{

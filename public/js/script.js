@@ -472,7 +472,8 @@ function toast(msg) { console.log(msg); }
 function showNfcRipple(){
   const el = document.createElement('div');
   el.className = 'nfc-ripple';
-  document.body.appendChild(el);
+  const app = document.querySelector('.app');
+  (app || document.body).appendChild(el);
   // 強制リフローでアニメーションを確実に開始
   void el.offsetWidth;
   // アニメーション終了で削除
