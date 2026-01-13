@@ -146,7 +146,8 @@ function stampPageHTML(s) {
 function renderIndicator() {
   $indicator.innerHTML = stamps.map((_, i) => {
     const active = i === currentIndex ? "is-active" : "";
-    return `<div class="dot ${active}" data-i="${i}"></div>`;
+    const stamped = stamps[i] && stamps[i].flag ? "is-stamped" : "";
+    return `<div class="dot ${active} ${stamped}" data-i="${i}"></div>`;
   }).join("");
 
   $indicator.querySelectorAll(".dot").forEach(dot => {
@@ -577,11 +578,11 @@ let _goldenSparkTimer = null;
 function startGoldenSparks(){
   if(_goldenSparkTimer) return;
   _goldenSparkTimer = setInterval(() => {
-    if(!goldenActive) return;
-    // Add denser sparks to random .glass elements (1-3 per element occasionally)
+    if(!goldenActive || document.hidden) return;
+    // Add light sparks to random .glass elements
     document.querySelectorAll('.app.golden .glass').forEach(el => {
-      if(Math.random() > 0.55) return; // increased chance
-      const count = 1 + Math.floor(Math.random()*3);
+      if(Math.random() > 0.75) return;
+      const count = 1 + Math.floor(Math.random()*2);
       for(let i=0;i<count;i++){
         const s = document.createElement('div');
         s.className = 'gold-spark';
@@ -600,7 +601,7 @@ function startGoldenSparks(){
     // Larger background overlay sparks — spawn several for denser effect
     const overlay = document.getElementById('goldenOverlay');
     if(overlay){
-      const spawn = 1 + Math.floor(Math.random()*4); // 1-4 sparks
+      const spawn = 1 + Math.floor(Math.random()*2);
       for(let j=0;j<spawn;j++){
         const o = document.createElement('div');
         o.className = 'gold-overlay-spark';
@@ -615,13 +616,14 @@ function startGoldenSparks(){
         setTimeout(()=>{ try{ o.remove(); }catch(e){} }, 2600);
       }
     }
-  }, 220);
+  }, 600);
 }
 
 function stopGoldenSparks(){
   if(_goldenSparkTimer){ clearInterval(_goldenSparkTimer); _goldenSparkTimer = null; }
   // remove remaining sparks
   document.querySelectorAll('.gold-spark').forEach(e=>e.remove());
+  document.querySelectorAll('.gold-overlay-spark').forEach(e=>e.remove());
 }
 
 function updateGoldenUI(){
