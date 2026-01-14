@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>NFCスタンプラリー</title>
   <link rel="stylesheet" href="./css/stylesheet.css" />
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#ffffff">
 </head>
 <body>
   <div class="device">
@@ -128,10 +126,28 @@
 
         <!-- Profile -->
         <section id="page-profile" class="page" aria-label="プロフィール">
-          <div class="page-center glass">
+          <!-- <div class="page-center glass">
             <h2 class="page-title">プロフィール</h2>
-            <p class="page-desc">ここにユーザー情報などを表示できます。</p>
+            <p class="page-desc">ここにユーザー情報などを表示できます。</p> -->
             <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
+          <!-- </div> -->
+          <div id="profile-section">
+            <div id="user-info" style="display: none;">
+              <p>ようこそ、<span id="display-username"></span>さん</p>
+              <button onclick="logout()">ログアウト</button>
+            </div>
+            <button id="auth-trigger-btn" onclick="openAuthModal()">ログイン/会員登録</button>
+          </div>
+
+          <div id="auth-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+              <h2 id="auth-title">ログイン</h2>
+              <input type="text" id="auth-username" placeholder="ユーザー名">
+              <input type="password" id="auth-password" placeholder="パスワード">
+              <button id="auth-submit-btn" onclick="handleAuth()">実行</button>
+              <p id="auth-toggle-text" onclick="toggleAuthMode()">新規登録はこちら</p>
+              <button onclick="closeAuthModal()">閉じる</button>
+            </div>
           </div>
 
           <!-- Subtle Golden Card tucked bottom-right of profile page -->
@@ -187,10 +203,5 @@
 
   <!-- app -->
   <script src="./js/script.js" defer></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
-    }
-  </script>
 </body>
 </html>
