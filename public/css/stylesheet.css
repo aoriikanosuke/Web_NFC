@@ -277,6 +277,20 @@ html, body{
   padding-top: 6px;
   padding-left: 6px;
 }
+.title-glass{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 18px;
+}
+.title-glass{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 18px;
+}
 
 /* .title-big{
   font-size: clamp(44px, 10vw, 64px);
@@ -294,9 +308,12 @@ html, body{
   width: min(220px, 58vw);
   max-width: 240px;
   height: auto;
-  margin-top: 6px;
+  margin-top: 0;
   object-fit: contain;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
+  filter:
+    drop-shadow(0 6px 16px rgba(0,0,0,0.18))
+    drop-shadow(0 0 10px rgba(255,255,255,0.45))
+    drop-shadow(0 0 2px rgba(255,255,255,0.7));
  }
 
 .oop-pill{
@@ -1335,9 +1352,12 @@ html, body{
   width: min(220px, 58vw);
   max-width: 240px;
   height: auto;
-  margin-top: 6px;
+  margin-top: 0;
   object-fit: contain;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
+  filter:
+    drop-shadow(0 6px 16px rgba(0,0,0,0.18))
+    drop-shadow(0 0 10px rgba(255,255,255,0.45))
+    drop-shadow(0 0 2px rgba(255,255,255,0.7));
  }
 
 .oop-pill{
