@@ -1,5 +1,5 @@
 :root{
-background: linear-gradient(-45deg, #e7a996 0%, #e9b5c9 28%, #95cde1 52%, #8cddbe 100%);
+background: linear-gradient(-45deg, #c8d6ee 0%, #9fbfe6 28%, #6fa8dd 56%, #4b86c9 100%);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
   height: 100vh;
@@ -70,8 +70,8 @@ html, body{
     padding: 56px 28px;
     background:
       radial-gradient(1200px 700px at 50% -10%, rgba(255,255,255,.10), rgba(255,255,255,0) 55%),
-      radial-gradient(900px 520px at 80% 20%, rgba(95,183,255,.12), rgba(0,0,0,0) 60%),
-      radial-gradient(900px 520px at 20% 70%, rgba(127,227,198,.10), rgba(0,0,0,0) 60%),
+      radial-gradient(900px 520px at 80% 20%, rgba(95,183,255,.16), rgba(0,0,0,0) 60%),
+      radial-gradient(900px 520px at 20% 70%, rgba(80,140,210,.10), rgba(0,0,0,0) 60%),
       linear-gradient(180deg, #05070c 0%, #0b1220 60%, #05070c 100%);
   }
 
@@ -134,7 +134,7 @@ html, body{
 
   /* PC表示ではスマホ内にルートと同じアニメート背景を適用 */
   .app{
-    background: linear-gradient(-45deg, #e7a996 0%, #e9a2bd 18%, #95cde1 52%, #91decc 100%);
+    background: linear-gradient(-45deg, #c8d6ee 0%, #a7c5ea 18%, #6fa8dd 56%, #4b86c9 100%);
     background-size: 400% 400%;
     animation: gradient 15s ease infinite;
     color: #fff;
@@ -159,7 +159,7 @@ html, body{
 @media (min-width: 900px){
   .app{
     border-radius: 30px;
-    background: linear-gradient(-45deg, #e7a996 0%, #e9a2bd 18%, #95cde1 52%, #91decc 100%);
+    background: linear-gradient(-45deg, #c8d6ee 0%, #a7c5ea 18%, #6fa8dd 56%, #4b86c9 100%);
     background-size: 400% 400%;
     animation: gradient 15s ease infinite;
     color: #fff;
@@ -251,7 +251,7 @@ html, body{
   transform: translate3d(0,0,0);
 }
 .orb.o1{ left:-120px; top: 10%; background: radial-gradient(circle, rgba(255,255,255,.70), rgba(95,183,255,0) 60%); }
-.orb.o2{ right:-180px; top: 38%; background: radial-gradient(circle, rgba(255,255,255,.55), rgba(127,227,198,0) 62%); }
+.orb.o2{ right:-180px; top: 38%; background: radial-gradient(circle, rgba(255,255,255,.55), rgba(95,183,255,0) 62%); }
 .orb.o3{ left: 20%; bottom:-220px; background: radial-gradient(circle, rgba(255,255,255,.50), rgba(0,0,0,0) 65%); }
 
 /* 前面レイヤ */
@@ -2087,4 +2087,21 @@ html, body{
   12%{ opacity: 1; transform: translateY(0); }
   88%{ opacity: 1; transform: translateY(0); }
   100%{ opacity: 0; transform: translateY(-6px); }
+}
+
+/* Animated SVG background */
+#bg-wrap{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+#bg-wrap svg{
+  width: 100%;
+  height: 100%;
+  filter: saturate(0.5);
+}
+.bg-orbs{
+  z-index: 1;
 }
