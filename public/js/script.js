@@ -27,6 +27,18 @@ const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
 const $modalBody = document.getElementById("modalBody");
 
+// Sprite sheet config for stamp_ANI2.png
+const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
+const STAMP_ANI_DURATION = 2100;
+const STAMP_ANI_HOLD = 600;
+const STAMP_ANI_TAIL_HOLD = 400;
+const STAMP_ANI_START_DELAY = 200;
+let stampAniEl = null;
+let stampAniSprite = null;
+let stampAniRaf = 0;
+let stampAniResolve = null;
+let stampAniTimer = 0;
+
 // ================== 永続化（維持） ==================
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
@@ -333,12 +345,13 @@ async function startScan() {
     await reader.scan();
     showModalMessage("NFC", "\u30b9\u30ad\u30e3\u30f3\u3092\u958b\u59cb\u3057\u307e\u3057\u305f\u3002\u30bf\u30b0\u3092\u304b\u3056\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
     toast("NFCスキャンを開始しました。タグをかざしてください。");
-    reader.onreading = (event) => {
+    reader.onreading = async (event) => {
       const uid = event.serialNumber || "";
       if (!uid) { toast("UIDが取得できませんでした。"); return; }
       console.log("NFC UID:", uid);
       // ビジュアル波紋を表示
       try { showNfcRipple(); } catch (e) { /* no-op */ }
+      try { await showStampAni(STAMP_ANI_DURATION); } catch (e) { /* no-op */ }
       applyUid(uid);
     };
   } catch (err) {
@@ -468,9 +481,89 @@ function showNfcRipple(){
   }, { once: true });
 }
 
+function initStampAni(){
+  stampAniEl = document.getElementById('stampAni');
+  if(!stampAniEl) return;
+  stampAniSprite = stampAniEl.querySelector('.stamp-ani-sprite');
+  stampAniEl.style.setProperty('--stamp-ani-cols', String(STAMP_ANI.cols));
+  stampAniEl.style.setProperty('--stamp-ani-rows', String(STAMP_ANI.rows));
+  stampAniEl.style.setProperty('--stamp-ani-frames', String(STAMP_ANI.frames));
+}
+
+function playStampAni(durationMs){
+  return new Promise(resolve => {
+    if(!stampAniEl || !stampAniSprite) initStampAni();
+    if(!stampAniEl || !stampAniSprite) { resolve(); return; }
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if(duration <= 0){ resolve(); return; }
+    const hold = Math.max(0, Number(STAMP_ANI_HOLD) || 0);
+    const tailHold = Math.max(0, Number(STAMP_ANI_TAIL_HOLD) || 0);
+
+    const frames = STAMP_ANI.frames;
+    const cols = STAMP_ANI.cols;
+
+    if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
+    if(stampAniTimer) clearTimeout(stampAniTimer);
+    if(stampAniResolve){ stampAniResolve(); }
+    stampAniResolve = resolve;
+
+    const startDelay = Math.max(0, Number(STAMP_ANI_START_DELAY) || 0);
+    const begin = () => {
+      const start = performance.now();
+      stampAniEl.style.setProperty('--stamp-ani-duration', `${duration}ms`);
+      stampAniEl.classList.add('is-show');
+      stampAniSprite.style.backgroundPosition = '0% 0%';
+      stampAniSprite.style.animation = 'none';
+      void stampAniSprite.offsetWidth;
+      stampAniSprite.style.animation = '';
+
+      const step = (now) => {
+        const elapsed = now - start;
+        const activeDuration = Math.max(1, (duration - hold - tailHold));
+        let idx = 0;
+        if (elapsed < hold) {
+          idx = 0;
+        } else if (elapsed < (hold + activeDuration)) {
+          const t = Math.min(1, Math.max(0, (elapsed - hold) / activeDuration));
+          idx = Math.min(frames - 1, Math.floor(t * frames));
+        } else {
+          idx = frames - 1;
+        }
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const x = cols > 1 ? (col / (cols - 1)) * 100 : 0;
+        const y = STAMP_ANI.rows > 1 ? (row / (STAMP_ANI.rows - 1)) * 100 : 0;
+        stampAniSprite.style.backgroundPosition = `${x}% ${y}%`;
+        if(elapsed < duration){
+          stampAniRaf = requestAnimationFrame(step);
+        }else{
+          stampAniEl.classList.remove('is-show');
+          stampAniRaf = 0;
+          const done = stampAniResolve;
+          stampAniResolve = null;
+          if(done) done();
+        }
+      };
+      stampAniRaf = requestAnimationFrame(step);
+    };
+
+    if(startDelay > 0){
+      stampAniEl.classList.remove('is-show');
+      stampAniTimer = setTimeout(begin, startDelay);
+    }else{
+      begin();
+    }
+  });
+}
+
+function showStampAni(durationMs){
+  return playStampAni(durationMs);
+}
+
 /* ================== Debug UI ================== */
-function simulateTouch(uid){
+async function simulateTouch(uid){
   try{ showNfcRipple(); }catch(e){}
+  try{ await showStampAni(STAMP_ANI_DURATION); }catch(e){}
   applyUid(uid);
 }
 
@@ -758,6 +851,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   setPage("stamp");
   render();
   initLiquidGlass();
+  initStampAni();
   // デバッグUIはデスクトップ向けに初期化
   initDebugUI();
   initKiran();

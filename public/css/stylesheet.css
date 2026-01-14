@@ -10,6 +10,9 @@ background: linear-gradient(-45deg, #e7a996 0%, #e9b5c9 28%, #95cde1 52%, #8cddb
   --glass-br: rgba(255,255,255,.24);
   --glass-in: rgba(255,255,255,.20);
   --glass-shadow: 0 12px 40px rgba(0,0,0,.12);
+  --stamp-ani-cols: 4;
+  --stamp-ani-rows: 10;
+  --stamp-ani-frames: 38;
 }
 
 @keyframes gradient {
@@ -609,31 +612,6 @@ html, body{
   box-shadow: 0 6px 14px rgba(0,0,0,.12);
 }
 
-/* ヘッダー下に置く SCAN ボタン */
-.scan-top{
-  position: absolute;
-  right: 18px;
-  top: calc(100% + 6px);
-  z-index: 12;
-}
-.scan-top .scan-mini{
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-/* scan をよりコンパクトに（視認性を保ちつつ収まるように） */
-.below-row.inside-card .scan-mini{
-  padding-left: 10px;
-  padding-right: 10px;
-}
-.chips-btn, .scan-mini{
-  border: none;
-  font-weight: 900;
-  border-radius: 10px;
-  padding: 10px 16px;
-  cursor:pointer;
-}
 .chips-btn{ color:#4aa8ff; }
 .scan-mini{ color:#08304b; }
 
@@ -1578,7 +1556,7 @@ html, body{
 .scan-top{
   position: absolute;
   right: 18px;
-  top: calc(100% + 6px);
+  top: calc(env(safe-area-inset-top) + 70px);
   z-index: 12;
 }
 .scan-top .scan-mini{
@@ -2051,4 +2029,61 @@ html, body{
 }
 .bg-orbs{
   z-index: 1;
+}
+
+/* ===== Stamp sprite overlay ===== */
+.stamp-ani{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+  z-index: 10000;
+}
+.stamp-ani::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 14, 24, 0.08);
+  opacity: 0;
+  transition: opacity 10ms ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.stamp-ani.is-show{
+  opacity: 1;
+}
+.stamp-ani.is-show::before{
+  opacity: 1;
+}
+.stamp-ani-sprite{
+  width: min(60%, 220px);
+  max-height: 80vh;
+  margin-top: 122px;
+  aspect-ratio: 669 / 970;
+  background-image: url("../images/stamp_ANI2.png");
+  background-repeat: no-repeat;
+  background-size: calc(var(--stamp-ani-cols) * 100%) calc(var(--stamp-ani-rows) * 100%);
+  background-position: 0% 0%;
+  filter: drop-shadow(0 16px 42px rgba(0,0,0,.35));
+  transform: translateZ(0);
+  opacity: 0.95;
+  animation: stamp-ani-fade var(--stamp-ani-duration, 700ms) ease-in-out;
+  animation-fill-mode: both;
+  backface-visibility: hidden;
+  will-change: opacity, transform, background-position;
+}
+@media (min-width: 900px){
+  .stamp-ani-sprite{
+    width: min(60%, 260px);
+  }
+}
+@keyframes stamp-ani-fade{
+  0%{ opacity: 0; transform: translateY(6px); }
+  12%{ opacity: 1; transform: translateY(0); }
+  88%{ opacity: 1; transform: translateY(0); }
+  100%{ opacity: 0; transform: translateY(-6px); }
 }
