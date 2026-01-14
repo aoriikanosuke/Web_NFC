@@ -268,10 +268,11 @@ html, body{
 .title{
   flex: 1;
   display:flex;
-  justify-content:center;
+  justify-content:flex-start;
   align-items:flex-start;
   position: relative;
   padding-top: 6px;
+  padding-left: 6px;
 }
 
 /* .title-big{
@@ -287,8 +288,8 @@ html, body{
   letter-spacing: .5px;
 } */
  .title-png{
-  width: min(260px, 70vw);
-  max-width: 280px;
+  width: min(220px, 58vw);
+  max-width: 240px;
   height: auto;
   margin-top: 6px;
   object-fit: contain;
@@ -1353,8 +1354,8 @@ html, body{
   letter-spacing: .5px;
 } */
  .title-png{
-  width: min(260px, 70vw);
-  max-width: 280px;
+  width: min(220px, 58vw);
+  max-width: 240px;
   height: auto;
   margin-top: 6px;
   object-fit: contain;
