@@ -420,25 +420,10 @@ function initLiquidGlass(){
   const ok = CSS.supports("backdrop-filter", "blur(10px)") || CSS.supports("-webkit-backdrop-filter", "blur(10px)");
   if (!ok) document.documentElement.classList.add("no-backdrop");
 
-  // 反射位置は nav全体で管理（子にも継承される）
   const targets = document.querySelectorAll(".glass, .glass-nav");
-  let raf = 0;
-
-  const setXY = (el, x, y) => {
-    const r = el.getBoundingClientRect();
-    const gx = ((x - r.left) / r.width) * 100;
-    const gy = ((y - r.top) / r.height) * 100;
-    el.style.setProperty("--gx", `${Math.max(0, Math.min(100, gx))}%`);
-    el.style.setProperty("--gy", `${Math.max(0, Math.min(100, gy))}%`);
-  };
-
   targets.forEach(el => {
     el.style.setProperty("--gx", "35%");
     el.style.setProperty("--gy", "15%");
-    el.addEventListener("pointermove", (e) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setXY(el, e.clientX, e.clientY));
-    }, { passive: true });
   });
 }
 

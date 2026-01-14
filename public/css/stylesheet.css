@@ -265,6 +265,15 @@ html, body{
   z-index: 5; /* keep scan button above main content */
 }
 
+.title{
+  flex: 1;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  position: relative;
+  padding-top: 6px;
+}
+
 /* .title-big{
   font-size: clamp(44px, 10vw, 64px);
   line-height: 1;
@@ -278,12 +287,12 @@ html, body{
   letter-spacing: .5px;
 } */
  .title-png{
-  width: 250px;
-  position: absolute;
-  left: 32%;
-  transform: translateX(-50%);
-  margin-top: 20px;
+  width: min(260px, 70vw);
+  max-width: 280px;
+  height: auto;
+  margin-top: 6px;
   object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
  }
 
 .oop-pill{
@@ -354,6 +363,19 @@ html, body{
   pointer-events: none;
   background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95), rgba(255,255,255,0));
   transform: rotate(45deg) scale(1);
+}
+.kiran-target:hover .kiran-shine{
+  animation: kiran 700ms linear;
+}
+@media (hover: none){
+  .kiran-target:active .kiran-shine{
+    animation: kiran 700ms linear;
+  }
+}
+@keyframes kiran{
+  0%{ transform: translateX(-140%) rotate(45deg) scale(1); opacity: 0; }
+  20%{ opacity: .7; }
+  100%{ transform: translateX(360%) rotate(45deg) scale(1); opacity: 0; }
 }
 .kiran-target:hover .kiran-shine{
   animation: kiran 700ms linear;
@@ -669,13 +691,7 @@ html, body{
 }
 
 .glass::before{
-  content: "";
-  position: absolute;
-  inset: -1px;
-  /* soft highlight spot (moves with --gx/--gy) */
-  background: radial-gradient(circle at var(--gx, 30%) var(--gy, 20%), rgba(255,255,255,0.72), rgba(255,255,255,0.06) 28%, rgba(255,255,255,0) 42%);
-  opacity: .75; /* slightly reduced to tone down white on hover */
-  pointer-events: none;
+  content: none;
 }
 
 .glass::after{
@@ -721,12 +737,7 @@ html, body{
   overflow: hidden;
 }
 .glass-nav::before{
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: radial-gradient(circle at var(--gx,55%) var(--gy,10%), rgba(255,255,255,0.86), rgba(255,255,255,0.02) 36%, rgba(255,255,255,0) 52%);
-  opacity: .72; /* toned down highlight */
-  pointer-events: none;
+  content: none;
 }
 .glass-nav::after{
   content: "";
@@ -1342,12 +1353,12 @@ html, body{
   letter-spacing: .5px;
 } */
  .title-png{
-  width: 250px;
-  position: absolute;
-  left: 32%;
-  transform: translateX(-50%);
-  margin-top: 20px;
+  width: min(260px, 70vw);
+  max-width: 280px;
+  height: auto;
+  margin-top: 6px;
   object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.18));
  }
 
 .oop-pill{
@@ -2035,7 +2046,7 @@ html, body{
 #bg-wrap svg{
   width: 100%;
   height: 100%;
-  filter: saturate(0.6);
+  filter: saturate(0.5);
 }
 .bg-orbs{
   z-index: 1;
