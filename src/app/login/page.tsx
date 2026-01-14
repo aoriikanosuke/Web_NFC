@@ -6,7 +6,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+
+  // 1. 型（インターフェース）を定義する
+  interface AuthMessage {
+    type: "success" | "error";
+    text: string;
+  }
+
+  // 2. useStateに型を適用する（<AuthMessage | null> の部分）
+  const [msg, setMsg] = useState<AuthMessage | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
