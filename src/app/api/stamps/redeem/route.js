@@ -35,6 +35,7 @@ export async function POST(request) {
       [userId, stamp.id]
     );
 
+    const alreadyOwned = insertResult.rowCount === 0;
     if (insertResult.rowCount > 0) {
       await pool.query(
         'UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2',
@@ -53,6 +54,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
+      alreadyOwned,
       points: pointsResult.rows[0]?.points ?? 0,
       stamp_progress: stampsResult.rows.map((row) => row.stamp_id),
     });

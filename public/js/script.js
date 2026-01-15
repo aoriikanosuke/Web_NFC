@@ -317,11 +317,6 @@ function isStampOwnedByUid(uid) {
   return !!(hit && hit.flag);
 }
 
-function isStampOwnedByToken(token) {
-  if (!token) return false;
-  const hit = stamps.find(s => s.token === token);
-  return !!(hit && hit.flag);
-}
 
 // Manual test (iPhone pseudo NFC):
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
@@ -407,13 +402,13 @@ function applyStampProgress(progress) {
 // 3) Same token twice -> no extra points
 // 4) Android UID scan still works
 async function redeemToken(token) {
-  if (!token) return;
+  if (!token) return { ok: false };
   const userRaw = localStorage.getItem("user");
   if (!userRaw) {
     localStorage.setItem(LS_PENDING_TOKEN, token);
     localStorage.setItem(LS_OPEN_AUTH, "1");
     try { openAuthModal(); } catch {}
-    return;
+    return { ok: false, needsAuth: true };
   }
 
   try {
@@ -428,11 +423,11 @@ async function redeemToken(token) {
       localStorage.setItem(LS_PENDING_TOKEN, token);
       localStorage.setItem(LS_OPEN_AUTH, "1");
       try { openAuthModal(); } catch {}
-      return;
+      return { ok: false, needsAuth: true };
     }
     if (!res.ok || !data.ok) {
       showModalMessage("NFC", data.error || "スタンプ取得に失敗しました。");
-      return;
+      return { ok: false };
     }
 
     try {
@@ -448,9 +443,11 @@ async function redeemToken(token) {
     }
     localStorage.removeItem(LS_PENDING_TOKEN);
     localStorage.removeItem(LS_PENDING_PROGRESS);
+    return { ok: true, alreadyOwned: !!data.alreadyOwned };
   } catch (err) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
+    return { ok: false };
   }
 }
 
@@ -590,16 +587,20 @@ async function startScan() {
 
         // ビジュアル波紋を表示
         try { showNfcRipple(); } catch (e) { /* no-op */ }
-        const uid = event.serialNumber || "";
-        const owned = token ? isStampOwnedByToken(token) : isStampOwnedByUid(uid);
-        try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
 
         if (token) {
-          await redeemToken(token);
+          const result = await redeemToken(token);
+          if (result && result.ok) {
+            const owned = result.alreadyOwned === true;
+            try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
+          }
           return;
         }
 
+        const uid = event.serialNumber || "";
         if (!uid) { toast("UIDが取得できませんでした。"); return; }
+        const owned = isStampOwnedByUid(uid);
+        try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
         console.log("NFC UID:", uid);
         applyUid(uid);
       };
