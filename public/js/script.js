@@ -14,11 +14,26 @@ const LS_KEY = "nfc_stamps_v2_images";
 const LS_PENDING_TOKEN = "pending_nfc_token";
 const LS_PENDING_PROGRESS = "pending_stamp_progress";
 const LS_OPEN_AUTH = "open_auth_modal";
+const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
+const LS_PENDING_BROADCAST_ACK = "pending_nfc_broadcast_ack";
+const LS_TAB_ID = "nfc_tab_id";
 
 let stamps = loadStamps();
 let currentIndex = 0;
 let $track = null;
 let swipeBound = false;
+const TAB_ID = (() => {
+  const existing = sessionStorage.getItem(LS_TAB_ID);
+  if (existing) return existing;
+  const next = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  sessionStorage.setItem(LS_TAB_ID, next);
+  return next;
+})();
+
+const BROADCAST_NAME = "nfc_token_channel";
+const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BROADCAST_NAME) : null;
+let pendingBroadcastAck = null;
+const handledBroadcasts = new Map();
 
 // DOM
 const $oopValue = document.getElementById("oopValue");
@@ -344,6 +359,99 @@ async function applyToken(token) {
   return true;
 }
 
+function isDuplicateBroadcast(from, token) {
+  const key = `${from}|${token}`;
+  const now = Date.now();
+  const prev = handledBroadcasts.get(key);
+  if (prev && (now - prev) < 3000) return true;
+  handledBroadcasts.set(key, now);
+  return false;
+}
+
+async function handleIncomingBroadcastToken(token) {
+  const applied = await applyToken(token);
+  if (applied) {
+    localStorage.removeItem(LS_PENDING_TOKEN);
+  } else {
+    localStorage.setItem(LS_PENDING_TOKEN, token);
+  }
+}
+
+function tryCloseCurrentTab() {
+  try { window.close(); } catch {}
+  try {
+    window.open("", "_self");
+    window.close();
+  } catch {}
+}
+
+function waitForBroadcastAck(token) {
+  return new Promise(resolve => {
+    const timeout = setTimeout(() => {
+      pendingBroadcastAck = null;
+      resolve(false);
+    }, 450);
+
+    pendingBroadcastAck = (data) => {
+      if (!data || data.to !== TAB_ID || data.token !== token) return;
+      clearTimeout(timeout);
+      pendingBroadcastAck = null;
+      resolve(true);
+    };
+  });
+}
+
+function broadcastTokenToOtherTabs(token) {
+  const payload = { type: "nfc-token", token, from: TAB_ID, ts: Date.now() };
+  try {
+    if (bc) bc.postMessage(payload);
+  } catch {}
+  try { localStorage.setItem(LS_PENDING_BROADCAST, JSON.stringify(payload)); } catch {}
+  return waitForBroadcastAck(token);
+}
+
+function initBroadcastListeners() {
+  if (bc) {
+    bc.addEventListener("message", async (event) => {
+      const data = event && event.data;
+      if (!data || !data.type) return;
+      if (data.type === "nfc-token") {
+        if (!data.token || data.from === TAB_ID) return;
+        if (isDuplicateBroadcast(data.from, data.token)) return;
+        await handleIncomingBroadcastToken(data.token);
+        try { bc.postMessage({ type: "nfc-token-ack", to: data.from, from: TAB_ID, token: data.token }); } catch {}
+      }
+      if (data.type === "nfc-token-ack" && pendingBroadcastAck) {
+        pendingBroadcastAck(data);
+      }
+    });
+  }
+
+  window.addEventListener("storage", async (event) => {
+    if (event.key === LS_PENDING_BROADCAST && event.newValue) {
+      try {
+        const data = JSON.parse(event.newValue);
+        if (!data || !data.token || data.from === TAB_ID) return;
+        if (isDuplicateBroadcast(data.from, data.token)) return;
+        await handleIncomingBroadcastToken(data.token);
+        localStorage.setItem(LS_PENDING_BROADCAST_ACK, JSON.stringify({
+          to: data.from,
+          from: TAB_ID,
+          token: data.token,
+          ts: Date.now()
+        }));
+      } catch {}
+      return;
+    }
+    if (event.key === LS_PENDING_BROADCAST_ACK && event.newValue && pendingBroadcastAck) {
+      try {
+        const data = JSON.parse(event.newValue);
+        pendingBroadcastAck(data);
+      } catch {}
+    }
+  });
+}
+
 async function consumeTokenFromUrlAndPending() {
   let processedToken = "";
   let targetWindow = window;
@@ -366,12 +474,18 @@ async function consumeTokenFromUrlAndPending() {
 
   if (t) {
     processedToken = t;
-    const applied = await applyToken(t);
-    if (applied) {
-      localStorage.removeItem(LS_PENDING_TOKEN);
-    } else {
-      localStorage.setItem(LS_PENDING_TOKEN, t);
+    const transferred = await broadcastTokenToOtherTabs(t);
+    if (transferred) {
+      url.searchParams.delete("t");
+      const next = url.searchParams.toString();
+      const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
+      try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
+      tryCloseCurrentTab();
+      return;
     }
+    const applied = await applyToken(t);
+    if (applied) localStorage.removeItem(LS_PENDING_TOKEN);
+    else localStorage.setItem(LS_PENDING_TOKEN, t);
     url.searchParams.delete("t");
     const next = url.searchParams.toString();
     const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
@@ -1163,6 +1277,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   render();
   initLiquidGlass();
   initStampAni();
+  initBroadcastListeners();
   // デバッグUIはデスクトップ向けに初期化
   initDebugUI();
   initKiran();
