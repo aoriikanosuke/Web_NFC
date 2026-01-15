@@ -671,6 +671,15 @@ html, body{
   cursor:pointer;
 }
 
+.auth-trigger-btn{
+  background: #4aa8ff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
 .glass{
   /* richer liquid glass */
   background:
@@ -858,6 +867,40 @@ html, body{
 }
 .modal-actions .modal-danger{
   color: #d32f2f;
+}
+
+/* 認証フォーム用スタイル */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.auth-input-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  color: #0b1c2a;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-sizing: border-box; /* はみ出し防止 */
+}
+.auth-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.auth-toggle-btn {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #4aa8ff;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* backdrop-filter 非対応フォールバック */

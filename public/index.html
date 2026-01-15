@@ -77,27 +77,33 @@
 
         <!-- Profile -->
         <section id="page-profile" class="page" aria-label="プロフィール">
-          <!-- <div class="page-center glass">
+          <div class="page-center glass">
             <h2 class="page-title">プロフィール</h2>
-            <p class="page-desc">ここにユーザー情報などを表示できます。</p> -->
-            <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
-          <!-- </div> -->
-          <div id="profile-section">
             <div id="user-info" style="display: none;">
               <p>ようこそ、<span id="display-username"></span>さん</p>
               <button onclick="logout()">ログアウト</button>
             </div>
             <button id="auth-trigger-btn" onclick="openAuthModal()">ログイン/会員登録</button>
+            <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
           </div>
 
-          <div id="auth-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-              <h2 id="auth-title">ログイン</h2>
-              <input type="text" id="auth-username" placeholder="ユーザー名">
-              <input type="password" id="auth-password" placeholder="パスワード">
-              <button id="auth-submit-btn" onclick="handleAuth()">実行</button>
-              <p id="auth-toggle-text" onclick="toggleAuthMode()">新規登録はこちら</p>
-              <button onclick="closeAuthModal()">閉じる</button>
+          <div id="auth-modal" class="modal" aria-hidden="true">
+            <div class="modal-backdrop" onclick="closeAuthModal()"></div>
+            <div class="modal-panel glass" role="dialog" aria-labelledby="auth-title">
+              <div class="modal-head">
+                <div id="auth-title" class="modal-title">ログイン</div>
+                <button class="modal-close" type="button" onclick="closeAuthModal()">✕</button>
+              </div>
+              <div class="modal-body auth-form">
+                <div class="auth-input-group">
+                  <input type="text" id="auth-username" class="glass" placeholder="ユーザー名">
+                  <input type="password" id="auth-password" class="glass" placeholder="パスワード">
+                </div>
+                <div class="auth-actions">
+                  <button id="auth-submit-btn" class="chips-btn glass" onclick="handleAuth()">実行</button>
+                </div>
+                <p id="auth-toggle-text" class="auth-toggle-btn" onclick="toggleAuthMode()">新規登録はこちら</p>
+              </div>
             </div>
           </div>
 

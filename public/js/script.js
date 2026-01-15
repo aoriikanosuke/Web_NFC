@@ -878,13 +878,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function openAuthModal() {
-  document.getElementById('auth-modal').style.display = 'block';
+  const modal = document.getElementById('auth-modal');
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
 }
 
 function closeAuthModal() {
-  document.getElementById('auth-modal').style.display = 'none';
+  const modal = document.getElementById('auth-modal');
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
 }
 
+// toggleAuthMode もタイトル等を書き換えるよう維持
 function toggleAuthMode() {
   isLoginMode = !isLoginMode;
   document.getElementById('auth-title').innerText = isLoginMode ? 'ログイン' : '新規登録';
