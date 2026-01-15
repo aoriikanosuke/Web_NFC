@@ -949,7 +949,7 @@ function playStampAni(durationMs){
         }
         stampAniEl.classList.add('is-flyout');
         const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
-        const endX = (isMobile ? 1.35 : 0.7) * window.innerWidth;
+        const endX = (isMobile ? 1.6 : 0.7) * window.innerWidth;
         const endY = -0.28 * window.innerHeight;
         stampAniFlyout = stampAniSprite.animate([
           { transform: 'translateZ(0) rotate(0deg)', opacity: 1 },
