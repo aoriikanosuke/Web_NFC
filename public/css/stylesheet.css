@@ -48,6 +48,15 @@ body{
   -webkit-touch-callout: none;
   touch-action: manipulation;
 }
+body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--app-bg);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  z-index: -1;
+}
 input, textarea, [contenteditable="true"]{
   user-select: text;
   -webkit-user-select: text;
