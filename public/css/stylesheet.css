@@ -712,7 +712,29 @@ html, body{
   padding: 8px 10px;
   border-radius: 999px;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.18));
-  margin-bottom: 60px;
+  margin-bottom: 0;
+}
+
+@media (max-height: 740px){
+  .main{
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+  .page{
+    justify-content: flex-start;
+    padding-top: 8px;
+  }
+  .bottom-nav{
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    height: 58px;
+  }
+  .bottom-nav .nav-btn{
+    width: 76px;
+    height: 44px;
+  }
+  .bottom-nav .nav-ico-img{
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* nav自体をガラス強め */
@@ -1695,7 +1717,29 @@ html, body{
   padding: 8px 10px;
   border-radius: 999px;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.18));
-  margin-bottom: 60px;
+  margin-bottom: 0;
+}
+
+@media (max-height: 740px){
+  .main{
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+  .page{
+    justify-content: flex-start;
+    padding-top: 8px;
+  }
+  .bottom-nav{
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    height: 58px;
+  }
+  .bottom-nav .nav-btn{
+    width: 76px;
+    height: 44px;
+  }
+  .bottom-nav .nav-ico-img{
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* nav自体をガラス強め */
