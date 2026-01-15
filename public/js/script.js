@@ -377,14 +377,6 @@ async function handleIncomingBroadcastToken(token) {
   }
 }
 
-function tryCloseCurrentTab() {
-  try { window.close(); } catch {}
-  try {
-    window.open("", "_self");
-    window.close();
-  } catch {}
-}
-
 function waitForBroadcastAck(token) {
   return new Promise(resolve => {
     const timeout = setTimeout(() => {
@@ -477,12 +469,11 @@ async function consumeTokenFromUrlAndPending() {
     const transferred = await broadcastTokenToOtherTabs(t);
     if (transferred) {
       url.searchParams.delete("t");
-      const next = url.searchParams.toString();
-      const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
-      try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
-      tryCloseCurrentTab();
-      return;
-    }
+    const next = url.searchParams.toString();
+    const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
+    try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
+    return;
+  }
     const applied = await applyToken(t);
     if (applied) localStorage.removeItem(LS_PENDING_TOKEN);
     else localStorage.setItem(LS_PENDING_TOKEN, t);
