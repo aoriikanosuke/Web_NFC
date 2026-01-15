@@ -950,7 +950,7 @@ function playStampAni(durationMs){
         stampAniEl.classList.add('is-flyout');
         stampAniFlyout = stampAniSprite.animate([
           { transform: 'translateZ(0) rotate(0deg)', opacity: 1 },
-          { transform: 'translate(50vw, -28vh) rotate(720deg)', opacity: 0 }
+          { transform: 'translate(70vw, -28vh) rotate(720deg)', opacity: 0 }
         ], { duration: STAMP_ANI3_FLYOUT_MS, easing: 'cubic-bezier(.12,.6,.2,1)', fill: 'forwards' });
         stampAniFlyout.addEventListener('finish', () => {
           stampAniSprite.style.opacity = '0';
