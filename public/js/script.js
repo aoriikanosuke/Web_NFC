@@ -1320,6 +1320,33 @@ function showAuthForm(nextIsLogin) {
   if (authToggleText) authToggleText.innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
 }
 
+function initZoomGuards() {
+  const prevent = (e) => { e.preventDefault(); };
+  document.addEventListener('gesturestart', prevent, { passive: false });
+  document.addEventListener('gesturechange', prevent, { passive: false });
+  document.addEventListener('gestureend', prevent, { passive: false });
+}
+
+function initAuthEnterShortcuts() {
+  const usernameEl = document.getElementById('auth-username');
+  const passwordEl = document.getElementById('auth-password');
+  if (!usernameEl || !passwordEl) return;
+
+  usernameEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!isLoginMode) return;
+    e.preventDefault();
+    passwordEl.focus();
+  });
+
+  passwordEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!isLoginMode) return;
+    e.preventDefault();
+    handleAuth();
+  });
+}
+
 // 初期化：ログイン状態ならUIを更新
 document.addEventListener('DOMContentLoaded', () => {
   if (currentUser) {
@@ -1343,6 +1370,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try { openAuthModal(); } catch {}
   }
 
+  initAuthEnterShortcuts();
+  initZoomGuards();
   consumeTokenFromUrlAndPending();
 });
 
