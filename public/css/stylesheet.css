@@ -2211,13 +2211,21 @@ html, body{
     min-height: 100dvh;
   }
   body{
-    background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
-    background-size: 400% 400%;
-    background-attachment: fixed;
-    background-position: center;
+    background: transparent;
     margin: 0;
     padding: 0;
     overscroll-behavior: none;
+    position: relative;
+  }
+  body::before{
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+    pointer-events: none;
   }
   .device, .phone, .app{
     width: 100vw;
@@ -2226,10 +2234,7 @@ html, body{
   }
   .app{
     border-radius: 0;
-    background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
-    background-size: 400% 400%;
-    background-attachment: fixed;
-    background-position: center;
+    background: transparent;
     overflow: hidden;
   }
   .header{
