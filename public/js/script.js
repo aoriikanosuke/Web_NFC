@@ -404,8 +404,9 @@ function applyStampProgress(progress) {
 // 2) /tap?t=TESTTOKEN (logged-out) -> pending token stored -> login -> auto redeem
 // 3) Same token twice -> no extra points
 // 4) Android UID scan still works
-async function redeemToken(token) {
+async function redeemToken(token, options) {
   if (!token) return { ok: false };
+  const deferApply = !!(options && options.deferApply);
   const userRaw = localStorage.getItem("user");
   if (!userRaw) {
     localStorage.setItem(LS_PENDING_TOKEN, token);
@@ -441,12 +442,13 @@ async function redeemToken(token) {
       localStorage.setItem("user", JSON.stringify(current));
     } catch {}
 
-    if (Array.isArray(data.stamp_progress)) {
-      applyStampProgress(data.stamp_progress);
+    const stampProgress = Array.isArray(data.stamp_progress) ? data.stamp_progress : null;
+    if (stampProgress && !deferApply) {
+      applyStampProgress(stampProgress);
     }
     localStorage.removeItem(LS_PENDING_TOKEN);
     localStorage.removeItem(LS_PENDING_PROGRESS);
-    return { ok: true, alreadyOwned: !!data.alreadyOwned };
+    return { ok: true, alreadyOwned: !!data.alreadyOwned, stampProgress, points: data.points };
   } catch (err) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
@@ -592,10 +594,13 @@ async function startScan() {
         try { showNfcRipple(); } catch (e) { /* no-op */ }
 
         if (token) {
-          const result = await redeemToken(token);
+          const result = await redeemToken(token, { deferApply: true });
           if (result && result.ok) {
             const owned = result.alreadyOwned === true;
             try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
+            if (Array.isArray(result.stampProgress)) {
+              applyStampProgress(result.stampProgress);
+            }
           }
           return;
         }
