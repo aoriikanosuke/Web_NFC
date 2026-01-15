@@ -35,9 +35,7 @@ html, body{
   overflow:hidden;
   font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
   -webkit-text-size-adjust: 100%;
-  background: var(--app-bg);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
+  background: transparent;
 }
 input, textarea, select{
   font-size: 16px;
@@ -48,7 +46,7 @@ body{
   -webkit-touch-callout: none;
   touch-action: manipulation;
 }
-body::before{
+html::before{
   content: "";
   position: fixed;
   inset: 0;
@@ -56,6 +54,7 @@ body::before{
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
   z-index: -1;
+  pointer-events: none;
 }
 input, textarea, [contenteditable="true"]{
   user-select: text;
