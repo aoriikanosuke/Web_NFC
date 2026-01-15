@@ -38,26 +38,15 @@ const STAMP_ANI_DURATION = 2100;
 const STAMP_ANI_HOLD = 600;
 const STAMP_ANI_TAIL_HOLD = 400;
 const STAMP_ANI_START_DELAY = 200;
-const STAMP_ANI_END_DELAY = 140;
 let stampAniEl = null;
 let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
-let stampAniActive = 0;
-let stampAniEndTimer = 0;
+const STAMP_ANI_END_DELAY = 140;
 
-function setStampAnimating(active){
-  const app = document.querySelector('.app');
-  if (!app) return;
-  app.classList.toggle('is-stamp-animating', !!active);
-}
-
-function scheduleStampAnimatingOff(){
-  if (stampAniEndTimer) clearTimeout(stampAniEndTimer);
-  stampAniEndTimer = setTimeout(() => {
-    if (stampAniActive === 0) setStampAnimating(false);
-  }, STAMP_ANI_END_DELAY);
+function waitAfterStampAni(){
+  return new Promise(resolve => setTimeout(resolve, STAMP_ANI_END_DELAY));
 }
 
 // ================== 永続化（維持） ==================
@@ -350,6 +339,7 @@ async function applyToken(token) {
   const owned = isStampOwnedByUid(hit.uid);
   try { showNfcRipple(); } catch {}
   try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch {}
+  await waitAfterStampAni();
   applyUid(hit.uid);
   return true;
 }
@@ -614,6 +604,7 @@ async function startScan() {
           if (result && result.ok) {
             const owned = result.alreadyOwned === true;
             try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
+            await waitAfterStampAni();
             if (Array.isArray(result.stampProgress)) {
               applyStampProgress(result.stampProgress);
             }
@@ -625,6 +616,7 @@ async function startScan() {
         if (!uid) { toast("UIDが取得できませんでした。"); return; }
         const owned = isStampOwnedByUid(uid);
         try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
+        await waitAfterStampAni();
         console.log("NFC UID:", uid);
         applyUid(uid);
       };
@@ -779,17 +771,12 @@ function playStampAni(durationMs){
 
     if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
     if(stampAniTimer) clearTimeout(stampAniTimer);
-    if(stampAniEndTimer) clearTimeout(stampAniEndTimer);
     if(stampAniResolve){ stampAniResolve(); }
     stampAniResolve = resolve;
-    stampAniActive = 0;
-    setStampAnimating(false);
 
     const startDelay = Math.max(0, Number(STAMP_ANI_START_DELAY) || 0);
     const begin = () => {
       const start = performance.now();
-      stampAniActive += 1;
-      setStampAnimating(true);
       stampAniEl.style.setProperty('--stamp-ani-duration', `${duration}ms`);
       stampAniEl.classList.add('is-show');
       stampAniSprite.style.backgroundPosition = '0% 0%';
@@ -819,8 +806,6 @@ function playStampAni(durationMs){
         }else{
           stampAniEl.classList.remove('is-show');
           stampAniRaf = 0;
-          stampAniActive = Math.max(0, stampAniActive - 1);
-          if (stampAniActive === 0) scheduleStampAnimatingOff();
           const done = stampAniResolve;
           stampAniResolve = null;
           if(done) done();
@@ -849,6 +834,7 @@ async function simulateTouch(uid){
   try{ showNfcRipple(); }catch(e){}
   const owned = isStampOwnedByUid(uid);
   try{ await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); }catch(e){}
+  await waitAfterStampAni();
   applyUid(uid);
 }
 
