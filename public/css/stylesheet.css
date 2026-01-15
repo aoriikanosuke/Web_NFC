@@ -2124,6 +2124,16 @@ html, body{
   z-index: 1;
 }
 
+@media (max-width: 899px){
+  #page-stamp{
+    justify-content: flex-start;
+    padding-top: 6px;
+  }
+  #page-stamp .stamp-card{
+    margin-top: 4px;
+  }
+}
+
 /* ===== Stamp sprite overlay ===== */
 .stamp-ani{
   position: absolute;
