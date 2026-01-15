@@ -2203,6 +2203,42 @@ html, body{
   100%{ opacity: 0; transform: translateY(-6px); }
 }
 
+/* ===== Mobile layout tighten ===== */
+@media (max-width: 899px){
+  html, body{
+    height: 100%;
+    min-height: 100dvh;
+  }
+  body{
+    background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
+    background-size: 400% 400%;
+  }
+  .device, .phone, .app{
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+  .header{
+    margin-top: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 6px;
+  }
+  .main{
+    padding: 0 14px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  #page-stamp{
+    justify-content: center;
+    gap: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+  }
+  #page-stamp .stamp-card{
+    margin: 0 auto;
+    width: min(100%, 520px);
+  }
+}
+
 /* Animated SVG background */
 #bg-wrap{
   position: absolute;
