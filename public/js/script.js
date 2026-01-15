@@ -1079,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { openAuthModal(); } catch {}
   }
 
+  consumeTokenFromUrlAndPending();
 });
 
 function openAuthModal() {
