@@ -2169,6 +2169,9 @@ html, body{
   backface-visibility: hidden;
   will-change: opacity, transform, background-position;
 }
+.stamp-ani[data-variant="owned"] .stamp-ani-sprite{
+  background-image: url("../images/stamp_ANI3.png");
+}
 @media (min-width: 900px){
   .stamp-ani-sprite{
     width: min(60%, 260px);
