@@ -322,7 +322,7 @@ function isStampOwnedByUid(uid) {
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
 // 2) URLから t が消えることを確認（再読み込みで二重取得しない）
 // 3) 不正な token は console に warning を出し、pending に保存
-function applyToken(token) {
+async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
   const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
@@ -331,11 +331,14 @@ function applyToken(token) {
     console.warn("NFC token not found:", t);
     return false;
   }
+  const owned = isStampOwnedByUid(hit.uid);
+  try { showNfcRipple(); } catch {}
+  try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch {}
   applyUid(hit.uid);
   return true;
 }
 
-function consumeTokenFromUrlAndPending() {
+async function consumeTokenFromUrlAndPending() {
   let processedToken = "";
   let targetWindow = window;
   let url = new URL(window.location.href);
@@ -357,7 +360,7 @@ function consumeTokenFromUrlAndPending() {
 
   if (t) {
     processedToken = t;
-    const applied = applyToken(t);
+    const applied = await applyToken(t);
     if (applied) {
       localStorage.removeItem(LS_PENDING_TOKEN);
     } else {
@@ -371,7 +374,7 @@ function consumeTokenFromUrlAndPending() {
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
   if (pending && pending !== processedToken) {
-    if (applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
+    if (await applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
   }
 }
 
