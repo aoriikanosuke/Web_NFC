@@ -412,7 +412,7 @@ html, body{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(110px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
 }
 
 .page{
@@ -715,16 +715,16 @@ html, body{
   margin-bottom: 0;
 }
 
-@media (max-height: 740px){
+@media (max-height: 820px){
   .main{
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(6px + env(safe-area-inset-bottom));
+    bottom: calc(20px + env(safe-area-inset-bottom));
     height: 58px;
   }
   .bottom-nav .nav-btn{
@@ -1435,7 +1435,7 @@ html, body{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(110px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
 }
 
 .page{
@@ -1720,16 +1720,16 @@ html, body{
   margin-bottom: 0;
 }
 
-@media (max-height: 740px){
+@media (max-height: 820px){
   .main{
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(6px + env(safe-area-inset-bottom));
+    bottom: calc(20px + env(safe-area-inset-bottom));
     height: 58px;
   }
   .bottom-nav .nav-btn{
