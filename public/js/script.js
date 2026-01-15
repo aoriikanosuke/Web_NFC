@@ -1,14 +1,19 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
+// token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前", uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
-  { id: 2, name: "体育館", uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false, points: 10, location: "体育館：正面入口" },
-  { id: 3, name: "図書館", uid: "04:18:bc:aa:96:20:90", image: "./images/stamp3.png", flag: false, points: 15, location: "図書館：受付横" },
-  { id: 4, name: "中庭", uid: "04:18:bb:aa:96:20:90", image: "./images/stamp4.png", flag: false, points: 15, location: "中庭：ベンチ付近" },
-  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", image: "./images/stamp5.png", flag: false, points: 0, location: "決済：100コイン" },
-  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", image: "./images/stamp6.png", flag: false, points: 0, location: "決済：200コイン" },
+  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
+  { id: 2, name: "体育館",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/school_taiikukan2.png",     flag: false, points: 10, location: "体育館：正面入口" },
+  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 15, location: "図書館：受付横" },
+  { id: 4, name: "中庭",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 15, location: "中庭：ベンチ付近" },
+  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 0,  location: "決済：100コイン" },
+  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 0,  location: "決済：200コイン" },
 ];
 
+
 const LS_KEY = "nfc_stamps_v2_images";
+const LS_PENDING_TOKEN = "pending_nfc_token";
+const LS_PENDING_PROGRESS = "pending_stamp_progress";
+const LS_OPEN_AUTH = "open_auth_modal";
 
 let stamps = loadStamps();
 let currentIndex = 0;
@@ -238,6 +243,90 @@ function applyUid(uid) {
   }
 }
 
+function applyStampProgress(progress) {
+  if (!Array.isArray(progress)) return;
+  const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  const prevFlags = new Set(stamps.filter(s => s.flag).map(s => s.id));
+  const nextFlags = new Set(progress);
+
+  stamps = DEFAULT_STAMPS.map(def => {
+    const was = prevFlags.has(def.id);
+    const now = nextFlags.has(def.id);
+    return { ...def, flag: now, justStamped: now && !was };
+  });
+
+  saveStamps();
+  render();
+
+  const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  if (nextTotal > prevTotal) {
+    animateOOPIncrease(prevTotal, nextTotal, nextTotal - prevTotal);
+  }
+}
+
+// Manual test:
+// 1) /tap?t=TESTTOKEN (logged-in) -> points & stamps update
+// 2) /tap?t=TESTTOKEN (logged-out) -> pending token stored -> login -> auto redeem
+// 3) Same token twice -> no extra points
+// 4) Android UID scan still works
+async function redeemToken(token) {
+  if (!token) return;
+  const userRaw = localStorage.getItem("user");
+  if (!userRaw) {
+    localStorage.setItem(LS_PENDING_TOKEN, token);
+    localStorage.setItem(LS_OPEN_AUTH, "1");
+    try { openAuthModal(); } catch {}
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/stamps/redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (res.status === 401) {
+      localStorage.setItem(LS_PENDING_TOKEN, token);
+      localStorage.setItem(LS_OPEN_AUTH, "1");
+      try { openAuthModal(); } catch {}
+      return;
+    }
+    if (!res.ok || !data.ok) {
+      showModalMessage("NFC", data.error || "スタンプ取得に失敗しました。");
+      return;
+    }
+
+    try {
+      const current = JSON.parse(userRaw);
+      current.points = data.points ?? current.points;
+      current.stamp_progress = data.stamp_progress ?? current.stamp_progress;
+      currentUser = current;
+      localStorage.setItem("user", JSON.stringify(current));
+    } catch {}
+
+    if (Array.isArray(data.stamp_progress)) {
+      applyStampProgress(data.stamp_progress);
+    }
+    localStorage.removeItem(LS_PENDING_TOKEN);
+    localStorage.removeItem(LS_PENDING_PROGRESS);
+  } catch (err) {
+    console.error(err);
+    showModalMessage("NFC", "スタンプ取得に失敗しました。");
+  }
+}
+
+function extractTokenFromRecord(record) {
+  if (!record) return "";
+  if (record.recordType !== "url" && record.recordType !== "text") return "";
+  if (typeof record.data === "string") return record.data;
+  if (record.data) {
+    try { return new TextDecoder().decode(record.data); } catch {}
+  }
+  return "";
+}
+
 // ================== スワイプ（維持） ==================
 function bindSwipeEvents() {
   let startX = 0;
@@ -346,12 +435,34 @@ async function startScan() {
     showModalMessage("NFC", "\u30b9\u30ad\u30e3\u30f3\u3092\u958b\u59cb\u3057\u307e\u3057\u305f\u3002\u30bf\u30b0\u3092\u304b\u3056\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
     toast("NFCスキャンを開始しました。タグをかざしてください。");
     reader.onreading = async (event) => {
-      const uid = event.serialNumber || "";
-      if (!uid) { toast("UIDが取得できませんでした。"); return; }
-      console.log("NFC UID:", uid);
+      let token = "";
+      if (event.message && event.message.records) {
+        for (const record of event.message.records) {
+          const text = extractTokenFromRecord(record);
+          if (!text) continue;
+          try {
+            const url = new URL(text);
+            const t = url.searchParams.get("t");
+            if (t) {
+              token = t;
+              break;
+            }
+          } catch {}
+        }
+      }
+
       // ビジュアル波紋を表示
       try { showNfcRipple(); } catch (e) { /* no-op */ }
       try { await showStampAni(STAMP_ANI_DURATION); } catch (e) { /* no-op */ }
+
+      if (token) {
+        await redeemToken(token);
+        return;
+      }
+
+      const uid = event.serialNumber || "";
+      if (!uid) { toast("UIDが取得できませんでした。"); return; }
+      console.log("NFC UID:", uid);
       applyUid(uid);
     };
   } catch (err) {
@@ -907,9 +1018,38 @@ document.addEventListener('DOMContentLoaded', () => {
   if (currentUser) {
     updateUIForLoggedInUser();
     // 必要に応じてDBから最新状態を取得し同期
-    stamps = currentUser.stamp_progress;
-    points = currentUser.points;
-    renderStamps(); // 既存の描画関数
+    if (Array.isArray(currentUser.stamp_progress)) {
+      applyStampProgress(currentUser.stamp_progress);
+    } else {
+      render();
+    }
+  }
+
+  const pendingProgress = localStorage.getItem(LS_PENDING_PROGRESS);
+  if (pendingProgress) {
+    try { applyStampProgress(JSON.parse(pendingProgress)); } catch {}
+    localStorage.removeItem(LS_PENDING_PROGRESS);
+  }
+
+  const openAuth = localStorage.getItem(LS_OPEN_AUTH);
+  if (openAuth === "1") {
+    localStorage.removeItem(LS_OPEN_AUTH);
+    try { openAuthModal(); } catch {}
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("t");
+  if (token) {
+    redeemToken(token);
+    params.delete("t");
+    const next = params.toString();
+    const nextUrl = next ? `${window.location.pathname}?${next}` : window.location.pathname;
+    history.replaceState(null, "", nextUrl);
+  }
+
+  const pendingToken = localStorage.getItem(LS_PENDING_TOKEN);
+  if (currentUser && pendingToken) {
+    redeemToken(pendingToken);
   }
 });
 
@@ -929,9 +1069,14 @@ function closeAuthModal() {
 
 // toggleAuthMode もタイトル等を書き換えるよう維持
 function toggleAuthMode() {
-  isLoginMode = !isLoginMode;
-  document.getElementById('auth-title').innerText = isLoginMode ? 'ログイン' : '新規登録';
-  document.getElementById('auth-toggle-text').innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
+  showAuthForm(!isLoginMode);
+}
+
+if (authLoginChoice) {
+  authLoginChoice.addEventListener('click', () => showAuthForm(true));
+}
+if (authRegisterChoice) {
+  authRegisterChoice.addEventListener('click', () => showAuthForm(false));
 }
 
 async function handleAuth() {
@@ -951,12 +1096,18 @@ async function handleAuth() {
     localStorage.setItem('user', JSON.stringify(user));
     
     // DBのデータでローカルを上書き
-    stamps = user.stamp_progress;
-    points = user.points;
-    
+    if (Array.isArray(user.stamp_progress)) {
+      applyStampProgress(user.stamp_progress);
+    } else {
+      render();
+    }
+
     updateUIForLoggedInUser();
     closeAuthModal();
-    renderStamps(); 
+    const pendingToken = localStorage.getItem(LS_PENDING_TOKEN);
+    if (pendingToken) {
+      redeemToken(pendingToken);
+    }
     alert(isLoginMode ? 'ログインしました' : '登録が完了しました');
   } else {
     const err = await res.json();
