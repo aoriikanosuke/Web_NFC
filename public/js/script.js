@@ -78,11 +78,58 @@ let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
 let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
 let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
 
+let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+
+function persistCurrentUser() {
+  localStorage.setItem("user", JSON.stringify(currentUser));
+}
+
+async function syncFromDB() {
+  if (!currentUser?.id) return;
+
+  const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
+  if (!res.ok) return;
+
+  const data = await res.json();
+
+  // points をDBの正に合わせる
+  currentUser.points = Number(data.points || 0);
+  persistCurrentUser();
+
+  // 取得済みUIDでスタンプflagを同期（DBを正にする）
+  const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
+
+  // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
+  stamps = loadStamps();
+  stamps.forEach(s => {
+    s.flag = uidSet.has(String(s.uid).toUpperCase());
+  });
+
+  saveStamps();
+  render();
+}
+
+
+function getEarnedPoints() {
+  return (currentUser && Number.isFinite(Number(currentUser.points)))
+    ? Number(currentUser.points)
+    : calcPoints();
+}
+
+function getDisplayedTotal() {
+  return getEarnedPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+}
+
 function updateOOP() {
   if (oopAnimating) return;
-  const total = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
-  setOOPValue(total);
+  setOOPValue(getDisplayedTotal());
 }
+
+// function updateOOP() {
+//   if (oopAnimating) return;
+//   const total = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+//   setOOPValue(total);
+// }
 
 function setOOPValue(value) {
   $oopValue.textContent = String(value);
@@ -230,6 +277,11 @@ function applyUid(uid) {
   if (!hit.flag) {
     const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     hit.flag = true;
+    if (currentUser) {
+      // まず見た目を即反映（楽観加算）
+      currentUser.points = Number(currentUser.points || 0) + (Number(hit.points) || 0);
+      persistCurrentUser();
+    }
     hit.justStamped = true;
     saveStamps();
 
@@ -240,6 +292,22 @@ function applyUid(uid) {
     const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
+    // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
+    if (currentUser?.id) {
+      (async () => {
+        const r = await fetch("/api/stamps/acquire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: currentUser.id, uid }),
+        });
+        const data = await r.json().catch(() => null);
+        if (r.ok && data) {
+          currentUser.points = Number(data.points || 0);
+          persistCurrentUser();
+          updateOOP();
+        }
+      })();
+    }
   }
 }
 
@@ -947,45 +1015,85 @@ function toggleGolden(){
   updateGoldenUI();
 }
 
+
+async function resetDBProgressIfLoggedIn() {
+  // currentUser が未定義でも動くように保険
+  const u = (typeof currentUser !== "undefined" && currentUser)
+    ? currentUser
+    : JSON.parse(localStorage.getItem("user") || "null");
+
+  if (!u?.id) return { skipped: true };
+
+  const r = await fetch("/api/stamps/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: u.id }),
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || "DB reset failed");
+
+  // pointsを0に反映（DBを正にするなら必須）
+  if (typeof currentUser !== "undefined" && currentUser) {
+    currentUser.points = 0;
+    localStorage.setItem("user", JSON.stringify(currentUser));
+  }
+
+  return data; // { ok, deletedCount, user... } など
+}
+
 // ================== UIイベント ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
 
-document.getElementById("resetBtn").addEventListener("click", async () => {
+async function resetProgressAndGoStamp() {
   const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
   if (!ok) return;
-  stamps = structuredClone(DEFAULT_STAMPS);
-  saveStamps();
-  currentIndex = 0;
-  // reset golden and consumed points
-  consumedPoints = 0;
-  goldenUnlocked = false;
-  goldenActive = false;
-  persistConsumed();
-  persistGolden();
-  render();
-  applyGoldenClass();
-  updateGoldenUI();
-  updateOOP();
-});
 
-document.getElementById("resetBtn2").addEventListener("click", async () => {
-  const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
-  if (!ok) return;
+  // DB reset（ログイン中のみ）
+  const u =
+    (typeof currentUser !== "undefined" && currentUser)
+      ? currentUser
+      : JSON.parse(localStorage.getItem("user") || "null");
+
+  if (u?.id) {
+    const r = await fetch("/api/stamps/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: u.id }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      alert(data?.error || "DBのリセットに失敗しました。");
+      return;
+    }
+    if (typeof currentUser !== "undefined" && currentUser) {
+      currentUser.points = Number(data?.user?.points ?? 0);
+      localStorage.setItem("user", JSON.stringify(currentUser));
+    }
+  }
+
+  // local reset
   stamps = structuredClone(DEFAULT_STAMPS);
   saveStamps();
   currentIndex = 0;
-  // reset golden and consumed points
+
   consumedPoints = 0;
   goldenUnlocked = false;
   goldenActive = false;
   persistConsumed();
   persistGolden();
+
   render();
   applyGoldenClass();
   updateGoldenUI();
   updateOOP();
-  setPage("stamp");
-});
+
+  setPage("stamp"); // ← 常に戻す
+}
+
+document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
+document.getElementById("resetBtn2").addEventListener("click", resetProgressAndGoStamp);
+
 
 $chipsBtn.addEventListener("click", () => openModal());
 if ($oopInfo) {
@@ -1032,7 +1140,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
 
 })();
 
-let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+// let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let isLoginMode = true;
 const authModal = document.getElementById('auth-modal');
 const authTitle = document.getElementById('auth-title');
@@ -1076,11 +1184,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (currentUser) {
     updateUIForLoggedInUser();
     // 必要に応じてDBから最新状態を取得し同期
-    if (Array.isArray(currentUser.stamp_progress)) {
-      applyStampProgress(currentUser.stamp_progress);
-    } else {
-      render();
-    }
+    syncFromDB();
+    // stamps = currentUser.stamp_progress;
+    // points = currentUser.points;
+    // renderStamps(); // 既存の描画関数
   }
 
   const pendingProgress = localStorage.getItem(LS_PENDING_PROGRESS);
@@ -1138,22 +1245,14 @@ async function handleAuth() {
   if (res.ok) {
     const user = await res.json();
     currentUser = user;
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    // DBのデータでローカルを上書き
-    if (Array.isArray(user.stamp_progress)) {
-      applyStampProgress(user.stamp_progress);
-    } else {
-      render();
-    }
+    localStorage.setItem("user", JSON.stringify(user));
 
     updateUIForLoggedInUser();
     closeAuthModal();
-    const pendingToken = localStorage.getItem(LS_PENDING_TOKEN);
-    if (pendingToken) {
-      redeemToken(pendingToken);
-    }
-    alert(isLoginMode ? 'ログインしました' : '登録が完了しました');
+
+    await syncFromDB(); // ← ここで stamps と points が揃う
+
+    alert(isLoginMode ? "ログインしました" : "登録が完了しました");
   } else {
     const err = await res.json();
     alert(err.error);
