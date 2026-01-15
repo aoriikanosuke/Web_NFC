@@ -43,6 +43,13 @@ let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
+let stampAniActive = 0;
+
+function setStampAnimating(active){
+  const app = document.querySelector('.app');
+  if (!app) return;
+  app.classList.toggle('is-stamp-animating', !!active);
+}
 
 // ================== 永続化（維持） ==================
 function loadStamps() {
@@ -765,10 +772,14 @@ function playStampAni(durationMs){
     if(stampAniTimer) clearTimeout(stampAniTimer);
     if(stampAniResolve){ stampAniResolve(); }
     stampAniResolve = resolve;
+    stampAniActive = 0;
+    setStampAnimating(false);
 
     const startDelay = Math.max(0, Number(STAMP_ANI_START_DELAY) || 0);
     const begin = () => {
       const start = performance.now();
+      stampAniActive += 1;
+      setStampAnimating(true);
       stampAniEl.style.setProperty('--stamp-ani-duration', `${duration}ms`);
       stampAniEl.classList.add('is-show');
       stampAniSprite.style.backgroundPosition = '0% 0%';
@@ -798,6 +809,8 @@ function playStampAni(durationMs){
         }else{
           stampAniEl.classList.remove('is-show');
           stampAniRaf = 0;
+          stampAniActive = Math.max(0, stampAniActive - 1);
+          if (stampAniActive === 0) setStampAnimating(false);
           const done = stampAniResolve;
           stampAniResolve = null;
           if(done) done();
