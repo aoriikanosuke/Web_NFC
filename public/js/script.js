@@ -1170,3 +1170,5 @@ function logout() {
   localStorage.removeItem('user');
   location.reload(); // 状態リセットのためリロード
 }
+
+//なんで
