@@ -2181,6 +2181,10 @@ html, body{
 .stamp-ani.is-show::before{
   opacity: 1;
 }
+.stamp-ani.is-flyout::before{
+  opacity: 0;
+  transition-duration: 60ms;
+}
 .stamp-ani-sprite{
   width: min(60%, 220px);
   max-height: 80vh;
@@ -2192,6 +2196,7 @@ html, body{
   background-position: 0% 0%;
   filter: drop-shadow(0 16px 42px rgba(0,0,0,.35));
   transform: translateZ(0);
+  transform-origin: 50% 50%;
   opacity: 0.95;
   animation: stamp-ani-fade var(--stamp-ani-duration, 700ms) ease-in-out;
   animation-fill-mode: both;

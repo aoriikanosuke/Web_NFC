@@ -50,18 +50,26 @@ const $modalBody = document.getElementById("modalBody");
 // Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
 const STAMP_ANI_DURATION = 2100;
+const STAMP_ANI_DURATION_UID = 0;
 const STAMP_ANI_HOLD = 600;
 const STAMP_ANI_TAIL_HOLD = 400;
 const STAMP_ANI_START_DELAY = 200;
+const STAMP_ANI3_STOP_FRAME = 6;
+const STAMP_ANI3_FLYOUT_MS = 8000;
+const STAMP_ANI_FADE_ANIM = 'stamp-ani-fade var(--stamp-ani-duration, 700ms) ease-in-out both';
+const STAMP_ANI_HIDE_DELAY_MS = 180;
 let stampAniEl = null;
 let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
+let stampAniFlyout = null;
 const STAMP_ANI_END_DELAY = 2100;
+const STAMP_ANI_END_DELAY_OWNED = 0;
 
-function waitAfterStampAni(){
-  return new Promise(resolve => setTimeout(resolve, STAMP_ANI_END_DELAY));
+function waitAfterStampAni(variant){
+  const delay = variant === 'owned' ? STAMP_ANI_END_DELAY_OWNED : STAMP_ANI_END_DELAY;
+  return new Promise(resolve => setTimeout(resolve, delay));
 }
 
 // ================== 永続化（維持） ==================
@@ -277,6 +285,17 @@ function render() {
   stamps.forEach(s => { if (s.justStamped) s.justStamped = false; });
 }
 
+function preloadStampImages() {
+  const urls = Array.from(new Set(DEFAULT_STAMPS.map(s => s.image).filter(Boolean)));
+  urls.forEach((src) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = src;
+    if (img.decode) img.decode().catch(() => {});
+  });
+}
+
 function updateSlidePosition(withAnim) {
   if (!$track) return;
   $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
@@ -353,8 +372,9 @@ async function applyToken(token) {
   }
   const owned = isStampOwnedByUid(hit.uid);
   try { showNfcRipple(); } catch {}
-  try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch {}
-  await waitAfterStampAni();
+  const variant = owned ? "owned" : "new";
+  try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
+  await waitAfterStampAni(variant);
   applyUid(hit.uid);
   return true;
 }
@@ -708,8 +728,9 @@ async function startScan() {
           const result = await redeemToken(token, { deferApply: true });
           if (result && result.ok) {
             const owned = result.alreadyOwned === true;
-            try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
-            await waitAfterStampAni();
+            const variant = owned ? "owned" : "new";
+            try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) { /* no-op */ }
+            await waitAfterStampAni(variant);
             if (Array.isArray(result.stampProgress)) {
               applyStampProgress(result.stampProgress);
             }
@@ -720,8 +741,7 @@ async function startScan() {
         const uid = event.serialNumber || "";
         if (!uid) { toast("UIDが取得できませんでした。"); return; }
         const owned = isStampOwnedByUid(uid);
-        try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
-        await waitAfterStampAni();
+        try { await showStampAni(STAMP_ANI_DURATION_UID, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
         console.log("NFC UID:", uid);
         applyUid(uid);
       };
@@ -868,6 +888,7 @@ function playStampAni(durationMs){
     if(!stampAniEl || !stampAniSprite) { resolve(); return; }
     const duration = Math.max(0, Number(durationMs) || 0);
     if(duration <= 0){ resolve(); return; }
+    const isOwned = stampAniEl.dataset.variant === 'owned';
     const hold = Math.max(0, Number(STAMP_ANI_HOLD) || 0);
     const tailHold = Math.max(0, Number(STAMP_ANI_TAIL_HOLD) || 0);
 
@@ -877,44 +898,129 @@ function playStampAni(durationMs){
     if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
     if(stampAniTimer) clearTimeout(stampAniTimer);
     if(stampAniResolve){ stampAniResolve(); }
+    if(stampAniFlyout){
+      stampAniFlyout.cancel();
+      stampAniFlyout = null;
+    }
+    stampAniEl.style.visibility = 'hidden';
+    stampAniEl.classList.remove('is-show');
+    stampAniEl.classList.remove('is-flyout');
+    stampAniSprite.style.visibility = 'hidden';
+    stampAniSprite.style.opacity = '0';
+    stampAniSprite.style.transform = '';
     stampAniResolve = resolve;
 
     const startDelay = Math.max(0, Number(STAMP_ANI_START_DELAY) || 0);
     const begin = () => {
       const start = performance.now();
+      if (stampAniSprite.getAnimations) {
+        stampAniSprite.getAnimations().forEach(a => a.cancel());
+      }
       stampAniEl.style.setProperty('--stamp-ani-duration', `${duration}ms`);
-      stampAniEl.classList.add('is-show');
+      stampAniEl.style.visibility = 'hidden';
+      stampAniEl.classList.remove('is-flyout');
       stampAniSprite.style.backgroundPosition = '0% 0%';
       stampAniSprite.style.animation = 'none';
+      stampAniSprite.style.transform = '';
+      stampAniSprite.style.opacity = '0';
+      stampAniSprite.style.visibility = 'hidden';
       void stampAniSprite.offsetWidth;
-      stampAniSprite.style.animation = '';
+
+      let frameShown = false;
+      let flyoutStarted = false;
+      const startFlyout = () => {
+        if(flyoutStarted) return;
+        flyoutStarted = true;
+        if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
+        stampAniRaf = 0;
+        if(stampAniFlyout) stampAniFlyout.cancel();
+        if(!stampAniSprite.animate){
+          stampAniSprite.style.opacity = '0';
+          stampAniEl.classList.remove('is-show');
+          stampAniEl.classList.remove('is-flyout');
+          setTimeout(() => {
+            stampAniSprite.style.transform = '';
+            stampAniSprite.style.opacity = '';
+          }, STAMP_ANI_HIDE_DELAY_MS);
+          const done = stampAniResolve;
+          stampAniResolve = null;
+          if(done) done();
+          return;
+        }
+        stampAniEl.classList.add('is-flyout');
+        stampAniFlyout = stampAniSprite.animate([
+          { transform: 'translateZ(0) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(50vw, -28vh) rotate(720deg)', opacity: 0 }
+        ], { duration: STAMP_ANI3_FLYOUT_MS, easing: 'cubic-bezier(.12,.6,.2,1)', fill: 'forwards' });
+        stampAniFlyout.addEventListener('finish', () => {
+          stampAniSprite.style.opacity = '0';
+          stampAniEl.classList.remove('is-show');
+          stampAniEl.classList.remove('is-flyout');
+          setTimeout(() => {
+            stampAniSprite.style.transform = '';
+            stampAniSprite.style.opacity = '';
+          }, STAMP_ANI_HIDE_DELAY_MS);
+          stampAniFlyout = null;
+          const done = stampAniResolve;
+          stampAniResolve = null;
+          if(done) done();
+        }, { once: true });
+      };
 
       const step = (now) => {
         const elapsed = now - start;
         const activeDuration = Math.max(1, (duration - hold - tailHold));
+        const perFrame = activeDuration / Math.max(1, (frames - 1));
         let idx = 0;
         if (elapsed < hold) {
           idx = 0;
         } else if (elapsed < (hold + activeDuration)) {
           const t = Math.min(1, Math.max(0, (elapsed - hold) / activeDuration));
-          idx = Math.min(frames - 1, Math.floor(t * frames));
+          if(isOwned){
+            idx = Math.min(STAMP_ANI3_STOP_FRAME, Math.floor((elapsed - hold) / perFrame));
+          }else{
+            idx = Math.min(frames - 1, Math.floor(t * frames));
+          }
         } else {
-          idx = frames - 1;
+          idx = isOwned ? Math.min(STAMP_ANI3_STOP_FRAME, frames - 1) : (frames - 1);
         }
         const col = idx % cols;
         const row = Math.floor(idx / cols);
         const x = cols > 1 ? (col / (cols - 1)) * 100 : 0;
         const y = STAMP_ANI.rows > 1 ? (row / (STAMP_ANI.rows - 1)) * 100 : 0;
+        if(!frameShown){
+          frameShown = true;
+          stampAniEl.style.visibility = 'visible';
+          stampAniEl.classList.add('is-show');
+          stampAniSprite.style.visibility = 'visible';
+          if(isOwned){
+            stampAniSprite.style.opacity = '1';
+          }else{
+            stampAniSprite.style.opacity = '';
+            stampAniSprite.style.animation = 'none';
+            void stampAniSprite.offsetWidth;
+            stampAniSprite.style.animation = STAMP_ANI_FADE_ANIM;
+          }
+        }
         stampAniSprite.style.backgroundPosition = `${x}% ${y}%`;
+        if(isOwned){
+          const flyoutAt = hold + (perFrame * (STAMP_ANI3_STOP_FRAME + 1));
+          if(elapsed >= flyoutAt){
+            startFlyout();
+            return;
+          }
+          stampAniRaf = requestAnimationFrame(step);
+          return;
+        }
         if(elapsed < duration){
           stampAniRaf = requestAnimationFrame(step);
-        }else{
-          stampAniEl.classList.remove('is-show');
-          stampAniRaf = 0;
-          const done = stampAniResolve;
-          stampAniResolve = null;
-          if(done) done();
+          return;
         }
+        stampAniEl.classList.remove('is-show');
+        stampAniRaf = 0;
+        const done = stampAniResolve;
+        stampAniResolve = null;
+        if(done) done();
       };
       stampAniRaf = requestAnimationFrame(step);
     };
@@ -938,8 +1044,9 @@ function showStampAni(durationMs, variant){
 async function simulateTouch(uid){
   try{ showNfcRipple(); }catch(e){}
   const owned = isStampOwnedByUid(uid);
-  try{ await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); }catch(e){}
-  await waitAfterStampAni();
+  const variant = owned ? "owned" : "new";
+  try{ await showStampAni(STAMP_ANI_DURATION, variant); }catch(e){}
+  await waitAfterStampAni(variant);
   applyUid(uid);
 }
 
@@ -1265,6 +1372,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
 // ================== 初期化 ==================
 (function init() {
   setPage("stamp");
+  preloadStampImages();
   render();
   initLiquidGlass();
   initStampAni();
