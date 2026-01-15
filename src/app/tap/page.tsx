@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react"; // Suspense を追加
 import { useRouter, useSearchParams } from "next/navigation";
 
 const LS_PENDING_TOKEN = "pending_nfc_token";
@@ -9,6 +9,7 @@ const LS_USER = "user";
 const LS_STAMPS = "nfc_stamps_v2_images";
 const LS_PENDING_PROGRESS = "pending_stamp_progress";
 
+// 既存の updateLocalStamps 関数はそのまま ...
 function updateLocalStamps(progress: number[]) {
   if (!Array.isArray(progress)) return;
   const raw = localStorage.getItem(LS_STAMPS);
@@ -26,7 +27,8 @@ function updateLocalStamps(progress: number[]) {
   }
 }
 
-export default function TapPage() {
+// 1. ロジックを別のコンポーネントに切り出す
+function TapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("スタンプを確認しています...");
@@ -98,5 +100,18 @@ export default function TapPage() {
     <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
       <p>{message}</p>
     </main>
+  );
+}
+
+// 2. ページコンポーネントで Suspense を使ってラップする
+export default function TapPage() {
+  return (
+    <Suspense fallback={
+      <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
+        <p>読み込み中...</p>
+      </main>
+    }>
+      <TapContent />
+    </Suspense>
   );
 }
