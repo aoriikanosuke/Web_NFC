@@ -1,4 +1,4 @@
-// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
+﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 const DEFAULT_STAMPS = [
   { id: 1, name: "本部前", uid: "04:18:be:aa:96:20:90", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
   { id: 2, name: "体育館", uid: "04:18:BD:AA:96:20:90", image: "./images/school_taiikukan2.png", flag: false, points: 10, location: "体育館：正面入口" },
@@ -865,6 +865,42 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
 
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let isLoginMode = true;
+const authModal = document.getElementById('auth-modal');
+const authTitle = document.getElementById('auth-title');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authToggleText = document.getElementById('auth-toggle-text');
+const authChoice = document.getElementById('auth-choice');
+const authForm = document.getElementById('auth-form');
+const authLoginChoice = document.getElementById('auth-login-choice');
+const authRegisterChoice = document.getElementById('auth-register-choice');
+
+function showAuthChoice() {
+  isLoginMode = true;
+  if (authChoice) {
+    authChoice.hidden = false;
+    authChoice.style.display = 'flex';
+  }
+  if (authForm) {
+    authForm.hidden = true;
+    authForm.style.display = 'none';
+  }
+  if (authTitle) authTitle.innerText = 'アカウント';
+}
+
+function showAuthForm(nextIsLogin) {
+  isLoginMode = !!nextIsLogin;
+  if (authChoice) {
+    authChoice.hidden = true;
+    authChoice.style.display = 'none';
+  }
+  if (authForm) {
+    authForm.hidden = false;
+    authForm.style.display = 'block';
+  }
+  if (authTitle) authTitle.innerText = isLoginMode ? 'ログイン' : '新規会員登録';
+  if (authSubmitBtn) authSubmitBtn.innerText = isLoginMode ? 'ログイン' : '登録';
+  if (authToggleText) authToggleText.innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
+}
 
 // 初期化：ログイン状態ならUIを更新
 document.addEventListener('DOMContentLoaded', () => {
@@ -878,15 +914,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function openAuthModal() {
-  const modal = document.getElementById('auth-modal');
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
+  if (!authModal) return;
+  authModal.classList.add('is-open');
+  authModal.setAttribute('aria-hidden', 'false');
+  showAuthChoice();
 }
 
 function closeAuthModal() {
-  const modal = document.getElementById('auth-modal');
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
+  if (!authModal) return;
+  authModal.classList.remove('is-open');
+  authModal.setAttribute('aria-hidden', 'true');
+  showAuthChoice();
 }
 
 // toggleAuthMode もタイトル等を書き換えるよう維持

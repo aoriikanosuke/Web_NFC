@@ -235,15 +235,28 @@
       let isLogin = true;
 
       function showChoice() {
-        if (authChoice) authChoice.style.display = "flex";
-        if (authForm) authForm.style.display = "none";
+        isLogin = true;
+        if (authChoice) {
+          authChoice.hidden = false;
+          authChoice.style.display = "flex";
+        }
+        if (authForm) {
+          authForm.hidden = true;
+          authForm.style.display = "none";
+        }
         if (authTitle) authTitle.textContent = "アカウント";
       }
 
       function showForm(modeIsLogin) {
         isLogin = !!modeIsLogin;
-        if (authChoice) authChoice.style.display = "none";
-        if (authForm) authForm.style.display = "block";
+        if (authChoice) {
+          authChoice.hidden = true;
+          authChoice.style.display = "none";
+        }
+        if (authForm) {
+          authForm.hidden = false;
+          authForm.style.display = "block";
+        }
         if (authTitle) authTitle.textContent = isLogin ? "ログイン" : "新規会員登録";
         if (authSubmitBtn) authSubmitBtn.textContent = isLogin ? "ログイン" : "登録";
         if (authToggleText) authToggleText.textContent = isLogin ? "新規登録はこちら" : "ログインはこちら";
