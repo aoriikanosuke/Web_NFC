@@ -243,6 +243,47 @@ function applyUid(uid) {
   }
 }
 
+// Manual test (iPhone pseudo NFC):
+// 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
+// 2) URLから t が消えることを確認（再読み込みで二重取得しない）
+// 3) 不正な token は console に warning を出し、pending に保存
+function applyToken(token) {
+  const t = String(token || "").trim();
+  if (!t) return false;
+  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
+  const hit = list.find(s => s.token === t);
+  if (!hit) {
+    console.warn("NFC token not found:", t);
+    return false;
+  }
+  applyUid(hit.uid);
+  return true;
+}
+
+function consumeTokenFromUrlAndPending() {
+  let processedToken = "";
+  const url = new URL(window.location.href);
+  const t = url.searchParams.get("t");
+  if (t) {
+    processedToken = t;
+    const applied = applyToken(t);
+    if (applied) {
+      localStorage.removeItem(LS_PENDING_TOKEN);
+    } else {
+      localStorage.setItem(LS_PENDING_TOKEN, t);
+    }
+    url.searchParams.delete("t");
+    const next = url.searchParams.toString();
+    const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
+    history.replaceState(null, "", nextUrl);
+  }
+
+  const pending = localStorage.getItem(LS_PENDING_TOKEN);
+  if (pending && pending !== processedToken) {
+    if (applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
+  }
+}
+
 function applyStampProgress(progress) {
   if (!Array.isArray(progress)) return;
   const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
@@ -971,6 +1012,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   updateGoldenUI();
   if(goldenActive) startGoldenSparks();
   updateOOP();
+  consumeTokenFromUrlAndPending();
 
 })();
 
@@ -1037,20 +1079,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try { openAuthModal(); } catch {}
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("t");
-  if (token) {
-    redeemToken(token);
-    params.delete("t");
-    const next = params.toString();
-    const nextUrl = next ? `${window.location.pathname}?${next}` : window.location.pathname;
-    history.replaceState(null, "", nextUrl);
-  }
-
-  const pendingToken = localStorage.getItem(LS_PENDING_TOKEN);
-  if (currentUser && pendingToken) {
-    redeemToken(pendingToken);
-  }
 });
 
 function openAuthModal() {
