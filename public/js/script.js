@@ -1393,7 +1393,7 @@ async function handleAuth() {
 
     await syncFromDB(); // ← ここで stamps と points が揃う
 
-    alert(isLoginMode ? "ログインしました" : "登録が完了しました");
+    showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
   } else {
     const err = await res.json();
     alert(err.error);
