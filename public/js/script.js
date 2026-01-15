@@ -32,7 +32,7 @@ const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
 const $modalBody = document.getElementById("modalBody");
 
-// Sprite sheet config for stamp_ANI2.png
+// Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
 const STAMP_ANI_DURATION = 2100;
 const STAMP_ANI_HOLD = 600;
@@ -311,6 +311,18 @@ function applyUid(uid) {
   }
 }
 
+function isStampOwnedByUid(uid) {
+  if (!uid) return false;
+  const hit = stamps.find(s => s.uid.toUpperCase() === String(uid).toUpperCase());
+  return !!(hit && hit.flag);
+}
+
+function isStampOwnedByToken(token) {
+  if (!token) return false;
+  const hit = stamps.find(s => s.token === token);
+  return !!(hit && hit.flag);
+}
+
 // Manual test (iPhone pseudo NFC):
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
 // 2) URLから t が消えることを確認（再読み込みで二重取得しない）
@@ -576,20 +588,21 @@ async function startScan() {
         }
       }
 
-      // ビジュアル波紋を表示
-      try { showNfcRipple(); } catch (e) { /* no-op */ }
-      try { await showStampAni(STAMP_ANI_DURATION); } catch (e) { /* no-op */ }
+        // ビジュアル波紋を表示
+        try { showNfcRipple(); } catch (e) { /* no-op */ }
+        const uid = event.serialNumber || "";
+        const owned = token ? isStampOwnedByToken(token) : isStampOwnedByUid(uid);
+        try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) { /* no-op */ }
 
-      if (token) {
-        await redeemToken(token);
-        return;
-      }
+        if (token) {
+          await redeemToken(token);
+          return;
+        }
 
-      const uid = event.serialNumber || "";
-      if (!uid) { toast("UIDが取得できませんでした。"); return; }
-      console.log("NFC UID:", uid);
-      applyUid(uid);
-    };
+        if (!uid) { toast("UIDが取得できませんでした。"); return; }
+        console.log("NFC UID:", uid);
+        applyUid(uid);
+      };
   } catch (err) {
     console.error(err);
     showModalMessage("NFC", "NFC\u30b9\u30ad\u30e3\u30f3\u3092\u958b\u59cb\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u6a29\u9650/HTTPS/\u7aef\u672b\u5bfe\u5fdc\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
@@ -724,6 +737,7 @@ function initStampAni(){
   stampAniEl.style.setProperty('--stamp-ani-cols', String(STAMP_ANI.cols));
   stampAniEl.style.setProperty('--stamp-ani-rows', String(STAMP_ANI.rows));
   stampAniEl.style.setProperty('--stamp-ani-frames', String(STAMP_ANI.frames));
+  stampAniEl.dataset.variant = 'new';
 }
 
 function playStampAni(durationMs){
@@ -792,14 +806,17 @@ function playStampAni(durationMs){
   });
 }
 
-function showStampAni(durationMs){
+function showStampAni(durationMs, variant){
+  if(!stampAniEl || !stampAniSprite) initStampAni();
+  if(stampAniEl) stampAniEl.dataset.variant = (variant === 'owned') ? 'owned' : 'new';
   return playStampAni(durationMs);
 }
 
 /* ================== Debug UI ================== */
 async function simulateTouch(uid){
   try{ showNfcRipple(); }catch(e){}
-  try{ await showStampAni(STAMP_ANI_DURATION); }catch(e){}
+  const owned = isStampOwnedByUid(uid);
+  try{ await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); }catch(e){}
   applyUid(uid);
 }
 

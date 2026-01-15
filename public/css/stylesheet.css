@@ -2125,12 +2125,21 @@ html, body{
 }
 
 @media (max-width: 899px){
+  .header{
+    margin-top: 6px;
+    padding-bottom: 4px;
+  }
   #page-stamp{
     justify-content: flex-start;
-    padding-top: 6px;
+    padding-top: 0;
+    gap: 6px;
+    align-items: center;
   }
   #page-stamp .stamp-card{
-    margin-top: 4px;
+    margin-top: 0;
+    margin-left: auto;
+    margin-right: auto;
+    width: min(100%, 680px);
   }
 }
 
@@ -2178,6 +2187,9 @@ html, body{
   animation-fill-mode: both;
   backface-visibility: hidden;
   will-change: opacity, transform, background-position;
+}
+.stamp-ani[data-variant="owned"] .stamp-ani-sprite{
+  background-image: url("../images/stamp_ANI3.png");
 }
 @media (min-width: 900px){
   .stamp-ani-sprite{
