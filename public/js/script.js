@@ -262,8 +262,24 @@ function applyToken(token) {
 
 function consumeTokenFromUrlAndPending() {
   let processedToken = "";
-  const url = new URL(window.location.href);
-  const t = url.searchParams.get("t");
+  let targetWindow = window;
+  let url = new URL(window.location.href);
+  let t = url.searchParams.get("t");
+
+  if (!t) {
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentUrl = new URL(window.parent.location.href);
+        const parentToken = parentUrl.searchParams.get("t");
+        if (parentToken) {
+          t = parentToken;
+          url = parentUrl;
+          targetWindow = window.parent;
+        }
+      }
+    } catch {}
+  }
+
   if (t) {
     processedToken = t;
     const applied = applyToken(t);
@@ -275,7 +291,7 @@ function consumeTokenFromUrlAndPending() {
     url.searchParams.delete("t");
     const next = url.searchParams.toString();
     const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
-    history.replaceState(null, "", nextUrl);
+    try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
   }
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
