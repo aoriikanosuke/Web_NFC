@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
@@ -133,7 +133,7 @@
               <p>ようこそ、<span id="display-username"></span>さん</p>
               <button onclick="logout()">ログアウト</button>
             </div>
-            <button id="auth-trigger-btn" onclick="openAuthModal()">ログイン/会員登録</button>
+            <button id="auth-trigger-btn" class="chips-btn glass" type="button" onclick="openAuthModal()">ログイン/会員登録</button>
             <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
           </div>
 
@@ -145,14 +145,20 @@
                 <button class="modal-close" type="button" onclick="closeAuthModal()">✕</button>
               </div>
               <div class="modal-body auth-form">
-                <div class="auth-input-group">
-                  <input type="text" id="auth-username" class="glass" placeholder="ユーザー名">
-                  <input type="password" id="auth-password" class="glass" placeholder="パスワード">
+                <div id="auth-choice" class="auth-actions">
+                  <button id="auth-login-choice" class="chips-btn glass" type="button">ログイン</button>
+                  <button id="auth-register-choice" class="chips-btn glass" type="button">新規会員登録</button>
                 </div>
-                <div class="auth-actions">
-                  <button id="auth-submit-btn" class="chips-btn glass" onclick="handleAuth()">実行</button>
+                <div id="auth-form" hidden>
+                  <div class="auth-input-group">
+                    <input type="text" id="auth-username" class="glass" placeholder="ユーザー名">
+                    <input type="password" id="auth-password" class="glass" placeholder="パスワード">
+                  </div>
+                  <div class="auth-actions">
+                    <button id="auth-submit-btn" class="chips-btn glass" onclick="handleAuth()">実行</button>
+                  </div>
+                  <p id="auth-toggle-text" class="auth-toggle-btn" onclick="toggleAuthMode()">新規登録はこちら</p>
                 </div>
-                <p id="auth-toggle-text" class="auth-toggle-btn" onclick="toggleAuthMode()">新規登録はこちら</p>
               </div>
             </div>
           </div>
@@ -222,26 +228,51 @@
       const authTitle = document.getElementById("auth-title");
       const authSubmitBtn = document.getElementById("auth-submit-btn");
       const authToggleText = document.getElementById("auth-toggle-text");
+      const authChoice = document.getElementById("auth-choice");
+      const authForm = document.getElementById("auth-form");
+      const loginChoice = document.getElementById("auth-login-choice");
+      const registerChoice = document.getElementById("auth-register-choice");
       let isLogin = true;
+
+      function showChoice() {
+        if (authChoice) authChoice.style.display = "flex";
+        if (authForm) authForm.style.display = "none";
+        if (authTitle) authTitle.textContent = "アカウント";
+      }
+
+      function showForm(modeIsLogin) {
+        isLogin = !!modeIsLogin;
+        if (authChoice) authChoice.style.display = "none";
+        if (authForm) authForm.style.display = "block";
+        if (authTitle) authTitle.textContent = isLogin ? "ログイン" : "新規会員登録";
+        if (authSubmitBtn) authSubmitBtn.textContent = isLogin ? "ログイン" : "登録";
+        if (authToggleText) authToggleText.textContent = isLogin ? "新規登録はこちら" : "ログインはこちら";
+      }
 
       window.openAuthModal = function () {
         authModal.style.display = "block";
         authModal.classList.add("is-open");
         authModal.setAttribute("aria-hidden", "false");
+        showChoice();
       };
 
       window.closeAuthModal = function () {
         authModal.style.display = "none";
         authModal.classList.remove("is-open");
         authModal.setAttribute("aria-hidden", "true");
+        showChoice();
       };
 
       window.toggleAuthMode = function () {
-        isLogin = !isLogin;
-        if (authTitle) authTitle.textContent = isLogin ? "ログイン" : "会員登録";
-        if (authSubmitBtn) authSubmitBtn.textContent = isLogin ? "ログイン" : "登録";
-        if (authToggleText) authToggleText.textContent = isLogin ? "新規登録はこちら" : "ログインはこちら";
+        showForm(!isLogin);
       };
+
+      if (loginChoice) {
+        loginChoice.addEventListener("click", () => showForm(true));
+      }
+      if (registerChoice) {
+        registerChoice.addEventListener("click", () => showForm(false));
+      }
     })();
   </script>
 </body>
