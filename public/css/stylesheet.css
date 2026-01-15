@@ -881,6 +881,7 @@ input, textarea, [contenteditable="true"]{
 .modal{ z-index: 20000; }
 .modal-backdrop{ z-index: 20000; }
 .modal-panel{ z-index: 20001; }
+.modal-panel.glass{ transform: none; }
 .modal-text{ margin: 0; }
 .modal-actions{
   margin-top: 12px;
