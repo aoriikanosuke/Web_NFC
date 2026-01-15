@@ -2124,6 +2124,23 @@ html, body{
   z-index: 1;
 }
 
+@media (max-width: 899px) and (max-height: 820px){
+  #page-stamp{
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+  #page-stamp .stamp-card{
+    padding: 14px 14px 8px;
+  }
+  #page-stamp .stamp-carousel{
+    width: min(100%, 52vh);
+    margin: 0 auto;
+  }
+  #page-stamp .indicator{
+    padding-top: 6px;
+    padding-bottom: 2px;
+  }
+}
+
 @media (max-width: 899px){
   #page-stamp{
     justify-content: flex-start;
