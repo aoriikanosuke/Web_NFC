@@ -1320,12 +1320,7 @@ function showAuthForm(nextIsLogin) {
   if (authToggleText) authToggleText.innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
 }
 
-function initZoomGuards() {
-  const prevent = (e) => { e.preventDefault(); };
-  document.addEventListener('gesturestart', prevent, { passive: false });
-  document.addEventListener('gesturechange', prevent, { passive: false });
-  document.addEventListener('gestureend', prevent, { passive: false });
-}
+function initZoomGuards() {}
 
 function initAuthEnterShortcuts() {
   const usernameEl = document.getElementById('auth-username');
