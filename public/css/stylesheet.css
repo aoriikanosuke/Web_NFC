@@ -2246,7 +2246,7 @@ html, body{
     padding-bottom: 6px;
   }
   .main{
-    padding: 0 calc(10px + env(safe-area-inset-left)) 0 calc(10px + env(safe-area-inset-right));
+    padding: 0 calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left));
     padding-bottom: 0;
     align-items: stretch;
   }
