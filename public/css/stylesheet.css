@@ -833,6 +833,9 @@ html, body{
   cursor:pointer;
 }
 .modal-body{ padding: 14px; line-height: 1.65; }
+.modal{ z-index: 20000; }
+.modal-backdrop{ z-index: 20000; }
+.modal-panel{ z-index: 20001; }
 .modal-text{ margin: 0; }
 .modal-actions{
   margin-top: 12px;

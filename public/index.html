@@ -208,5 +208,35 @@
 
   <!-- app -->
   <script src="./js/script.js" defer></script>
+  <script>
+    (function () {
+      const authModal = document.getElementById("auth-modal");
+      if (!authModal) return;
+
+      const authTitle = document.getElementById("auth-title");
+      const authSubmitBtn = document.getElementById("auth-submit-btn");
+      const authToggleText = document.getElementById("auth-toggle-text");
+      let isLogin = true;
+
+      window.openAuthModal = function () {
+        authModal.style.display = "block";
+        authModal.classList.add("is-open");
+        authModal.setAttribute("aria-hidden", "false");
+      };
+
+      window.closeAuthModal = function () {
+        authModal.style.display = "none";
+        authModal.classList.remove("is-open");
+        authModal.setAttribute("aria-hidden", "true");
+      };
+
+      window.toggleAuthMode = function () {
+        isLogin = !isLogin;
+        if (authTitle) authTitle.textContent = isLogin ? "ログイン" : "会員登録";
+        if (authSubmitBtn) authSubmitBtn.textContent = isLogin ? "ログイン" : "登録";
+        if (authToggleText) authToggleText.textContent = isLogin ? "新規登録はこちら" : "ログインはこちら";
+      };
+    })();
+  </script>
 </body>
 </html>
