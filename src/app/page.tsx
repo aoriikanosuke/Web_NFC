@@ -24,9 +24,12 @@ export default function Home({ searchParams }: { searchParams?: SearchParams }) 
     <iframe
       src={`/index.html${query}`}
       style={{
-        width: "100%",
-        height: "100vh",
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100dvh",
         border: "none",
+        display: "block",
       }}
     />
   );
