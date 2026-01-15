@@ -908,6 +908,7 @@ input, textarea, [contenteditable="true"]{
   border-radius: 12px;
   color: #0b1c2a;
   border: 1px solid rgba(0,0,0,0.1);
+  font-size: 16px;
   box-sizing: border-box; /* はみ出し防止 */
 }
 .auth-actions {

@@ -1325,6 +1325,19 @@ function initZoomGuards() {
   document.addEventListener('gesturestart', prevent, { passive: false });
   document.addEventListener('gesturechange', prevent, { passive: false });
   document.addEventListener('gestureend', prevent, { passive: false });
+
+  let lastTouchEnd = 0;
+  const blockDoubleTap = (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 350) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  };
+  const usernameEl = document.getElementById('auth-username');
+  const passwordEl = document.getElementById('auth-password');
+  if (usernameEl) usernameEl.addEventListener('touchend', blockDoubleTap, { passive: false });
+  if (passwordEl) passwordEl.addEventListener('touchend', blockDoubleTap, { passive: false });
 }
 
 function initAuthEnterShortcuts() {
