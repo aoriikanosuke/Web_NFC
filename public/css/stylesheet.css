@@ -538,6 +538,9 @@ html, body{
 .app.is-stamp-animating .stamp-img{
   visibility: hidden;
 }
+.app.is-stamp-animating .stamp-img{
+  visibility: hidden;
+}
 .stamp-pop{
   animation: stamp-pop 420ms ease-out;
   transform-origin: 50% 60%;

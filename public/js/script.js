@@ -38,17 +38,26 @@ const STAMP_ANI_DURATION = 2100;
 const STAMP_ANI_HOLD = 600;
 const STAMP_ANI_TAIL_HOLD = 400;
 const STAMP_ANI_START_DELAY = 200;
+const STAMP_ANI_END_DELAY = 140;
 let stampAniEl = null;
 let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
 let stampAniActive = 0;
+let stampAniEndTimer = 0;
 
 function setStampAnimating(active){
   const app = document.querySelector('.app');
   if (!app) return;
   app.classList.toggle('is-stamp-animating', !!active);
+}
+
+function scheduleStampAnimatingOff(){
+  if (stampAniEndTimer) clearTimeout(stampAniEndTimer);
+  stampAniEndTimer = setTimeout(() => {
+    if (stampAniActive === 0) setStampAnimating(false);
+  }, STAMP_ANI_END_DELAY);
 }
 
 // ================== 永続化（維持） ==================
@@ -770,6 +779,7 @@ function playStampAni(durationMs){
 
     if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
     if(stampAniTimer) clearTimeout(stampAniTimer);
+    if(stampAniEndTimer) clearTimeout(stampAniEndTimer);
     if(stampAniResolve){ stampAniResolve(); }
     stampAniResolve = resolve;
     stampAniActive = 0;
@@ -810,7 +820,7 @@ function playStampAni(durationMs){
           stampAniEl.classList.remove('is-show');
           stampAniRaf = 0;
           stampAniActive = Math.max(0, stampAniActive - 1);
-          if (stampAniActive === 0) setStampAnimating(false);
+          if (stampAniActive === 0) scheduleStampAnimatingOff();
           const done = stampAniResolve;
           stampAniResolve = null;
           if(done) done();
