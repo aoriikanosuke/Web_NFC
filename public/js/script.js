@@ -43,7 +43,7 @@ let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
-const STAMP_ANI_END_DELAY = 140;
+const STAMP_ANI_END_DELAY = 2100;
 
 function waitAfterStampAni(){
   return new Promise(resolve => setTimeout(resolve, STAMP_ANI_END_DELAY));
