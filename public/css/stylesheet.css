@@ -2213,6 +2213,8 @@ html, body{
   body{
     background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
     background-size: 400% 400%;
+    background-attachment: fixed;
+    background-position: center;
     margin: 0;
     padding: 0;
     overscroll-behavior: none;
@@ -2226,6 +2228,8 @@ html, body{
     border-radius: 0;
     background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
     background-size: 400% 400%;
+    background-attachment: fixed;
+    background-position: center;
     overflow: hidden;
   }
   .header{
