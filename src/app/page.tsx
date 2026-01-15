@@ -1,5 +1,7 @@
 type SearchParams = Record<string, string | string[] | undefined>;
 
+export const dynamic = "force-dynamic";
+
 function buildQuery(searchParams?: SearchParams) {
   if (!searchParams) return "";
   const params = new URLSearchParams();
