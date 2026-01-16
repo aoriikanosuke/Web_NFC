@@ -1,12 +1,12 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 // token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
-  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
-  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
-  { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
-  { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
-  { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
+  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
+  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
+  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "/images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
+  { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "/images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
+  { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "/images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
+  { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "/images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
 ];
 
 
@@ -698,6 +698,7 @@ function bindWheelSwipe() {
 let nfcReader = null;
 let nfcAbort = null;
 let nfcScanning = false;
+let nfcBusy = false;
 
 /**
  * NFCの状態を完全にリセットする
@@ -716,23 +717,40 @@ function resetNfcState() {
  * NFCスキャンを開始する
  */
 async function startScan() {
-  if (nfcBusy) return; // 処理中なら何もしない
+  if (nfcBusy) return;
   nfcBusy = true;
 
-  // ボタン要素を取得（IDは適宜合わせてください）
   const btn = document.getElementById("scanBtn");
-  if (btn) btn.disabled = true; // ボタンを無効化
+  if (btn) btn.disabled = true;
 
   try {
-    // 1. 既存のスキャンがあれば、まず中断して「完全に止まるまで」少し待つ
+    // ✅ 追加：Web NFC対応チェック（ReferenceError回避）
+    const hasNdef = typeof window !== "undefined" && typeof window.NDEFReader !== "undefined";
+    if (!hasNdef) {
+      showModalMessage(
+        "NFC非対応",
+        "この端末/ブラウザはWeb NFCに対応していません。AndroidのChrome / Samsung Internet / Operaで開いてください（iPhoneは非対応）。"
+      );
+      toast("NFC非対応の環境です");
+      return;
+    }
+    if (!window.isSecureContext) {
+      showModalMessage("HTTPSが必要", "Web NFCはHTTPS（またはlocalhost）でのみ動作します。");
+      toast("HTTPSで開いてください");
+      return;
+    }
+
+    // 既存スキャンを止める…
     if (nfcAbort) {
       nfcAbort.abort();
-      await new Promise(r => setTimeout(r, 300)); // 0.3秒待機（Androidの解放待ち）
+      await new Promise((r) => setTimeout(r, 300));
     }
 
     nfcAbort = new AbortController();
-    nfcReader = new NDEFReader();
 
+    // ✅ 修正：グローバルを直接参照しない
+    nfcReader = new window.NDEFReader();
+    
     // 2. スキャン開始
     // ここで失敗したら catch へ飛ぶ
     await nfcReader.scan({ signal: nfcAbort.signal });
@@ -1356,7 +1374,8 @@ async function resetDBProgressIfLoggedIn() {
 }
 
 // ================== UIイベント ==================
-document.getElementById("scanBtn").addEventListener("click", startScan);
+const scanBtnEl = document.getElementById("scanBtn");
+if (scanBtnEl) scanBtnEl.addEventListener("click", startScan);
 
 async function resetProgressAndGoStamp() {
   const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
@@ -1404,11 +1423,13 @@ async function resetProgressAndGoStamp() {
   setPage("stamp"); // ← 常に戻す
 }
 
-document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
-document.getElementById("resetBtn2").addEventListener("click", resetProgressAndGoStamp);
+const resetBtnEl = document.getElementById("resetBtn");
+if (resetBtnEl) resetBtnEl.addEventListener("click", resetProgressAndGoStamp);
+const resetBtn2El = document.getElementById("resetBtn2");
+if (resetBtn2El) resetBtn2El.addEventListener("click", resetProgressAndGoStamp);
 
 
-$chipsBtn.addEventListener("click", () => openModal());
+if ($chipsBtn) $chipsBtn.addEventListener("click", () => openModal());
 if ($oopInfo) {
   $oopInfo.addEventListener("click", () => {
     openModal({
@@ -1417,13 +1438,14 @@ if ($oopInfo) {
     });
   });
 }
-$modal.addEventListener("click", (e) => {
+if ($modal) if ($modal) $modal.addEventListener("click", (e) => {
   const t = e.target;
   if (t && t.dataset && t.dataset.close) closeModal();
 });
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
+
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setPage(btn.dataset.target));
@@ -1451,7 +1473,6 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   updateGoldenUI();
   if(goldenActive) startGoldenSparks();
   updateOOP();
-  consumeTokenFromUrlAndPending();
 
 })();
 
@@ -1465,6 +1486,27 @@ const authChoice = document.getElementById('auth-choice');
 const authForm = document.getElementById('auth-form');
 const authLoginChoice = document.getElementById('auth-login-choice');
 const authRegisterChoice = document.getElementById('auth-register-choice');
+
+// ---- Next.js対応: inline onclick を使わずにイベントをバインド ----
+const authTriggerBtnEl = document.getElementById('auth-trigger-btn');
+if (authTriggerBtnEl) authTriggerBtnEl.addEventListener('click', openAuthModal);
+
+const authSubmitBtnEl = document.getElementById('auth-submit-btn');
+if (authSubmitBtnEl) authSubmitBtnEl.addEventListener('click', handleAuth);
+
+const authToggleTextEl = document.getElementById('auth-toggle-text');
+if (authToggleTextEl) authToggleTextEl.addEventListener('click', toggleAuthMode);
+
+const logoutBtnEl = document.getElementById('logout-btn');
+if (logoutBtnEl) logoutBtnEl.addEventListener('click', logout);
+
+// auth modal close/backdrop
+try {
+  const authBackdropEl = authModal ? authModal.querySelector('.modal-backdrop') : null;
+  const authCloseBtnEl = authModal ? authModal.querySelector('.modal-close') : null;
+  if (authBackdropEl) authBackdropEl.addEventListener('click', closeAuthModal);
+  if (authCloseBtnEl) authCloseBtnEl.addEventListener('click', closeAuthModal);
+} catch {}
 
 function showAuthChoice() {
   isLoginMode = true;
@@ -1517,8 +1559,8 @@ function initAuthEnterShortcuts() {
 }
 
 // 初期化：ログイン状態ならUIを更新
-document.addEventListener('DOMContentLoaded', () => {
-  if (currentUser) {
+function initAfterDomReady(){
+if (currentUser) {
     updateUIForLoggedInUser();
     // 必要に応じてDBから最新状態を取得し同期
     syncFromDB();
@@ -1542,7 +1584,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthEnterShortcuts();
   initZoomGuards();
   consumeTokenFromUrlAndPending();
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAfterDomReady, { once: true });
+} else {
+  initAfterDomReady();
+}
+
 
 function openAuthModal() {
   if (!authModal) return;
@@ -1599,9 +1647,12 @@ async function handleAuth() {
 }
 
 function updateUIForLoggedInUser() {
-  document.getElementById('auth-trigger-btn').style.display = 'none';
-  document.getElementById('user-info').style.display = 'block';
-  document.getElementById('display-username').innerText = currentUser.username;
+  const a = document.getElementById('auth-trigger-btn');
+  if (a) a.style.display = 'none';
+  const ui = document.getElementById('user-info');
+  if (ui) ui.style.display = 'block';
+  const du = document.getElementById('display-username');
+  if (du) du.innerText = currentUser.username;
 }
 
 function logout() {
