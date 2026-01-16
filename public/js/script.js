@@ -1,12 +1,12 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 // token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
-  { id: 2, name: "体育館",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/school_taiikukan2.png",     flag: false, points: 10, location: "体育館：正面入口" },
-  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/tosyokan_shisyo_man.png",               flag: false, points: 15, location: "図書館：受付横" },
-  { id: 4, name: "中庭",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/gardening.png",               flag: false, points: 15, location: "中庭：ベンチ付近" },
-  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/money_tokeru_dollar.png",               flag: false, points: 0,  location: "決済：100コイン" },
-  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/money_fueru_dollar.png",               flag: false, points: 0,  location: "決済：200コイン" },
+  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
+  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
+  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
+  { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
+  { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
+  { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
 ];
 
 
@@ -694,26 +694,51 @@ function bindWheelSwipe() {
 }
 
 // ================== Web NFC（維持） ==================
+let nfcReader = null;
+let nfcAbort = null;
+let nfcScanning = false;
+
+function resetNfcState() {
+  nfcScanning = false;
+  nfcAbort = null;
+  nfcReader = null;
+}
+
 async function startScan() {
+  // 1. 基礎チェック（これらは一瞬で終わる）
   if (!("NDEFReader" in window)) {
     alert("このブラウザは Web NFC に対応していません。");
     return;
   }
+  if (!window.isSecureContext) {
+    alert("NFCはHTTPS環境でのみ利用できます。");
+    return;
+  }
+
   try {
-    const reader = new NDEFReader();
-    if(!reader==true){
-      toast("NFCリーダーの初期化に失敗しました。");
+    if (nfcScanning) {
+      toast("すでにスキャン中です。");
+      return;
     }
-    await reader.scan(); 
 
-    toast("スキャンを開始しました。タグをかざしてください。");
+    // 2. リーダーとコントローラーの準備
+    const reader = new NDEFReader();
+    nfcReader = reader;
+    nfcAbort = new AbortController();
 
+    // 3. 【重要】まず scan を実行する！
+    // ボタンクリックの「熱」が冷めないうちに実行するのがコツです
+    await reader.scan({ signal: nfcAbort.signal });
+    
+    // scanが成功したら状態を更新
+    nfcScanning = true;
+
+    // 4. 読み取り後の処理（onreading）を定義する
     reader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
       try { showNfcRipple(); } catch (e) {}
 
       let token = "";
-      // トークン取得試行
       if (event.message && event.message.records) {
         for (const record of event.message.records) {
           const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
@@ -726,7 +751,7 @@ async function startScan() {
         }
       }
 
-      // A: トークンがある場合
+      // --- トークン(URL)方式の処理 ---
       if (token) {
         const result = await redeemToken(token, { deferApply: true });
         if (result && result.ok) {
@@ -738,10 +763,10 @@ async function startScan() {
             applyStampProgress(result.stampProgress);
           }
         }
-        return; // トークン処理完了
+        return;
       }
 
-      // B: トークンがない場合は UID 方式へ（ここが壊れていました）
+      // --- UID方式の処理 ---
       const uid = event.serialNumber || "";
       if (!uid) {
         toast("UIDが取得できませんでした。");
@@ -752,15 +777,19 @@ async function startScan() {
       const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
       
       try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
-      console.log("NFC UID 適用:", uid);
       applyUid(uid);
     };
 
     reader.onreadingerror = () => toast("読み取り失敗。再度タッチしてください。");
 
+    // 5. ユーザーへの通知
+    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
+    toast("NFCスキャン準備完了");
+
   } catch (err) {
+    resetNfcState(); // エラー時は状態をリセットする関数を呼ぶ
     console.error("NFC Error:", err);
-    alert(`NFCを開始できませんでした: ${err.message}`);
+    alert(`NFCを開始できませんでした: ${err.name} - ${err.message}`);
   }
 }
 
