@@ -695,33 +695,31 @@ function bindWheelSwipe() {
 
 // ================== Web NFC（維持） ==================
 async function startScan() {
-  // 1. Web NFC 対応確認
   if (!("NDEFReader" in window)) {
-    alert("このブラウザは Web NFC に対応していません。HTTPS環境またはAndroid Chromeを使用してください。");
+    alert("このブラウザは Web NFC に対応していません。");
     return;
   }
 
+  // iframe チェック
   if (window.self !== window.top) {
-    alert("エラー: 別のページ（iframe）の中から実行されています。直接URLを開き直してください。");
+    alert("エラー: Vercelツールバー等の影響で iframe 内で動作しています。URLを直接入力して開き直してください。");
     return;
   }
 
   try {
     const reader = new NDEFReader();
-    console.log("NFCスキャン開始");
-    
     await reader.scan(); 
-    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     
+    // スキャン開始に成功してからメッセージを表示
+    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     toast("NFCスキャン準備完了");
 
-    // 4. 読み取りイベント（1つに集約）
     reader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
-      
+      try { showNfcRipple(); } catch (e) {}
+
       let token = "";
-      
-      // --- A. トークン（書き込まれたデータ）の取得試行 ---
+      // トークン取得試行
       if (event.message && event.message.records) {
         for (const record of event.message.records) {
           const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
@@ -730,65 +728,45 @@ async function startScan() {
             const url = new URL(text);
             const t = url.searchParams.get("t");
             if (t) { token = t; break; }
-          } catch (e) { /* URLでない場合は無視 */ }
+          } catch (e) {}
         }
       }
 
-      // ビジュアル波紋エフェクト
-      try { showNfcRipple(); } catch (e) {}
-
-      // --- B. 判定ロジック ---
+      // A: トークンがある場合
       if (token) {
-        // トークンが見つかった場合
-        console.log("トークンを検出:", token);
         const result = await redeemToken(token, { deferApply: true });
-        
         if (result && result.ok) {
           const owned = result.alreadyOwned === true;
           const variant = owned ? "owned" : "new";
-          
           try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) {}
-          
-          // アニメーション完了を待ってから画面更新
-          if (typeof waitAfterStampAni === "function") await waitAfterStampAni(variant);
-          
+          await waitAfterStampAni(variant);
           if (Array.isArray(result.stampProgress)) {
             applyStampProgress(result.stampProgress);
           }
         }
-      } else {
-        // トークンがない場合は UID（製造番号）方式へ切り替え
-        const uid = event.serialNumber || "";
-        if (!uid) {
-          toast("IDを取得できませんでした。");
-          return;
-        }
-        
-        console.log("UIDを使用:", uid);
-        const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
-        
-        // UID用の定数がない場合は通常のDURATIONを使用
-        const duration = typeof STAMP_ANI_DURATION_UID !== 'undefined' ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
-        
-        try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
-        
-        // 既存のUID適用関数を実行
-        applyUid(uid);
+        return; // トークン処理完了
       }
+
+      // B: トークンがない場合は UID 方式へ（ここが壊れていました）
+      const uid = event.serialNumber || "";
+      if (!uid) {
+        toast("UIDが取得できませんでした。");
+        return;
+      }
+      
+      const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
+      const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
+      
+      try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
+      console.log("NFC UID 適用:", uid);
+      applyUid(uid);
     };
 
-    reader.onreadingerror = () => {
-      toast("読み取りに失敗しました。タグを動かさずにかざしてください。");
-    };
+    reader.onreadingerror = () => toast("読み取り失敗。再度タッチしてください。");
 
   } catch (err) {
     console.error("NFC Error:", err);
-    // ユーザーに原因を伝えるための詳細なアラート
-    if (err.name === 'NotAllowedError') {
-      alert("NFCの実行権限が拒否されました。ブラウザの設定を確認してください。");
-    } else {
-      alert(`NFCを開始できませんでした: ${err.message}`);
-    }
+    alert(`NFCを開始できませんでした: ${err.message}`);
   }
 }
 
