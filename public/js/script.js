@@ -1,12 +1,12 @@
-ï»¿// ====== è¨­å®šï¼šã‚¹ã‚¿ãƒ³ãƒ—ä¸€è¦§ï¼ˆpoints/locationã¯UIç”¨ã€‚è£ã®æµã‚Œã¯åŒã˜ï¼‰======
-// token ã‚’è¿½åŠ ï¼ˆiPhoneç”¨ï¼š/tap?t=token ã§ã‚¹ã‚¿ãƒ³ãƒ—ç‰¹å®šï¼‰
+// ====== İ’èFƒXƒ^ƒ“ƒvˆê——ipoints/location‚ÍUI—pB— ‚Ì—¬‚ê‚Í“¯‚¶j======
+// token ‚ğ’Ç‰ÁiiPhone—pF/tap?t=token ‚ÅƒXƒ^ƒ“ƒv“Á’èj
 const DEFAULT_STAMPS = [
-  { id: 1, name: "æœ¬éƒ¨å‰",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/stamp1.png", flag: false, points: 10, location: "æœ¬éƒ¨å‰ï¼šå…¥å£ä»˜è¿‘" },
-  { id: 2, name: "ãƒ©ã‚¦ãƒ³ã‚¸",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/stamp2.png",     flag: false, points: 10, location: "ãƒ©ã‚¦ãƒ³ã‚¸ï¼šéšæ®µæ¨ª" },
-  { id: 3, name: "å›³æ›¸é¤¨",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 15, location: "å›³æ›¸é¤¨ï¼šå—ä»˜æ¨ª" },
-  { id: 4, name: "å­¦å†…ã‚³ãƒ³ãƒ“ãƒ‹",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 15, location: "å­¦å†…ã‚³ãƒ³ãƒ“ãƒ‹ï¼šå…¥å£ä»˜è¿‘" },
-  { id: 5, name: "æƒ…å ±å­¦ç§‘æ•™å‹™å®¤å‰", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 20,  location: "æƒ…å ±å­¦ç§‘æ•™å‹™å®¤å‰ï¼šå…¥å£ä»˜è¿‘" },
-  { id: 6, name: "å—ä»˜", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 20,  location: "å—ä»˜ï¼šå—ä»˜æ¨ª" },
+  { id: 1, name: "–{•”‘O",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/stamp1.png", flag: false, points: 10, location: "–{•”‘OF“üŒû•t‹ß" },
+  { id: 2, name: "ƒ‰ƒEƒ“ƒW",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/stamp2.png",     flag: false, points: 10, location: "ƒ‰ƒEƒ“ƒWFŠK’i‰¡" },
+  { id: 3, name: "}‘ŠÙ",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 15, location: "}‘ŠÙFó•t‰¡" },
+  { id: 4, name: "Šw“àƒRƒ“ƒrƒj",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 15, location: "Šw“àƒRƒ“ƒrƒjF“üŒû•t‹ß" },
+  { id: 5, name: "î•ñŠw‰È‹³–±º‘O", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 20,  location: "î•ñŠw‰È‹³–±º‘OF“üŒû•t‹ß" },
+  { id: 6, name: "ó•t", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 20,  location: "ó•tFó•t‰¡" },
 ];
 
 
@@ -72,7 +72,7 @@ function waitAfterStampAni(variant){
   return new Promise(resolve => setTimeout(resolve, delay));
 }
 
-// ================== æ°¸ç¶šåŒ–ï¼ˆç¶­æŒï¼‰ ==================
+// ================== ‰i‘±‰»iˆÛj ==================
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
   if (!raw) return structuredClone(DEFAULT_STAMPS);
@@ -95,7 +95,7 @@ function saveStamps() {
 function calcPoints() {
   return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
 }
-// ãƒ‡ãƒãƒƒã‚°ç”¨ã‚ªãƒ•ã‚»ãƒƒãƒˆã‚’å«ã‚ã¦è¡¨ç¤º
+// ƒfƒoƒbƒO—pƒIƒtƒZƒbƒg‚ğŠÜ‚ß‚Ä•\¦
 window.debugPointsOffset = 0;
 
 // persistent consumption and golden mode state
@@ -120,14 +120,14 @@ async function syncFromDB() {
 
   const data = await res.json();
 
-  // points ã‚’DBã®æ­£ã«åˆã‚ã›ã‚‹
+  // points ‚ğDB‚Ì³‚É‡‚í‚¹‚é
   currentUser.points = Number(data.points || 0);
   persistCurrentUser();
 
-  // å–å¾—æ¸ˆã¿UIDã§ã‚¹ã‚¿ãƒ³ãƒ—flagã‚’åŒæœŸï¼ˆDBã‚’æ­£ã«ã™ã‚‹ï¼‰
+  // æ“¾Ï‚İUID‚ÅƒXƒ^ƒ“ƒvflag‚ğ“¯ŠúiDB‚ğ³‚É‚·‚éj
   const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
 
-  // ç”»åƒãªã©æ—¢å­˜çŠ¶æ…‹ã‚’ç¶­æŒã—ã¤ã¤ã€flagã ã‘åŒæœŸã—ãŸã„ãªã‚‰ loadStamps() ãƒ™ãƒ¼ã‚¹ãŒå®‰å…¨
+  // ‰æ‘œ‚È‚ÇŠù‘¶ó‘Ô‚ğˆÛ‚µ‚Â‚ÂAflag‚¾‚¯“¯Šú‚µ‚½‚¢‚È‚ç loadStamps() ƒx[ƒX‚ªˆÀ‘S
   stamps = loadStamps();
   stamps.forEach(s => {
     s.flag = uidSet.has(String(s.uid).toUpperCase());
@@ -255,8 +255,8 @@ function renderIndicator() {
 
 function syncChipsModalContent() {
   const s = stamps[currentIndex];
-  $modalTitle.textContent = `${s.name} ã® location`;
-  $modalBody.textContent = s.location || "locationæƒ…å ±ãŒæœªè¨­å®šã§ã™ã€‚";
+  $modalTitle.textContent = `${s.name} ‚Ì location`;
+  $modalBody.textContent = s.location || "locationî•ñ‚ª–¢İ’è‚Å‚·B";
 }
 
 function render() {
@@ -306,18 +306,18 @@ function updateSlidePosition(withAnim) {
   });
 }
 
-// ================== UIDé©ç”¨ï¼ˆç¶­æŒï¼‰ ==================
+// ================== UID“K—piˆÛj ==================
 function applyUid(uid) {
   const hit = stamps.find(s => s.uid.toUpperCase() === uid.toUpperCase());
   if (!hit) {
-    alert(`æœªç™»éŒ²ã®UIDã§ã™ï¼š${uid}\nscript.js ã® DEFAULT_STAMPS ã‚’ç¢ºèªã—ã¦ãã ã•ã„ã€‚`);
+    alert(`–¢“o˜^‚ÌUID‚Å‚·F${uid}\nscript.js ‚Ì DEFAULT_STAMPS ‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢B`);
     return;
   }
   if (!hit.flag) {
     const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     hit.flag = true;
     if (currentUser) {
-      // ã¾ãšè¦‹ãŸç›®ã‚’å³åæ˜ ï¼ˆæ¥½è¦³åŠ ç®—ï¼‰
+      // ‚Ü‚¸Œ©‚½–Ú‚ğ‘¦”½‰fiŠyŠÏ‰ÁZj
       currentUser.points = Number(currentUser.points || 0) + (Number(hit.points) || 0);
       persistCurrentUser();
     }
@@ -331,7 +331,7 @@ function applyUid(uid) {
     const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
-    // DBã¸ç¢ºå®šï¼ˆæˆåŠŸã—ãŸã‚‰DBã®pointsã§ä¸Šæ›¸ãã—ã¦ã‚ºãƒ¬ã‚’0ã«ï¼‰
+    // DB‚ÖŠm’èi¬Œ÷‚µ‚½‚çDB‚Ìpoints‚Åã‘‚«‚µ‚ÄƒYƒŒ‚ğ0‚Éj
     if (currentUser?.id) {
       (async () => {
         const r = await fetch("/api/stamps/acquire", {
@@ -358,9 +358,9 @@ function isStampOwnedByUid(uid) {
 
 
 // Manual test (iPhone pseudo NFC):
-// 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM ã‚’é–‹ã
-// 2) URLã‹ã‚‰ t ãŒæ¶ˆãˆã‚‹ã“ã¨ã‚’ç¢ºèªï¼ˆå†èª­ã¿è¾¼ã¿ã§äºŒé‡å–å¾—ã—ãªã„ï¼‰
-// 3) ä¸æ­£ãª token ã¯ console ã« warning ã‚’å‡ºã—ã€pending ã«ä¿å­˜
+// 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM ‚ğŠJ‚­
+// 2) URL‚©‚ç t ‚ªÁ‚¦‚é‚±‚Æ‚ğŠm”FiÄ“Ç‚İ‚İ‚Å“ñdæ“¾‚µ‚È‚¢j
+// 3) •s³‚È token ‚Í console ‚É warning ‚ğo‚µApending ‚É•Û‘¶
 async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
@@ -561,7 +561,7 @@ async function redeemToken(token, options) {
       return { ok: false, needsAuth: true };
     }
     if (!res.ok || !data.ok) {
-      showModalMessage("NFC", data.error || "ã‚¹ã‚¿ãƒ³ãƒ—å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚");
+      showModalMessage("NFC", data.error || "ƒXƒ^ƒ“ƒvæ“¾‚É¸”s‚µ‚Ü‚µ‚½B");
       return { ok: false };
     }
 
@@ -582,7 +582,7 @@ async function redeemToken(token, options) {
     return { ok: true, alreadyOwned: !!data.alreadyOwned, stampProgress, points: data.points };
   } catch (err) {
     console.error(err);
-    showModalMessage("NFC", "ã‚¹ã‚¿ãƒ³ãƒ—å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚");
+    showModalMessage("NFC", "ƒXƒ^ƒ“ƒvæ“¾‚É¸”s‚µ‚Ü‚µ‚½B");
     return { ok: false };
   }
 }
@@ -597,7 +597,7 @@ function extractTokenFromRecord(record) {
   return "";
 }
 
-// ================== ã‚¹ãƒ¯ã‚¤ãƒ—ï¼ˆç¶­æŒï¼‰ ==================
+// ================== ƒXƒƒCƒviˆÛj ==================
 function bindSwipeEvents() {
   let startX = 0;
   let deltaX = 0;
@@ -693,7 +693,7 @@ function bindWheelSwipe() {
   }, { passive: false });
 }
 
-// ================== Web NFCï¼ˆç¶­æŒï¼‰ ==================
+// ================== Web NFCiˆÛj ==================
 let nfcReader = null;
 let nfcAbort = null;
 let nfcScanning = false;
@@ -706,23 +706,27 @@ function resetNfcState() {
 
 async function startScan() {
   if (!("NDEFReader" in window)) {
-    alert("ã“ã®ãƒ–ãƒ©ã‚¦ã‚¶ã¯ Web NFC ã«å¯¾å¿œã—ã¦ã„ã¾ã›ã‚“ã€‚");
+    alert("‚±‚Ìƒuƒ‰ƒEƒU‚Í Web NFC ‚É‘Î‰‚µ‚Ä‚¢‚Ü‚¹‚ñB");
     return;
   }
   if (!window.isSecureContext) {
-    alert("NFCã¯HTTPSã¾ãŸã¯localhostã§ã®ã¿åˆ©ç”¨ã§ãã¾ã™ã€‚");
+    alert("NFC‚ÍHTTPS‚Ü‚½‚Ílocalhost‚Å‚Ì‚İ—˜—p‚Å‚«‚Ü‚·B");
     return;
   }
 
-  // iframe ãƒã‚§ãƒƒã‚¯
+  // iframe ƒ`ƒFƒbƒN
   if (window.self !== window.top) {
-    alert("ã‚¨ãƒ©ãƒ¼: Vercelãƒ„ãƒ¼ãƒ«ãƒãƒ¼ç­‰ã®å½±éŸ¿ã§ iframe å†…ã§å‹•ä½œã—ã¦ã„ã¾ã™ã€‚URLã‚’ç›´æ¥å…¥åŠ›ã—ã¦é–‹ãç›´ã—ã¦ãã ã•ã„ã€‚");
+    try {
+      window.top.location.href = window.location.href;
+    } catch (e) {
+      alert("ƒGƒ‰[: Vercelƒc[ƒ‹ƒo[“™‚Ì‰e‹¿‚Å iframe “à‚Å“®ì‚µ‚Ä‚¢‚Ü‚·BURL‚ğ’¼Ú“ü—Í‚µ‚ÄŠJ‚«’¼‚µ‚Ä‚­‚¾‚³‚¢B");
+    }
     return;
   }
 
   try {
     if (nfcScanning && nfcReader) {
-      toast("ã™ã§ã«ã‚¹ã‚­ãƒ£ãƒ³ä¸­ã§ã™ã€‚");
+      toast("‚·‚Å‚ÉƒXƒLƒƒƒ“’†‚Å‚·B");
       return;
     }
 
@@ -731,11 +735,11 @@ async function startScan() {
     nfcAbort = new AbortController();
 
     reader.onreading = async (event) => {
-      console.log("NFCã‚¿ã‚°æ¤œçŸ¥:", event.serialNumber);
+      console.log("NFCƒ^ƒOŒŸ’m:", event.serialNumber);
       try { showNfcRipple(); } catch (e) {}
 
       let token = "";
-      // ãƒˆãƒ¼ã‚¯ãƒ³å–å¾—è©¦è¡Œ
+      // ƒg[ƒNƒ“æ“¾s
       if (event.message && event.message.records) {
         for (const record of event.message.records) {
           const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
@@ -748,7 +752,7 @@ async function startScan() {
         }
       }
 
-      // A: ãƒˆãƒ¼ã‚¯ãƒ³ãŒã‚ã‚‹å ´åˆ
+      // A: ƒg[ƒNƒ“‚ª‚ ‚éê‡
       if (token) {
         const result = await redeemToken(token, { deferApply: true });
         if (result && result.ok) {
@@ -760,13 +764,13 @@ async function startScan() {
             applyStampProgress(result.stampProgress);
           }
         }
-        return; // ãƒˆãƒ¼ã‚¯ãƒ³å‡¦ç†å®Œäº†
+        return; // ƒg[ƒNƒ“ˆ—Š®—¹
       }
 
-      // B: ãƒˆãƒ¼ã‚¯ãƒ³ãŒãªã„å ´åˆã¯ UID æ–¹å¼ã¸ï¼ˆã“ã“ãŒå£Šã‚Œã¦ã„ã¾ã—ãŸï¼‰
+      // B: ƒg[ƒNƒ“‚ª‚È‚¢ê‡‚Í UID •û®‚Öi‚±‚±‚ª‰ó‚ê‚Ä‚¢‚Ü‚µ‚½j
       const uid = event.serialNumber || "";
       if (!uid) {
-        toast("UIDãŒå–å¾—ã§ãã¾ã›ã‚“ã§ã—ãŸã€‚");
+        toast("UID‚ªæ“¾‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½B");
         return;
       }
       
@@ -774,22 +778,22 @@ async function startScan() {
       const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
       
       try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
-      console.log("NFC UID é©ç”¨:", uid);
+      console.log("NFC UID “K—p:", uid);
       applyUid(uid);
     };
 
-    reader.onreadingerror = () => toast("èª­ã¿å–ã‚Šå¤±æ•—ã€‚å†åº¦ã‚¿ãƒƒãƒã—ã¦ãã ã•ã„ã€‚");
+    reader.onreadingerror = () => toast("“Ç‚İæ‚è¸”sBÄ“xƒ^ƒbƒ`‚µ‚Ä‚­‚¾‚³‚¢B");
     await reader.scan({ signal: nfcAbort.signal });
     nfcScanning = true;
     
-    // ã‚¹ã‚­ãƒ£ãƒ³é–‹å§‹ã«æˆåŠŸã—ã¦ã‹ã‚‰ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’è¡¨ç¤º
-    showModalMessage("NFC", "ã‚¹ã‚­ãƒ£ãƒ³ã‚’é–‹å§‹ã—ã¾ã—ãŸã€‚ã‚¿ã‚°ã‚’ã‹ã–ã—ã¦ãã ã•ã„ã€‚");
-    toast("NFCã‚¹ã‚­ãƒ£ãƒ³æº–å‚™å®Œäº†");
+    // ƒXƒLƒƒƒ“ŠJn‚É¬Œ÷‚µ‚Ä‚©‚çƒƒbƒZ[ƒW‚ğ•\¦
+    showModalMessage("NFC", "ƒXƒLƒƒƒ“‚ğŠJn‚µ‚Ü‚µ‚½Bƒ^ƒO‚ğ‚©‚´‚µ‚Ä‚­‚¾‚³‚¢B");
+    toast("NFCƒXƒLƒƒƒ“€”õŠ®—¹");
 
   } catch (err) {
     resetNfcState();
     console.error("NFC Error:", err);
-    alert(`NFCã‚’é–‹å§‹ã§ãã¾ã›ã‚“ã§ã—ãŸ: ${err.message}`);
+    alert(`NFC‚ğŠJn‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½: ${err.message}`);
   }
 }
 
@@ -841,8 +845,8 @@ function showModalConfirm(title, body, okText, cancelText) {
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.className = "chips-btn glass";
-    cancel.textContent = cancelText || "ã‚­ãƒ£ãƒ³ã‚»ãƒ«";
-    if (okText === "ãƒªã‚»ãƒƒãƒˆã™ã‚‹") ok.classList.add("modal-danger");
+    cancel.textContent = cancelText || "ƒLƒƒƒ“ƒZƒ‹";
+    if (okText === "ƒŠƒZƒbƒg‚·‚é") ok.classList.add("modal-danger");
     actions.append(ok, cancel);
     wrap.append(msg, actions);
     openModal({ title, bodyNode: wrap });
@@ -861,7 +865,7 @@ function setPage(name) {
   });
 }
 
-// ================== Liquid Glass interactionï¼ˆUIã®ã¿ï¼‰  ==================
+// ================== Liquid Glass interactioniUI‚Ì‚İj  ==================
 function initLiquidGlass(){
   const ok = CSS.supports("backdrop-filter", "blur(10px)") || CSS.supports("-webkit-backdrop-filter", "blur(10px)");
   if (!ok) document.documentElement.classList.add("no-backdrop");
@@ -900,15 +904,15 @@ function initKiran(){
 function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 function toast(msg) { console.log(msg); }
 
-/* NFCèª­ã¿å–ã‚Šæ™‚ã«ãƒˆãƒƒãƒ—ä¸­å¤®ã§æ´¾æ‰‹ãªæ³¢ç´‹ã‚’å‡ºã™ (DOMæ“ä½œ) */
+/* NFC“Ç‚İæ‚è‚Éƒgƒbƒv’†‰›‚Å”hè‚È”g–ä‚ğo‚· (DOM‘€ì) */
 function showNfcRipple(){
   const el = document.createElement('div');
   el.className = 'nfc-ripple';
   const app = document.querySelector('.app');
   (app || document.body).appendChild(el);
-  // å¼·åˆ¶ãƒªãƒ•ãƒ­ãƒ¼ã§ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ç¢ºå®Ÿã«é–‹å§‹
+  // ‹­§ƒŠƒtƒ[‚ÅƒAƒjƒ[ƒVƒ‡ƒ“‚ğŠmÀ‚ÉŠJn
   void el.offsetWidth;
-  // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³çµ‚äº†ã§å‰Šé™¤
+  // ƒAƒjƒ[ƒVƒ‡ƒ“I—¹‚Åíœ
   el.addEventListener('animationend', () => {
     try { el.remove(); } catch(e){}
   }, { once: true });
@@ -1111,10 +1115,10 @@ function populateDebugPanel(){
 
   const title = document.createElement('div');
   title.style.fontWeight = '900';
-  title.textContent = 'ãƒ‡ãƒãƒƒã‚°æ“ä½œ';
+  title.textContent = 'ƒfƒoƒbƒO‘€ì';
   panel.appendChild(title);
 
-  // NFC UID ã®ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ãƒœã‚¿ãƒ³ç¾¤
+  // NFC UID ‚ÌƒVƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“ƒ{ƒ^ƒ“ŒQ
   const group = document.createElement('div');
   group.style.display = 'flex';
   group.style.flexDirection = 'column';
@@ -1127,7 +1131,7 @@ function populateDebugPanel(){
   });
   panel.appendChild(group);
 
-  // ãƒã‚¤ãƒ³ãƒˆå¢—æ¸›
+  // ƒ|ƒCƒ“ƒg‘Œ¸
   const controls = document.createElement('div');
   controls.style.display = 'flex';
   controls.style.gap = '8px';
@@ -1140,7 +1144,7 @@ function populateDebugPanel(){
   dec.textContent = '-10P';
   dec.addEventListener('click', () => adjustDebugPoints(-10));
   const reset = document.createElement('button');
-  reset.textContent = 'ãƒªã‚»ãƒƒãƒˆP';
+  reset.textContent = 'ƒŠƒZƒbƒgP';
   reset.addEventListener('click', () => { window.debugPointsOffset = 0; updateOOP(); });
 
   controls.appendChild(inc);
@@ -1149,7 +1153,7 @@ function populateDebugPanel(){
   panel.appendChild(controls);
 }
 
-// ãƒ‡ãƒãƒƒã‚°ãƒˆã‚°ãƒ«ã®åˆæœŸåŒ–
+// ƒfƒoƒbƒOƒgƒOƒ‹‚Ì‰Šú‰»
 function initDebugUI(){
   const toggle = document.getElementById('debugToggle');
   const panel = document.getElementById('debugPanel');
@@ -1204,7 +1208,7 @@ function startGoldenSparks(){
       }
     });
 
-    // Larger background overlay sparks â€” spawn several for denser effect
+    // Larger background overlay sparks ? spawn several for denser effect
     const overlay = document.getElementById('goldenOverlay');
     if(overlay){
       const spawn = 1 + Math.floor(Math.random()*2);
@@ -1266,11 +1270,11 @@ function updateGoldenUI(){
       stateEl.textContent = goldenActive ? 'ON' : 'OFF';
     }
     toggleBtn.classList.toggle('is-on', goldenActive);
-    status.textContent = goldenActive ? 'è§£ç¦æ¸ˆã¿' : 'è§£ç¦æ¸ˆã¿';
+    status.textContent = goldenActive ? '‰ğ‹ÖÏ‚İ' : '‰ğ‹ÖÏ‚İ';
   } else {
     unlockBtn.style.display = 'inline-block';
     toggleBtn.style.display = 'none';
-    status.textContent = 'æœªè§£ç¦';
+    status.textContent = '–¢‰ğ‹Ö';
   }
 }
 
@@ -1309,7 +1313,7 @@ function toggleGolden(){
 
 
 async function resetDBProgressIfLoggedIn() {
-  // currentUser ãŒæœªå®šç¾©ã§ã‚‚å‹•ãã‚ˆã†ã«ä¿é™º
+  // currentUser ‚ª–¢’è‹`‚Å‚à“®‚­‚æ‚¤‚É•ÛŒ¯
   const u = (typeof currentUser !== "undefined" && currentUser)
     ? currentUser
     : JSON.parse(localStorage.getItem("user") || "null");
@@ -1325,23 +1329,23 @@ async function resetDBProgressIfLoggedIn() {
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data?.error || "DB reset failed");
 
-  // pointsã‚’0ã«åæ˜ ï¼ˆDBã‚’æ­£ã«ã™ã‚‹ãªã‚‰å¿…é ˆï¼‰
+  // points‚ğ0‚É”½‰fiDB‚ğ³‚É‚·‚é‚È‚ç•K{j
   if (typeof currentUser !== "undefined" && currentUser) {
     currentUser.points = 0;
     localStorage.setItem("user", JSON.stringify(currentUser));
   }
 
-  return data; // { ok, deletedCount, user... } ãªã©
+  return data; // { ok, deletedCount, user... } ‚È‚Ç
 }
 
-// ================== UIã‚¤ãƒ™ãƒ³ãƒˆ ==================
+// ================== UIƒCƒxƒ“ƒg ==================
 document.getElementById("scanBtn").addEventListener("click", startScan);
 
 async function resetProgressAndGoStamp() {
-  const ok = await showModalConfirm("ãƒªã‚»ãƒƒãƒˆ", "é€²æ—ã‚’ãƒªã‚»ãƒƒãƒˆã—ã¦ã‚‚ã‚ˆã„ã§ã™ã‹ï¼Ÿ", "ãƒªã‚»ãƒƒãƒˆã™ã‚‹", "ã‚­ãƒ£ãƒ³ã‚»ãƒ«");
+  const ok = await showModalConfirm("ƒŠƒZƒbƒg", "i’»‚ğƒŠƒZƒbƒg‚µ‚Ä‚à‚æ‚¢‚Å‚·‚©H", "ƒŠƒZƒbƒg‚·‚é", "ƒLƒƒƒ“ƒZƒ‹");
   if (!ok) return;
 
-  // DB resetï¼ˆãƒ­ã‚°ã‚¤ãƒ³ä¸­ã®ã¿ï¼‰
+  // DB resetiƒƒOƒCƒ“’†‚Ì‚İj
   const u =
     (typeof currentUser !== "undefined" && currentUser)
       ? currentUser
@@ -1355,7 +1359,7 @@ async function resetProgressAndGoStamp() {
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
-      alert(data?.error || "DBã®ãƒªã‚»ãƒƒãƒˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚");
+      alert(data?.error || "DB‚ÌƒŠƒZƒbƒg‚É¸”s‚µ‚Ü‚µ‚½B");
       return;
     }
     if (typeof currentUser !== "undefined" && currentUser) {
@@ -1380,7 +1384,7 @@ async function resetProgressAndGoStamp() {
   updateGoldenUI();
   updateOOP();
 
-  setPage("stamp"); // â† å¸¸ã«æˆ»ã™
+  setPage("stamp"); // © í‚É–ß‚·
 }
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
@@ -1391,8 +1395,8 @@ $chipsBtn.addEventListener("click", () => openModal());
 if ($oopInfo) {
   $oopInfo.addEventListener("click", () => {
     openModal({
-      title: "ãƒã‚¤ãƒ³ãƒˆã«ã¤ã„ã¦",
-      body: "ã‚¹ã‚¿ãƒ³ãƒ—ã‚’å…¥æ‰‹ã™ã‚‹ã¨ãƒã‚¤ãƒ³ãƒˆãŒãŸã¾ã‚Šã€ã‚·ãƒ§ãƒƒãƒ”ãƒ³ã‚°ãªã©ã§åˆ©ç”¨ã§ãã¾ã™ã€‚",
+      title: "ƒ|ƒCƒ“ƒg‚É‚Â‚¢‚Ä",
+      body: "ƒXƒ^ƒ“ƒv‚ğ“üè‚·‚é‚Æƒ|ƒCƒ“ƒg‚ª‚½‚Ü‚èAƒVƒ‡ƒbƒsƒ“ƒO‚È‚Ç‚Å—˜—p‚Å‚«‚Ü‚·B",
     });
   });
 }
@@ -1414,7 +1418,7 @@ const toggleBtnEl = document.getElementById('toggleGoldenBtn');
 if(unlockBtnEl) unlockBtnEl.addEventListener('click', unlockGolden);
 if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
 
-// ================== åˆæœŸåŒ– ==================
+// ================== ‰Šú‰» ==================
 (function init() {
   setPage("stamp");
   preloadStampImages();
@@ -1422,10 +1426,10 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   initLiquidGlass();
   initStampAni();
   initBroadcastListeners();
-  // ãƒ‡ãƒãƒƒã‚°UIã¯ãƒ‡ã‚¹ã‚¯ãƒˆãƒƒãƒ—å‘ã‘ã«åˆæœŸåŒ–
+  // ƒfƒoƒbƒOUI‚ÍƒfƒXƒNƒgƒbƒvŒü‚¯‚É‰Šú‰»
   initDebugUI();
   initKiran();
-  // golden åˆæœŸåŒ–
+  // golden ‰Šú‰»
   applyGoldenClass();
   updateGoldenUI();
   if(goldenActive) startGoldenSparks();
@@ -1455,7 +1459,7 @@ function showAuthChoice() {
     authForm.hidden = true;
     authForm.style.display = 'none';
   }
-  if (authTitle) authTitle.innerText = 'ã‚¢ã‚«ã‚¦ãƒ³ãƒˆ';
+  if (authTitle) authTitle.innerText = 'ƒAƒJƒEƒ“ƒg';
 }
 
 function showAuthForm(nextIsLogin) {
@@ -1468,9 +1472,9 @@ function showAuthForm(nextIsLogin) {
     authForm.hidden = false;
     authForm.style.display = 'block';
   }
-  if (authTitle) authTitle.innerText = isLoginMode ? 'ãƒ­ã‚°ã‚¤ãƒ³' : 'æ–°è¦ä¼šå“¡ç™»éŒ²';
-  if (authSubmitBtn) authSubmitBtn.innerText = isLoginMode ? 'ãƒ­ã‚°ã‚¤ãƒ³' : 'ç™»éŒ²';
-  if (authToggleText) authToggleText.innerText = isLoginMode ? 'æ–°è¦ç™»éŒ²ã¯ã“ã¡ã‚‰' : 'ãƒ­ã‚°ã‚¤ãƒ³ã¯ã“ã¡ã‚‰';
+  if (authTitle) authTitle.innerText = isLoginMode ? 'ƒƒOƒCƒ“' : 'V‹K‰ïˆõ“o˜^';
+  if (authSubmitBtn) authSubmitBtn.innerText = isLoginMode ? 'ƒƒOƒCƒ“' : '“o˜^';
+  if (authToggleText) authToggleText.innerText = isLoginMode ? 'V‹K“o˜^‚Í‚±‚¿‚ç' : 'ƒƒOƒCƒ“‚Í‚±‚¿‚ç';
 }
 
 function initZoomGuards() {}
@@ -1495,15 +1499,15 @@ function initAuthEnterShortcuts() {
   });
 }
 
-// åˆæœŸåŒ–ï¼šãƒ­ã‚°ã‚¤ãƒ³çŠ¶æ…‹ãªã‚‰UIã‚’æ›´æ–°
+// ‰Šú‰»FƒƒOƒCƒ“ó‘Ô‚È‚çUI‚ğXV
 document.addEventListener('DOMContentLoaded', () => {
   if (currentUser) {
     updateUIForLoggedInUser();
-    // å¿…è¦ã«å¿œã˜ã¦DBã‹ã‚‰æœ€æ–°çŠ¶æ…‹ã‚’å–å¾—ã—åŒæœŸ
+    // •K—v‚É‰‚¶‚ÄDB‚©‚çÅVó‘Ô‚ğæ“¾‚µ“¯Šú
     syncFromDB();
     // stamps = currentUser.stamp_progress;
     // points = currentUser.points;
-    // renderStamps(); // æ—¢å­˜ã®æç”»é–¢æ•°
+    // renderStamps(); // Šù‘¶‚Ì•`‰æŠÖ”
   }
 
   const pendingProgress = localStorage.getItem(LS_PENDING_PROGRESS);
@@ -1537,7 +1541,7 @@ function closeAuthModal() {
   showAuthChoice();
 }
 
-// toggleAuthMode ã‚‚ã‚¿ã‚¤ãƒˆãƒ«ç­‰ã‚’æ›¸ãæ›ãˆã‚‹ã‚ˆã†ç¶­æŒ
+// toggleAuthMode ‚àƒ^ƒCƒgƒ‹“™‚ğ‘‚«Š·‚¦‚é‚æ‚¤ˆÛ
 function toggleAuthMode() {
   showAuthForm(!isLoginMode);
 }
@@ -1568,9 +1572,9 @@ async function handleAuth() {
     updateUIForLoggedInUser();
     closeAuthModal();
 
-    await syncFromDB(); // â† ã“ã“ã§ stamps ã¨ points ãŒæƒã†
+    await syncFromDB(); // © ‚±‚±‚Å stamps ‚Æ points ‚ª‘µ‚¤
 
-    showModalMessage("ã‚¢ã‚«ã‚¦ãƒ³ãƒˆ", isLoginMode ? "ãƒ­ã‚°ã‚¤ãƒ³ã—ã¾ã—ãŸ" : "ç™»éŒ²ãŒå®Œäº†ã—ã¾ã—ãŸ");
+    showModalMessage("ƒAƒJƒEƒ“ƒg", isLoginMode ? "ƒƒOƒCƒ“‚µ‚Ü‚µ‚½" : "“o˜^‚ªŠ®—¹‚µ‚Ü‚µ‚½");
   } else {
     const err = await res.json();
     alert(err.error);
@@ -1585,5 +1589,5 @@ function updateUIForLoggedInUser() {
 
 function logout() {
   localStorage.removeItem('user');
-  location.reload(); // çŠ¶æ…‹ãƒªã‚»ãƒƒãƒˆã®ãŸã‚ãƒªãƒ­ãƒ¼ãƒ‰
+  location.reload(); // ó‘ÔƒŠƒZƒbƒg‚Ì‚½‚ßƒŠƒ[ƒh
 }
