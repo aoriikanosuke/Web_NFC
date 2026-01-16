@@ -701,18 +701,18 @@ async function startScan() {
     return;
   }
 
-  try {
-    // 2. モーダルを scan() の「前」に表示（Androidのシステムプロンプトとの衝突を回避）
-    try {
-      showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
-    } catch (e) {
-      console.warn("showModalMessage failed:", e);
-    }
+  if (window.self !== window.top) {
+    alert("エラー: 別のページ（iframe）の中から実行されています。直接URLを開き直してください。");
+    return;
+  }
 
+  try {
     const reader = new NDEFReader();
+    console.log("NFCスキャン開始");
     
-    // 3. スキャン開始（ここでAndroid標準のプロンプトが出る）
     await reader.scan(); 
+    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
+    
     toast("NFCスキャン準備完了");
 
     // 4. 読み取りイベント（1つに集約）
