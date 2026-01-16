@@ -694,18 +694,29 @@ function bindWheelSwipe() {
 }
 
 // ================== Web NFC（維持） ==================
+// --- グローバル変数（関数の外に配置） ---
 let nfcReader = null;
 let nfcAbort = null;
 let nfcScanning = false;
 
+/**
+ * NFCの状態を完全にリセットする
+ */
 function resetNfcState() {
-  nfcScanning = false;
-  nfcAbort = null;
+  if (nfcAbort) {
+    nfcAbort.abort(); // 前のスキャンを強制終了
+  }
   nfcReader = null;
+  nfcAbort = null;
+  nfcScanning = false;
+  console.log("NFC状態をリセットしました");
 }
 
+/**
+ * NFCスキャンを開始する
+ */
 async function startScan() {
-  // 1. 基礎チェック（これらは一瞬で終わる）
+  // 1. 基礎チェック
   if (!("NDEFReader" in window)) {
     alert("このブラウザは Web NFC に対応していません。");
     return;
@@ -715,26 +726,25 @@ async function startScan() {
     return;
   }
 
+  // 2. 二重起動防止：実行中の場合は一度止めてからやり直す
+  if (nfcScanning) {
+    resetNfcState();
+    // ブラウザが内部的にアンテナを解放するのを待つための微小な待機
+    await new Promise(r => setTimeout(r, 100));
+  }
+
   try {
-    if (nfcScanning) {
-      toast("すでにスキャン中です。");
-      return;
-    }
-
-    // 2. リーダーとコントローラーの準備
-    const reader = new NDEFReader();
-    nfcReader = reader;
+    // 3. インスタンスの生成（毎回新しく作るのが安定のコツ）
     nfcAbort = new AbortController();
+    nfcReader = new NDEFReader();
 
-    // 3. 【重要】まず scan を実行する！
-    // ボタンクリックの「熱」が冷めないうちに実行するのがコツです
-    await reader.scan({ signal: nfcAbort.signal });
-    
-    // scanが成功したら状態を更新
+    // 4. 【最優先】スキャンを即座に実行
+    // ボタンクリックの有効期限が切れる前に実行する
+    await nfcReader.scan({ signal: nfcAbort.signal });
     nfcScanning = true;
 
-    // 4. 読み取り後の処理（onreading）を定義する
-    reader.onreading = async (event) => {
+    // 5. 読み取りイベントの設定
+    nfcReader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
       try { showNfcRipple(); } catch (e) {}
 
@@ -751,7 +761,7 @@ async function startScan() {
         }
       }
 
-      // --- トークン(URL)方式の処理 ---
+      // --- トークン(URL)方式 ---
       if (token) {
         const result = await redeemToken(token, { deferApply: true });
         if (result && result.ok) {
@@ -766,7 +776,7 @@ async function startScan() {
         return;
       }
 
-      // --- UID方式の処理 ---
+      // --- UID方式 ---
       const uid = event.serialNumber || "";
       if (!uid) {
         toast("UIDが取得できませんでした。");
@@ -780,16 +790,24 @@ async function startScan() {
       applyUid(uid);
     };
 
-    reader.onreadingerror = () => toast("読み取り失敗。再度タッチしてください。");
+    nfcReader.onreadingerror = () => {
+      toast("読み取り失敗。再度タッチしてください。");
+    };
 
-    // 5. ユーザーへの通知
+    // 6. ユーザーへの通知
     showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     toast("NFCスキャン準備完了");
 
   } catch (err) {
-    resetNfcState(); // エラー時は状態をリセットする関数を呼ぶ
+    // InvalidStateError 等が発生した場合はリセット
+    resetNfcState();
     console.error("NFC Error:", err);
-    alert(`NFCを開始できませんでした: ${err.name} - ${err.message}`);
+
+    if (err.name === "InvalidStateError") {
+      alert("NFCが既に動作中のため、再試行します。もう一度ボタンを押してください。");
+    } else {
+      alert(`NFCを開始できませんでした: ${err.name} - ${err.message}`);
+    }
   }
 }
 
