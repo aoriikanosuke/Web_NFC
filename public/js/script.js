@@ -699,20 +699,14 @@ async function startScan() {
     alert("このブラウザは Web NFC に対応していません。");
     return;
   }
-
-  // iframe チェック
-  if (window.self !== window.top) {
-    alert("エラー: Vercelツールバー等の影響で iframe 内で動作しています。URLを直接入力して開き直してください。");
-    return;
-  }
-
   try {
     const reader = new NDEFReader();
+    if(!reader==true){
+      toast("NFCリーダーの初期化に失敗しました。");
+    }
     await reader.scan(); 
-    
-    // スキャン開始に成功してからメッセージを表示
-    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
-    toast("NFCスキャン準備完了");
+
+    toast("スキャンを開始しました。タグをかざしてください。");
 
     reader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
