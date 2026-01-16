@@ -46,6 +46,30 @@ let oopAnimating = false;
 const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
 const $modalBody = document.getElementById("modalBody");
+const $app = document.querySelector(".app");
+const $siteInfoTrigger = document.getElementById("siteInfoTrigger");
+const $siteInfoOverlay = document.getElementById("siteInfoOverlay");
+const $siteInfoStartBtn = document.getElementById("siteInfoStartBtn");
+const $siteInfoLoginBtn = document.getElementById("siteInfoLoginBtn");
+const $siteInfoSignupBtn = document.getElementById("siteInfoSignupBtn");
+const $siteInfoForm = document.getElementById("siteInfoForm");
+const $siteInfoFormTitle = document.getElementById("siteInfoFormTitle");
+const $siteInfoUsername = document.getElementById("siteInfoUsername");
+const $siteInfoPassword = document.getElementById("siteInfoPassword");
+const $siteInfoSubmitBtn = document.getElementById("siteInfoSubmitBtn");
+const $siteInfoToggleLink = document.getElementById("siteInfoToggleLink");
+const $siteInfoFormError = document.getElementById("siteInfoFormError");
+
+// Pay UI
+const $payAmount = document.getElementById("payAmount");
+const $payConfirmAmount = document.getElementById("payConfirmAmount");
+const $payAvailable = document.getElementById("payAvailable");
+const $payRotator = document.getElementById("payRotator");
+const $payKeypad = document.getElementById("payKeypad");
+const $payConfirmBtn = document.getElementById("payConfirmBtn");
+const $payBackBtn = document.getElementById("payBackBtn");
+const $payCommitBtn = document.getElementById("payCommitBtn");
+const $payStatus = document.getElementById("payStatus");
 
 // Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
@@ -67,7 +91,8 @@ let stampAniFlyout = null;
 const STAMP_ANI_END_DELAY = 2100;
 const STAMP_ANI_END_DELAY_OWNED = 0;
 
-function waitAfterStampAni(variant){
+function waitAfterStampAni(variant, options){
+  if (options && options.debug) return Promise.resolve();
   const delay = variant === 'owned' ? STAMP_ANI_END_DELAY_OWNED : STAMP_ANI_END_DELAY;
   return new Promise(resolve => setTimeout(resolve, delay));
 }
@@ -151,6 +176,7 @@ function getDisplayedTotal() {
 function updateOOP() {
   if (oopAnimating) return;
   setOOPValue(getDisplayedTotal());
+  updatePayAvailable();
 }
 
 // function updateOOP() {
@@ -161,6 +187,151 @@ function updateOOP() {
 
 function setOOPValue(value) {
   $oopValue.textContent = String(value);
+}
+
+// ================== Pay UI ==================
+const MAX_PAY_AMOUNT = 999999;
+let payAmount = 0;
+let payBusy = false;
+
+function formatPayAmount(value) {
+  const num = Number(value || 0);
+  return Number.isFinite(num) ? num.toLocaleString("ja-JP") : "0";
+}
+
+function getAvailablePayPoints() {
+  return Math.max(0, Number(getDisplayedTotal() || 0));
+}
+
+function setPayStatus(message) {
+  if ($payStatus) $payStatus.textContent = message || "";
+}
+
+function setPayRotated(isRotated) {
+  if (!$payRotator) return;
+  $payRotator.classList.toggle("is-rotated", !!isRotated);
+  syncPayButtons();
+}
+
+function setPayAmount(nextValue) {
+  const safeValue = Math.max(0, Math.min(MAX_PAY_AMOUNT, Number(nextValue || 0)));
+  payAmount = Number.isFinite(safeValue) ? Math.floor(safeValue) : 0;
+  if ($payAmount) $payAmount.textContent = formatPayAmount(payAmount);
+  if ($payConfirmAmount) $payConfirmAmount.textContent = formatPayAmount(payAmount);
+  syncPayButtons();
+}
+
+function updatePayAvailable() {
+  if ($payAvailable) $payAvailable.textContent = formatPayAmount(getAvailablePayPoints());
+  syncPayButtons();
+}
+
+function syncPayButtons() {
+  const rotated = !!($payRotator && $payRotator.classList.contains("is-rotated"));
+  const available = getAvailablePayPoints();
+  const canConfirm = payAmount > 0 && payAmount <= available && !payBusy;
+
+  if ($payConfirmBtn) $payConfirmBtn.disabled = rotated || !canConfirm;
+  if ($payBackBtn) $payBackBtn.disabled = !rotated || payBusy;
+  if ($payCommitBtn) $payCommitBtn.disabled = !rotated || payBusy || !canConfirm;
+
+  if ($payKeypad) {
+    $payKeypad.querySelectorAll("button").forEach((btn) => {
+      btn.disabled = rotated || payBusy;
+    });
+  }
+}
+
+function applyPayKey(key) {
+  if (payBusy) return;
+  if (key === "clear") {
+    setPayAmount(0);
+    return;
+  }
+  if (key === "back") {
+    setPayAmount(Math.floor(payAmount / 10));
+    return;
+  }
+  const digit = Number(key);
+  if (!Number.isFinite(digit)) return;
+  setPayAmount((payAmount * 10) + digit);
+}
+
+async function handlePayConfirm() {
+  if (payBusy) return;
+  if (!currentUser?.id) {
+    showModalMessage("決済", "ログインが必要です。");
+    try { openAuthModal(); } catch {}
+    return;
+  }
+  if (payAmount <= 0) {
+    showModalMessage("決済", "金額を入力してください。");
+    return;
+  }
+  if (payAmount > getAvailablePayPoints()) {
+    showModalMessage("決済", "ポイントが不足しています。");
+    return;
+  }
+  setPayStatus("店員さん側で確認してください。");
+  setPayRotated(true);
+}
+
+async function handlePayCommit() {
+  if (payBusy || payAmount <= 0) return;
+  if (!currentUser?.id) {
+    showModalMessage("決済", "ログインが必要です。");
+    return;
+  }
+
+  payBusy = true;
+  syncPayButtons();
+  setPayStatus("決済処理中...");
+
+  try {
+    const res = await fetch("/api/pay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id, amount: payAmount }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      showModalMessage("決済", data.error || "決済に失敗しました。");
+      setPayStatus(data.error || "決済に失敗しました。");
+      return;
+    }
+
+    currentUser.points = Number(data.points || 0);
+    persistCurrentUser();
+    updateOOP();
+    setPayAmount(0);
+    setPayStatus("決済が完了しました。");
+    setPayRotated(false);
+  } catch (err) {
+    showModalMessage("決済", "通信に失敗しました。");
+    setPayStatus("通信に失敗しました。");
+  } finally {
+    payBusy = false;
+    syncPayButtons();
+  }
+}
+
+function initPayUI() {
+  if ($payKeypad) {
+    $payKeypad.querySelectorAll("[data-paykey]").forEach((btn) => {
+      btn.addEventListener("click", () => applyPayKey(btn.dataset.paykey));
+    });
+  }
+  if ($payConfirmBtn) $payConfirmBtn.addEventListener("click", handlePayConfirm);
+  if ($payBackBtn) $payBackBtn.addEventListener("click", () => {
+    setPayRotated(false);
+    setPayStatus("");
+  });
+  if ($payCommitBtn) $payCommitBtn.addEventListener("click", handlePayCommit);
+
+  setPayAmount(0);
+  updatePayAvailable();
+  setPayRotated(false);
+  setPayStatus("");
 }
 
 function spawnPointsFloat(amount) {
@@ -795,6 +966,7 @@ async function startScan() {
 
 // ================== Modal ==================
 let modalResolve = null;
+let modalBlurActive = false;
 
 function openModal(custom) {
   if (custom) {
@@ -805,15 +977,20 @@ function openModal(custom) {
     } else {
       $modalBody.textContent = custom.body;
     }
+    modalBlurActive = !!custom.blur;
   } else {
     syncChipsModalContent();
+    modalBlurActive = false;
   }
+  if ($app) $app.classList.toggle("is-modal-blur", modalBlurActive);
   $modal.classList.add("is-open");
   $modal.setAttribute("aria-hidden", "false");
 }
 function closeModal(result) {
   $modal.classList.remove("is-open");
   $modal.setAttribute("aria-hidden", "true");
+  modalBlurActive = false;
+  if ($app) $app.classList.remove("is-modal-blur");
   if (modalResolve) {
     const resolve = modalResolve;
     modalResolve = null;
@@ -859,6 +1036,117 @@ function setPage(name) {
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("is-active", btn.dataset.target === name);
   });
+  if (name === "pay") updatePayAvailable();
+  if (name !== "pay") setPayRotated(false);
+}
+
+// ================== Site info overlay ==================
+let siteInfoOpen = false;
+const LS_SITEINFO_SEEN = "nfc_siteinfo_seen";
+let siteInfoLocked = false;
+let siteInfoForced = false;
+let siteInfoAuthChoice = false;
+let siteInfoAuthMode = "login";
+
+function openSiteInfo(options) {
+  if (!$siteInfoOverlay || !$app) return;
+  siteInfoOpen = true;
+  siteInfoForced = !!(options && options.forced);
+  siteInfoLocked = siteInfoForced || !!(options && options.locked);
+  siteInfoAuthChoice = false;
+  siteInfoAuthMode = "login";
+  $siteInfoOverlay.classList.add("is-open");
+  $siteInfoOverlay.classList.toggle("is-forced", siteInfoForced);
+  $siteInfoOverlay.classList.toggle("is-auth-choice", siteInfoAuthChoice);
+  $siteInfoOverlay.classList.remove("is-auth-form");
+  if ($siteInfoFormError) $siteInfoFormError.textContent = "";
+  $siteInfoOverlay.setAttribute("aria-hidden", "false");
+  $app.classList.add("is-siteinfo-open");
+}
+
+function closeSiteInfo() {
+  if (!$siteInfoOverlay || !$app) return;
+  siteInfoOpen = false;
+  siteInfoLocked = false;
+  siteInfoForced = false;
+  siteInfoAuthChoice = false;
+  siteInfoAuthMode = "login";
+  $siteInfoOverlay.classList.remove("is-open");
+  $siteInfoOverlay.classList.remove("is-forced");
+  $siteInfoOverlay.classList.remove("is-auth-choice");
+  $siteInfoOverlay.classList.remove("is-auth-form");
+  $siteInfoOverlay.setAttribute("aria-hidden", "true");
+  $app.classList.remove("is-siteinfo-open");
+  localStorage.setItem(LS_SITEINFO_SEEN, "1");
+}
+
+function showSiteInfoAuthChoice() {
+  if (!$siteInfoOverlay) return;
+  siteInfoAuthChoice = true;
+  $siteInfoOverlay.classList.add("is-auth-choice");
+  $siteInfoOverlay.classList.remove("is-auth-form");
+}
+
+function setSiteInfoError(message) {
+  if ($siteInfoFormError) $siteInfoFormError.textContent = message || "";
+}
+
+function updateSiteInfoToggleText() {
+  if (!$siteInfoToggleLink) return;
+  $siteInfoToggleLink.textContent =
+    siteInfoAuthMode === "signup" ? "ログインの場合はこちら" : "会員登録の場合はこちら";
+}
+
+function showSiteInfoForm(mode) {
+  if (!$siteInfoOverlay) return;
+  siteInfoAuthMode = mode === "signup" ? "signup" : "login";
+  $siteInfoOverlay.classList.add("is-auth-form");
+  $siteInfoOverlay.classList.remove("is-auth-choice");
+  if ($siteInfoFormTitle) $siteInfoFormTitle.textContent = siteInfoAuthMode === "signup" ? "会員登録" : "ログイン";
+  if ($siteInfoSubmitBtn) $siteInfoSubmitBtn.textContent = siteInfoAuthMode === "signup" ? "会員登録" : "ログイン";
+  updateSiteInfoToggleText();
+  setSiteInfoError("");
+  if ($siteInfoPassword) $siteInfoPassword.value = "";
+  if ($siteInfoUsername) $siteInfoUsername.focus();
+}
+
+async function handleSiteInfoAuth() {
+  const username = $siteInfoUsername?.value?.trim();
+  const password = $siteInfoPassword?.value || "";
+  if (!username || !password) {
+    setSiteInfoError("ユーザー名とパスワードを入力してください。");
+    return;
+  }
+
+  const endpoint = siteInfoAuthMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setSiteInfoError(data?.error || "認証に失敗しました。");
+      return;
+    }
+
+    currentUser = data;
+    localStorage.setItem("user", JSON.stringify(data));
+    localStorage.setItem(LS_SITEINFO_SEEN, "1");
+    updateUIForLoggedInUser();
+    closeSiteInfo();
+    await syncFromDB();
+    updateOOP();
+  } catch {
+    setSiteInfoError("通信に失敗しました。");
+  }
+}
+
+function toggleSiteInfo() {
+  if (siteInfoForced) return;
+  if (siteInfoOpen) closeSiteInfo();
+  else openSiteInfo({ locked: false, forced: false });
 }
 
 // ================== Liquid Glass interaction（UIのみ）  ==================
@@ -1091,7 +1379,7 @@ async function simulateTouch(uid){
   const owned = isStampOwnedByUid(uid);
   const variant = owned ? "owned" : "new";
   try{ await showStampAni(STAMP_ANI_DURATION, variant); }catch(e){}
-  await waitAfterStampAni(variant);
+  await waitAfterStampAni(variant, { debug: true });
   applyUid(uid);
 }
 
@@ -1275,7 +1563,7 @@ function updateGoldenUI(){
 }
 
 function availablePoints(){
-  return calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  return getDisplayedTotal();
 }
 
 async function unlockGolden(){
@@ -1396,6 +1684,41 @@ if ($oopInfo) {
     });
   });
 }
+$siteInfoTrigger?.addEventListener("click", () => {
+  toggleSiteInfo();
+});
+$siteInfoTrigger?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  e.preventDefault();
+  toggleSiteInfo();
+});
+$siteInfoOverlay?.addEventListener("click", () => {
+  if (siteInfoLocked) return;
+  closeSiteInfo();
+});
+$siteInfoStartBtn?.addEventListener("click", () => {
+  if (currentUser?.id) {
+    closeSiteInfo();
+    return;
+  }
+  showSiteInfoAuthChoice();
+});
+$siteInfoLoginBtn?.addEventListener("click", () => {
+  showSiteInfoForm("login");
+});
+$siteInfoSignupBtn?.addEventListener("click", () => {
+  showSiteInfoForm("signup");
+});
+$siteInfoToggleLink?.addEventListener("click", () => {
+  showSiteInfoForm(siteInfoAuthMode === "signup" ? "login" : "signup");
+});
+$siteInfoSubmitBtn?.addEventListener("click", handleSiteInfoAuth);
+$siteInfoPassword?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleSiteInfoAuth();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !siteInfoLocked) closeSiteInfo();
+});
 $modal.addEventListener("click", (e) => {
   const t = e.target;
   if (t && t.dataset && t.dataset.close) closeModal();
@@ -1425,12 +1748,18 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   // デバッグUIはデスクトップ向けに初期化
   initDebugUI();
   initKiran();
+  initPayUI();
   // golden 初期化
   applyGoldenClass();
   updateGoldenUI();
   if(goldenActive) startGoldenSparks();
   updateOOP();
   consumeTokenFromUrlAndPending();
+  if (!currentUser?.id) {
+    openSiteInfo({ locked: true, forced: true });
+  } else if (!localStorage.getItem(LS_SITEINFO_SEEN)) {
+    openSiteInfo({ locked: false, forced: false });
+  }
 
 })();
 
@@ -1532,6 +1861,7 @@ function openAuthModal() {
 
 function closeAuthModal() {
   if (!authModal) return;
+  if (!currentUser?.id) return;
   authModal.classList.remove('is-open');
   authModal.setAttribute('aria-hidden', 'true');
   showAuthChoice();
@@ -1564,9 +1894,11 @@ async function handleAuth() {
     const user = await res.json();
     currentUser = user;
     localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem(LS_SITEINFO_SEEN, "1");
 
     updateUIForLoggedInUser();
     closeAuthModal();
+    closeSiteInfo();
 
     await syncFromDB(); // ← ここで stamps と points が揃う
 
