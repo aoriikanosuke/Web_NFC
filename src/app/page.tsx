@@ -88,7 +88,10 @@ export default function Home(props: { searchParams: SearchParams }) {
                   <h2 className="page-title">プロフィール</h2>
                   <div id="user-info" style={{ display: 'none' }}>
                     <p>ようこそ、<span id="display-username"></span>さん</p>
-                    <button className="chips-btn glass" type="button" id="logout-btn-manual">ログアウト</button>
+                    <button className="chips-btn glass" type="button"   onClick={() => {
+    localStorage.removeItem("user");
+    location.reload();
+  }} id="logout-btn-manual">ログアウト</button>
                   </div>
                   <button id="auth-trigger-btn" className="chips-btn glass" type="button">ログイン/会員登録</button>
                   <button className="danger" type="button" id="resetBtn2">進捗リセット</button>
