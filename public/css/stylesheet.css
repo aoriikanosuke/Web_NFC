@@ -1,5 +1,6 @@
 :root{
-background: linear-gradient(-45deg, #d8e6f6 0%, #a9c9ee 30%, #6ea9e2 62%, #2f73c7 100%);
+  --app-bg: linear-gradient(-45deg, #d8e6f6 0%, #a9c9ee 30%, #6ea9e2 62%, #2f73c7 100%);
+  background: var(--app-bg);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
   height: 100vh;
@@ -30,9 +31,40 @@ background: linear-gradient(-45deg, #d8e6f6 0%, #a9c9ee 30%, #6ea9e2 62%, #2f73c
 /* 縦スクロール不可（スマホ比率前提） */
 html, body{
   height:100%;
+  min-height: 100dvh;
   margin:0;
   overflow:hidden;
   font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  -webkit-text-size-adjust: 100%;
+  background: var(--app-bg);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+input, textarea, select{
+  font-size: 16px;
+}
+body{
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+.bg-layer{
+  position: fixed;
+  inset: 0;
+  background: var(--app-bg);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+.device{
+  position: relative;
+  z-index: 1;
+}
+input, textarea, [contenteditable="true"]{
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ====== スマホ枠プレビュー（PCだけON） ====== */
@@ -46,7 +78,9 @@ html, body{
   min-height: 100dvh;
   min-width: 100vw;
   display:block;
-  background: transparent;
+  background: var(--app-bg);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
 }
 
 /* HTMLに .phone を入れるのが前提（PCで中央にスマホ表示するため） */
@@ -412,7 +446,7 @@ html, body{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
 }
 
 .page{
@@ -715,16 +749,16 @@ html, body{
   margin-bottom: 0;
 }
 
-@media (max-height: 820px){
+@media (max-height: 740px){
   .main{
-    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(20px + env(safe-area-inset-bottom));
+    bottom: calc(6px + env(safe-area-inset-bottom));
     height: 58px;
   }
   .bottom-nav .nav-btn{
@@ -836,15 +870,12 @@ html, body{
 }
 
 /* ===== Modal ===== */
-.modal{ position: fixed; inset:0; display:none; z-index:50; }
-.modal.is-open{ display:block; }
+.modal{ position: fixed; inset:0; display:none; z-index:50; align-items:center; justify-content:center; }
+.modal.is-open{ display:flex; }
 .modal-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.35); }
 
 .modal-panel{
-  position:absolute;
-  left:50%;
-  top:56%;
-  transform: translate(-50%,-50%);
+  position:relative;
   width: min(520px, calc(100% - 36px));
   border-radius: 18px;
   color:#0b1c2a;
@@ -897,6 +928,7 @@ html, body{
   border-radius: 12px;
   color: #0b1c2a;
   border: 1px solid rgba(0,0,0,0.1);
+  font-size: 16px;
   box-sizing: border-box; /* はみ出し防止 */
 }
 .auth-actions {
@@ -1435,7 +1467,7 @@ html, body{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
 }
 
 .page{
@@ -1720,16 +1752,16 @@ html, body{
   margin-bottom: 0;
 }
 
-@media (max-height: 820px){
+@media (max-height: 740px){
   .main{
-    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(20px + env(safe-area-inset-bottom));
+    bottom: calc(6px + env(safe-area-inset-bottom));
     height: 58px;
   }
   .bottom-nav .nav-btn{
@@ -1846,15 +1878,12 @@ html, body{
 }
 
 /* ===== Modal ===== */
-.modal{ position: fixed; inset:0; display:none; z-index:50; }
-.modal.is-open{ display:block; }
+.modal{ position: fixed; inset:0; display:none; z-index:50; align-items:center; justify-content:center; }
+.modal.is-open{ display:flex; }
 .modal-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.35); }
 
 .modal-panel{
-  position:absolute;
-  left:50%;
-  top:56%;
-  transform: translate(-50%,-50%);
+  position:relative;
   width: min(520px, calc(100% - 36px));
   border-radius: 18px;
   color:#0b1c2a;
@@ -2124,25 +2153,6 @@ html, body{
   z-index: 1;
 }
 
-@media (max-width: 899px){
-  .header{
-    margin-top: 6px;
-    padding-bottom: 4px;
-  }
-  #page-stamp{
-    justify-content: flex-start;
-    padding-top: 0;
-    gap: 6px;
-    align-items: center;
-  }
-  #page-stamp .stamp-card{
-    margin-top: 0;
-    margin-left: auto;
-    margin-right: auto;
-    width: min(100%, 680px);
-  }
-}
-
 /* ===== Stamp sprite overlay ===== */
 .stamp-ani{
   position: absolute;
@@ -2171,6 +2181,10 @@ html, body{
 .stamp-ani.is-show::before{
   opacity: 1;
 }
+.stamp-ani.is-flyout::before{
+  opacity: 0;
+  transition-duration: 60ms;
+}
 .stamp-ani-sprite{
   width: min(60%, 220px);
   max-height: 80vh;
@@ -2182,6 +2196,7 @@ html, body{
   background-position: 0% 0%;
   filter: drop-shadow(0 16px 42px rgba(0,0,0,.35));
   transform: translateZ(0);
+  transform-origin: 50% 50%;
   opacity: 0.95;
   animation: stamp-ani-fade var(--stamp-ani-duration, 700ms) ease-in-out;
   animation-fill-mode: both;

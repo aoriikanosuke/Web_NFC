@@ -3,10 +3,10 @@
 const DEFAULT_STAMPS = [
   { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/computer_tokui_boy.png", flag: false, points: 10, location: "本部前：入口付近" },
   { id: 2, name: "体育館",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/school_taiikukan2.png",     flag: false, points: 10, location: "体育館：正面入口" },
-  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 15, location: "図書館：受付横" },
-  { id: 4, name: "中庭",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 15, location: "中庭：ベンチ付近" },
-  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 0,  location: "決済：100コイン" },
-  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 0,  location: "決済：200コイン" },
+  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/tosyokan_shisyo_man.png",               flag: false, points: 15, location: "図書館：受付横" },
+  { id: 4, name: "中庭",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/gardening.png",               flag: false, points: 15, location: "中庭：ベンチ付近" },
+  { id: 5, name: "100コイン決済", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/money_tokeru_dollar.png",               flag: false, points: 0,  location: "決済：100コイン" },
+  { id: 6, name: "200コイン決済", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/money_fueru_dollar.png",               flag: false, points: 0,  location: "決済：200コイン" },
 ];
 
 
@@ -14,11 +14,26 @@ const LS_KEY = "nfc_stamps_v2_images";
 const LS_PENDING_TOKEN = "pending_nfc_token";
 const LS_PENDING_PROGRESS = "pending_stamp_progress";
 const LS_OPEN_AUTH = "open_auth_modal";
+const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
+const LS_PENDING_BROADCAST_ACK = "pending_nfc_broadcast_ack";
+const LS_TAB_ID = "nfc_tab_id";
 
 let stamps = loadStamps();
 let currentIndex = 0;
 let $track = null;
 let swipeBound = false;
+const TAB_ID = (() => {
+  const existing = sessionStorage.getItem(LS_TAB_ID);
+  if (existing) return existing;
+  const next = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  sessionStorage.setItem(LS_TAB_ID, next);
+  return next;
+})();
+
+const BROADCAST_NAME = "nfc_token_channel";
+const bc = ("BroadcastChannel" in window) ? new BroadcastChannel(BROADCAST_NAME) : null;
+let pendingBroadcastAck = null;
+const handledBroadcasts = new Map();
 
 // DOM
 const $oopValue = document.getElementById("oopValue");
@@ -35,14 +50,27 @@ const $modalBody = document.getElementById("modalBody");
 // Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
 const STAMP_ANI_DURATION = 2100;
+const STAMP_ANI_DURATION_UID = 0;
 const STAMP_ANI_HOLD = 600;
 const STAMP_ANI_TAIL_HOLD = 400;
 const STAMP_ANI_START_DELAY = 200;
+const STAMP_ANI3_STOP_FRAME = 6;
+const STAMP_ANI3_FLYOUT_MS = 8000;
+const STAMP_ANI_FADE_ANIM = 'stamp-ani-fade var(--stamp-ani-duration, 700ms) ease-in-out both';
+const STAMP_ANI_HIDE_DELAY_MS = 180;
 let stampAniEl = null;
 let stampAniSprite = null;
 let stampAniRaf = 0;
 let stampAniResolve = null;
 let stampAniTimer = 0;
+let stampAniFlyout = null;
+const STAMP_ANI_END_DELAY = 2100;
+const STAMP_ANI_END_DELAY_OWNED = 0;
+
+function waitAfterStampAni(variant){
+  const delay = variant === 'owned' ? STAMP_ANI_END_DELAY_OWNED : STAMP_ANI_END_DELAY;
+  return new Promise(resolve => setTimeout(resolve, delay));
+}
 
 // ================== 永続化（維持） ==================
 function loadStamps() {
@@ -257,6 +285,17 @@ function render() {
   stamps.forEach(s => { if (s.justStamped) s.justStamped = false; });
 }
 
+function preloadStampImages() {
+  const urls = Array.from(new Set(DEFAULT_STAMPS.map(s => s.image).filter(Boolean)));
+  urls.forEach((src) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = src;
+    if (img.decode) img.decode().catch(() => {});
+  });
+}
+
 function updateSlidePosition(withAnim) {
   if (!$track) return;
   $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
@@ -322,7 +361,7 @@ function isStampOwnedByUid(uid) {
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
 // 2) URLから t が消えることを確認（再読み込みで二重取得しない）
 // 3) 不正な token は console に warning を出し、pending に保存
-function applyToken(token) {
+async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
   const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
@@ -331,11 +370,101 @@ function applyToken(token) {
     console.warn("NFC token not found:", t);
     return false;
   }
+  const owned = isStampOwnedByUid(hit.uid);
+  try { showNfcRipple(); } catch {}
+  const variant = owned ? "owned" : "new";
+  try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
+  await waitAfterStampAni(variant);
   applyUid(hit.uid);
   return true;
 }
 
-function consumeTokenFromUrlAndPending() {
+function isDuplicateBroadcast(from, token) {
+  const key = `${from}|${token}`;
+  const now = Date.now();
+  const prev = handledBroadcasts.get(key);
+  if (prev && (now - prev) < 3000) return true;
+  handledBroadcasts.set(key, now);
+  return false;
+}
+
+async function handleIncomingBroadcastToken(token) {
+  const applied = await applyToken(token);
+  if (applied) {
+    localStorage.removeItem(LS_PENDING_TOKEN);
+  } else {
+    localStorage.setItem(LS_PENDING_TOKEN, token);
+  }
+}
+
+function waitForBroadcastAck(token) {
+  return new Promise(resolve => {
+    const timeout = setTimeout(() => {
+      pendingBroadcastAck = null;
+      resolve(false);
+    }, 450);
+
+    pendingBroadcastAck = (data) => {
+      if (!data || data.to !== TAB_ID || data.token !== token) return;
+      clearTimeout(timeout);
+      pendingBroadcastAck = null;
+      resolve(true);
+    };
+  });
+}
+
+function broadcastTokenToOtherTabs(token) {
+  const payload = { type: "nfc-token", token, from: TAB_ID, ts: Date.now() };
+  try {
+    if (bc) bc.postMessage(payload);
+  } catch {}
+  try { localStorage.setItem(LS_PENDING_BROADCAST, JSON.stringify(payload)); } catch {}
+  return waitForBroadcastAck(token);
+}
+
+function initBroadcastListeners() {
+  if (bc) {
+    bc.addEventListener("message", async (event) => {
+      const data = event && event.data;
+      if (!data || !data.type) return;
+      if (data.type === "nfc-token") {
+        if (!data.token || data.from === TAB_ID) return;
+        if (isDuplicateBroadcast(data.from, data.token)) return;
+        await handleIncomingBroadcastToken(data.token);
+        try { bc.postMessage({ type: "nfc-token-ack", to: data.from, from: TAB_ID, token: data.token }); } catch {}
+      }
+      if (data.type === "nfc-token-ack" && pendingBroadcastAck) {
+        pendingBroadcastAck(data);
+      }
+    });
+  }
+
+  window.addEventListener("storage", async (event) => {
+    if (event.key === LS_PENDING_BROADCAST && event.newValue) {
+      try {
+        const data = JSON.parse(event.newValue);
+        if (!data || !data.token || data.from === TAB_ID) return;
+        if (isDuplicateBroadcast(data.from, data.token)) return;
+        await handleIncomingBroadcastToken(data.token);
+        localStorage.setItem(LS_PENDING_BROADCAST_ACK, JSON.stringify({
+          to: data.from,
+          from: TAB_ID,
+          token: data.token,
+          ts: Date.now()
+        }));
+      } catch {}
+      return;
+    }
+    if (event.key === LS_PENDING_BROADCAST_ACK && event.newValue && pendingBroadcastAck) {
+      try {
+        const data = JSON.parse(event.newValue);
+        pendingBroadcastAck(data);
+      } catch {}
+    }
+  });
+}
+
+async function consumeTokenFromUrlAndPending() {
   let processedToken = "";
   let targetWindow = window;
   let url = new URL(window.location.href);
@@ -357,12 +486,17 @@ function consumeTokenFromUrlAndPending() {
 
   if (t) {
     processedToken = t;
-    const applied = applyToken(t);
-    if (applied) {
-      localStorage.removeItem(LS_PENDING_TOKEN);
-    } else {
-      localStorage.setItem(LS_PENDING_TOKEN, t);
-    }
+    const transferred = await broadcastTokenToOtherTabs(t);
+    if (transferred) {
+      url.searchParams.delete("t");
+    const next = url.searchParams.toString();
+    const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
+    try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
+    return;
+  }
+    const applied = await applyToken(t);
+    if (applied) localStorage.removeItem(LS_PENDING_TOKEN);
+    else localStorage.setItem(LS_PENDING_TOKEN, t);
     url.searchParams.delete("t");
     const next = url.searchParams.toString();
     const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
@@ -371,7 +505,7 @@ function consumeTokenFromUrlAndPending() {
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
   if (pending && pending !== processedToken) {
-    if (applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
+    if (await applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
   }
 }
 
@@ -401,8 +535,9 @@ function applyStampProgress(progress) {
 // 2) /tap?t=TESTTOKEN (logged-out) -> pending token stored -> login -> auto redeem
 // 3) Same token twice -> no extra points
 // 4) Android UID scan still works
-async function redeemToken(token) {
+async function redeemToken(token, options) {
   if (!token) return { ok: false };
+  const deferApply = !!(options && options.deferApply);
   const userRaw = localStorage.getItem("user");
   if (!userRaw) {
     localStorage.setItem(LS_PENDING_TOKEN, token);
@@ -438,12 +573,13 @@ async function redeemToken(token) {
       localStorage.setItem("user", JSON.stringify(current));
     } catch {}
 
-    if (Array.isArray(data.stamp_progress)) {
-      applyStampProgress(data.stamp_progress);
+    const stampProgress = Array.isArray(data.stamp_progress) ? data.stamp_progress : null;
+    if (stampProgress && !deferApply) {
+      applyStampProgress(stampProgress);
     }
     localStorage.removeItem(LS_PENDING_TOKEN);
     localStorage.removeItem(LS_PENDING_PROGRESS);
-    return { ok: true, alreadyOwned: !!data.alreadyOwned };
+    return { ok: true, alreadyOwned: !!data.alreadyOwned, stampProgress, points: data.points };
   } catch (err) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
@@ -559,71 +695,100 @@ function bindWheelSwipe() {
 
 // ================== Web NFC（維持） ==================
 async function startScan() {
-  // 1. まず対応確認
+  // 1. Web NFC 対応確認
   if (!("NDEFReader" in window)) {
-    alert("このブラウザは Web NFC に対応していません。"); // ここは確実に動くalertを推奨
+    alert("このブラウザは Web NFC に対応していません。HTTPS環境またはAndroid Chromeを使用してください。");
     return;
   }
 
   try {
-    // 2. モーダル（独自UI）は scan() を呼ぶ「前」に表示する
-    // これにより、システムプロンプトと自作モーダルが衝突するのを防ぎます
+    // 2. モーダルを scan() の「前」に表示（Androidのシステムプロンプトとの衝突を回避）
     try {
-      showModalMessage("NFC", "スキャンを開始します。タグをかざしてください。");
+      showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     } catch (e) {
-      console.warn("showModalMessage failed, using toast instead.");
+      console.warn("showModalMessage failed:", e);
     }
 
     const reader = new NDEFReader();
     
-    // 3. scan() を実行（ここでAndroidのシステムプロンプトが出る）
+    // 3. スキャン開始（ここでAndroid標準のプロンプトが出る）
     await reader.scan(); 
-    
-    toast("NFCスキャンを開始しました。");
+    toast("NFCスキャン準備完了");
 
+    // 4. 読み取りイベント（1つに集約）
     reader.onreading = async (event) => {
-      // --- 読み取り処理（変更なしでOKですが安全策を追加） ---
+      console.log("NFCタグ検知:", event.serialNumber);
+      
       let token = "";
+      
+      // --- A. トークン（書き込まれたデータ）の取得試行 ---
       if (event.message && event.message.records) {
         for (const record of event.message.records) {
-          // extractTokenFromRecord が確実に存在することを確認してください
           const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
           if (!text) continue;
           try {
             const url = new URL(text);
             const t = url.searchParams.get("t");
             if (t) { token = t; break; }
-          } catch {}
+          } catch (e) { /* URLでない場合は無視 */ }
         }
       }
 
+      // ビジュアル波紋エフェクト
       try { showNfcRipple(); } catch (e) {}
 
+      // --- B. 判定ロジック ---
       if (token) {
-        const result = await redeemToken(token);
+        // トークンが見つかった場合
+        console.log("トークンを検出:", token);
+        const result = await redeemToken(token, { deferApply: true });
+        
         if (result && result.ok) {
           const owned = result.alreadyOwned === true;
-          try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) {}
+          const variant = owned ? "owned" : "new";
+          
+          try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) {}
+          
+          // アニメーション完了を待ってから画面更新
+          if (typeof waitAfterStampAni === "function") await waitAfterStampAni(variant);
+          
+          if (Array.isArray(result.stampProgress)) {
+            applyStampProgress(result.stampProgress);
+          }
         }
-        return;
+      } else {
+        // トークンがない場合は UID（製造番号）方式へ切り替え
+        const uid = event.serialNumber || "";
+        if (!uid) {
+          toast("IDを取得できませんでした。");
+          return;
+        }
+        
+        console.log("UIDを使用:", uid);
+        const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
+        
+        // UID用の定数がない場合は通常のDURATIONを使用
+        const duration = typeof STAMP_ANI_DURATION_UID !== 'undefined' ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
+        
+        try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
+        
+        // 既存のUID適用関数を実行
+        applyUid(uid);
       }
-
-      const uid = event.serialNumber || "";
-      if (!uid) { toast("UIDが取得できませんでした。"); return; }
-      
-      const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
-      try { await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); } catch (e) {}
-      
-      console.log("NFC UID:", uid);
-      applyUid(uid);
     };
 
-    reader.onreadingerror = () => toast("読み取りに失敗しました。再度タッチしてください。");
+    reader.onreadingerror = () => {
+      toast("読み取りに失敗しました。タグを動かさずにかざしてください。");
+    };
 
   } catch (err) {
-    console.error("NFC Error Details:", err);
-    // エラーが出た場合は標準のalertで内容を表示して原因を切り分ける
-    alert(`エラー: ${err.name} - ${err.message}`);
+    console.error("NFC Error:", err);
+    // ユーザーに原因を伝えるための詳細なアラート
+    if (err.name === 'NotAllowedError') {
+      alert("NFCの実行権限が拒否されました。ブラウザの設定を確認してください。");
+    } else {
+      alert(`NFCを開始できませんでした: ${err.message}`);
+    }
   }
 }
 
@@ -764,6 +929,7 @@ function playStampAni(durationMs){
     if(!stampAniEl || !stampAniSprite) { resolve(); return; }
     const duration = Math.max(0, Number(durationMs) || 0);
     if(duration <= 0){ resolve(); return; }
+    const isOwned = stampAniEl.dataset.variant === 'owned';
     const hold = Math.max(0, Number(STAMP_ANI_HOLD) || 0);
     const tailHold = Math.max(0, Number(STAMP_ANI_TAIL_HOLD) || 0);
 
@@ -773,44 +939,132 @@ function playStampAni(durationMs){
     if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
     if(stampAniTimer) clearTimeout(stampAniTimer);
     if(stampAniResolve){ stampAniResolve(); }
+    if(stampAniFlyout){
+      stampAniFlyout.cancel();
+      stampAniFlyout = null;
+    }
+    stampAniEl.style.visibility = 'hidden';
+    stampAniEl.classList.remove('is-show');
+    stampAniEl.classList.remove('is-flyout');
+    stampAniSprite.style.visibility = 'hidden';
+    stampAniSprite.style.opacity = '0';
+    stampAniSprite.style.transform = '';
     stampAniResolve = resolve;
 
     const startDelay = Math.max(0, Number(STAMP_ANI_START_DELAY) || 0);
     const begin = () => {
       const start = performance.now();
+      if (stampAniSprite.getAnimations) {
+        stampAniSprite.getAnimations().forEach(a => a.cancel());
+      }
       stampAniEl.style.setProperty('--stamp-ani-duration', `${duration}ms`);
-      stampAniEl.classList.add('is-show');
+      stampAniEl.style.visibility = 'hidden';
+      stampAniEl.classList.remove('is-flyout');
       stampAniSprite.style.backgroundPosition = '0% 0%';
       stampAniSprite.style.animation = 'none';
+      stampAniSprite.style.transform = '';
+      stampAniSprite.style.opacity = '0';
+      stampAniSprite.style.visibility = 'hidden';
       void stampAniSprite.offsetWidth;
-      stampAniSprite.style.animation = '';
+
+      let frameShown = false;
+      let flyoutStarted = false;
+      const startFlyout = () => {
+        if(flyoutStarted) return;
+        flyoutStarted = true;
+        if(stampAniRaf) cancelAnimationFrame(stampAniRaf);
+        stampAniRaf = 0;
+        if(stampAniFlyout) stampAniFlyout.cancel();
+        if(!stampAniSprite.animate){
+          stampAniSprite.style.opacity = '0';
+          stampAniEl.classList.remove('is-show');
+          stampAniEl.classList.remove('is-flyout');
+          setTimeout(() => {
+            stampAniSprite.style.transform = '';
+            stampAniSprite.style.opacity = '';
+          }, STAMP_ANI_HIDE_DELAY_MS);
+          const done = stampAniResolve;
+          stampAniResolve = null;
+          if(done) done();
+          return;
+        }
+        stampAniEl.classList.add('is-flyout');
+        const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+        const endX = (isMobile ? 1.6 : 0.7) * window.innerWidth;
+        const endY = -0.28 * window.innerHeight;
+        stampAniFlyout = stampAniSprite.animate([
+          { transform: 'translateZ(0) rotate(0deg)', opacity: 1 },
+          { transform: `translate(${endX}px, ${endY}px) rotate(720deg)`, opacity: 0 }
+        ], { duration: STAMP_ANI3_FLYOUT_MS, easing: 'cubic-bezier(.12,.6,.2,1)', fill: 'forwards' });
+        stampAniFlyout.addEventListener('finish', () => {
+          stampAniSprite.style.opacity = '0';
+          stampAniEl.classList.remove('is-show');
+          stampAniEl.classList.remove('is-flyout');
+          setTimeout(() => {
+            stampAniSprite.style.transform = '';
+            stampAniSprite.style.opacity = '';
+          }, STAMP_ANI_HIDE_DELAY_MS);
+          stampAniFlyout = null;
+          const done = stampAniResolve;
+          stampAniResolve = null;
+          if(done) done();
+        }, { once: true });
+      };
 
       const step = (now) => {
         const elapsed = now - start;
         const activeDuration = Math.max(1, (duration - hold - tailHold));
+        const perFrame = activeDuration / Math.max(1, (frames - 1));
         let idx = 0;
         if (elapsed < hold) {
           idx = 0;
         } else if (elapsed < (hold + activeDuration)) {
           const t = Math.min(1, Math.max(0, (elapsed - hold) / activeDuration));
-          idx = Math.min(frames - 1, Math.floor(t * frames));
+          if(isOwned){
+            idx = Math.min(STAMP_ANI3_STOP_FRAME, Math.floor((elapsed - hold) / perFrame));
+          }else{
+            idx = Math.min(frames - 1, Math.floor(t * frames));
+          }
         } else {
-          idx = frames - 1;
+          idx = isOwned ? Math.min(STAMP_ANI3_STOP_FRAME, frames - 1) : (frames - 1);
         }
         const col = idx % cols;
         const row = Math.floor(idx / cols);
         const x = cols > 1 ? (col / (cols - 1)) * 100 : 0;
         const y = STAMP_ANI.rows > 1 ? (row / (STAMP_ANI.rows - 1)) * 100 : 0;
+        if(!frameShown){
+          frameShown = true;
+          stampAniEl.style.visibility = 'visible';
+          stampAniEl.classList.add('is-show');
+          stampAniSprite.style.visibility = 'visible';
+          if(isOwned){
+            stampAniSprite.style.opacity = '1';
+          }else{
+            stampAniSprite.style.opacity = '';
+            stampAniSprite.style.animation = 'none';
+            void stampAniSprite.offsetWidth;
+            stampAniSprite.style.animation = STAMP_ANI_FADE_ANIM;
+          }
+        }
         stampAniSprite.style.backgroundPosition = `${x}% ${y}%`;
+        if(isOwned){
+          const flyoutAt = hold + (perFrame * (STAMP_ANI3_STOP_FRAME + 1));
+          if(elapsed >= flyoutAt){
+            startFlyout();
+            return;
+          }
+          stampAniRaf = requestAnimationFrame(step);
+          return;
+        }
         if(elapsed < duration){
           stampAniRaf = requestAnimationFrame(step);
-        }else{
-          stampAniEl.classList.remove('is-show');
-          stampAniRaf = 0;
-          const done = stampAniResolve;
-          stampAniResolve = null;
-          if(done) done();
+          return;
         }
+        stampAniEl.classList.remove('is-show');
+        stampAniRaf = 0;
+        const done = stampAniResolve;
+        stampAniResolve = null;
+        if(done) done();
       };
       stampAniRaf = requestAnimationFrame(step);
     };
@@ -834,7 +1088,9 @@ function showStampAni(durationMs, variant){
 async function simulateTouch(uid){
   try{ showNfcRipple(); }catch(e){}
   const owned = isStampOwnedByUid(uid);
-  try{ await showStampAni(STAMP_ANI_DURATION, owned ? "owned" : "new"); }catch(e){}
+  const variant = owned ? "owned" : "new";
+  try{ await showStampAni(STAMP_ANI_DURATION, variant); }catch(e){}
+  await waitAfterStampAni(variant);
   applyUid(uid);
 }
 
@@ -1160,9 +1416,11 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
 // ================== 初期化 ==================
 (function init() {
   setPage("stamp");
+  preloadStampImages();
   render();
   initLiquidGlass();
   initStampAni();
+  initBroadcastListeners();
   // デバッグUIはデスクトップ向けに初期化
   initDebugUI();
   initKiran();
@@ -1214,6 +1472,28 @@ function showAuthForm(nextIsLogin) {
   if (authToggleText) authToggleText.innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
 }
 
+function initZoomGuards() {}
+
+function initAuthEnterShortcuts() {
+  const usernameEl = document.getElementById('auth-username');
+  const passwordEl = document.getElementById('auth-password');
+  if (!usernameEl || !passwordEl) return;
+
+  usernameEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!isLoginMode) return;
+    e.preventDefault();
+    passwordEl.focus();
+  });
+
+  passwordEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!isLoginMode) return;
+    e.preventDefault();
+    handleAuth();
+  });
+}
+
 // 初期化：ログイン状態ならUIを更新
 document.addEventListener('DOMContentLoaded', () => {
   if (currentUser) {
@@ -1237,6 +1517,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try { openAuthModal(); } catch {}
   }
 
+  initAuthEnterShortcuts();
+  initZoomGuards();
   consumeTokenFromUrlAndPending();
 });
 
@@ -1287,7 +1569,7 @@ async function handleAuth() {
 
     await syncFromDB(); // ← ここで stamps と points が揃う
 
-    alert(isLoginMode ? "ログインしました" : "登録が完了しました");
+    showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
   } else {
     const err = await res.json();
     alert(err.error);
