@@ -59,6 +59,11 @@ const $siteInfoPassword = document.getElementById("siteInfoPassword");
 const $siteInfoSubmitBtn = document.getElementById("siteInfoSubmitBtn");
 const $siteInfoToggleLink = document.getElementById("siteInfoToggleLink");
 const $siteInfoFormError = document.getElementById("siteInfoFormError");
+const $completeOverlay = document.getElementById("completeOverlay");
+const $completeBonusBtn = document.getElementById("completeBonusBtn");
+const $rankingBtn = document.getElementById("rankingBtn");
+const $rankingModal = document.getElementById("rankingModal");
+const $rankingList = document.getElementById("rankingList");
 
 // Pay UI
 const $payAmount = document.getElementById("payAmount");
@@ -70,6 +75,9 @@ const $payConfirmBtn = document.getElementById("payConfirmBtn");
 const $payBackBtn = document.getElementById("payBackBtn");
 const $payCommitBtn = document.getElementById("payCommitBtn");
 const $payStatus = document.getElementById("payStatus");
+const $paySuccess = document.getElementById("paySuccess");
+const $paySuccessAmount = document.getElementById("paySuccessAmount");
+const $paySuccessConsumed = document.getElementById("paySuccessConsumed");
 
 // Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
@@ -127,6 +135,7 @@ window.debugPointsOffset = 0;
 const LS_CONSUMED = 'nfc_consumed_points';
 const LS_GOLD_UNLOCK = 'nfc_golden_unlocked';
 const LS_GOLD_ACTIVE = 'nfc_golden_active';
+const LS_BONUS_CLAIMED = "nfc_bonus_claimed";
 let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
 let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
 let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
@@ -189,6 +198,129 @@ function setOOPValue(value) {
   $oopValue.textContent = String(value);
 }
 
+// ================== Ranking ==================
+async function openRankingModal() {
+  if (!$rankingModal || !$rankingList) return;
+  $rankingList.innerHTML = "読み込み中...";
+  $rankingModal.classList.add("is-open");
+  $rankingModal.setAttribute("aria-hidden", "false");
+
+  try {
+    const res = await fetch("/api/ranking");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      $rankingList.textContent = data?.error || "ランキング取得に失敗しました。";
+      return;
+    }
+    const list = Array.isArray(data?.ranking) ? data.ranking : [];
+    if (list.length === 0) {
+      $rankingList.textContent = "ランキングデータがありません。";
+      return;
+    }
+    $rankingList.innerHTML = list.map((row, idx) => {
+      const name = row.username || "user";
+      const points = Number(row.points || 0);
+      const stampCount = Number(row.stamp_count || 0);
+      const iconCount = Math.max(0, Math.min(6, stampCount));
+      const icons = Array.from({ length: 6 }).map((_, i) => {
+        const active = i < iconCount ? "is-active" : "";
+        return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
+      }).join("");
+      return `
+        <div class="ranking-item">
+          <div class="ranking-rank">#${idx + 1}</div>
+          <div class="ranking-name">${name}</div>
+          <div class="ranking-stamps" aria-label="スタンプ所持数 ${stampCount}">
+            ${icons}
+          </div>
+          <div class="ranking-points">${points}P</div>
+        </div>
+      `;
+    }).join("");
+  } catch {
+    $rankingList.textContent = "ランキング取得に失敗しました。";
+  }
+}
+
+function closeRankingModal() {
+  if (!$rankingModal) return;
+  $rankingModal.classList.remove("is-open");
+  $rankingModal.setAttribute("aria-hidden", "true");
+}
+// ================== Completion bonus ==================
+let bonusClaiming = false;
+
+function getBonusKey() {
+  return `${LS_BONUS_CLAIMED}_${currentUser?.id || "guest"}`;
+}
+
+function isBonusClaimed() {
+  return localStorage.getItem(getBonusKey()) === "1";
+}
+
+function setBonusClaimed() {
+  localStorage.setItem(getBonusKey(), "1");
+}
+
+function allStampsCollected() {
+  return Array.isArray(stamps) && stamps.length > 0 && stamps.every(s => s.flag);
+}
+
+function showCompleteOverlay() {
+  if (!$completeOverlay) return;
+  $completeOverlay.classList.add("is-open");
+  $completeOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideCompleteOverlay() {
+  if (!$completeOverlay) return;
+  $completeOverlay.classList.remove("is-open");
+  $completeOverlay.setAttribute("aria-hidden", "true");
+}
+
+function updateCompleteOverlay() {
+  if (!allStampsCollected()) {
+    hideCompleteOverlay();
+    return;
+  }
+  if (isBonusClaimed()) {
+    hideCompleteOverlay();
+    return;
+  }
+  showCompleteOverlay();
+}
+
+async function claimCompletionBonus() {
+  if (bonusClaiming) return;
+  if (!currentUser?.id) {
+    showModalMessage("ボーナス", "ログインが必要です。");
+    try { openAuthModal(); } catch {}
+    return;
+  }
+  bonusClaiming = true;
+  try {
+    const res = await fetch("/api/bonus", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      showModalMessage("ボーナス", data.error || "ボーナス付与に失敗しました。");
+      return;
+    }
+    currentUser.points = Number(data.points || 0);
+    persistCurrentUser();
+    updateOOP();
+    setBonusClaimed();
+    hideCompleteOverlay();
+  } catch {
+    showModalMessage("ボーナス", "通信に失敗しました。");
+  } finally {
+    bonusClaiming = false;
+  }
+}
+
 // ================== Pay UI ==================
 const MAX_PAY_AMOUNT = 999999;
 let payAmount = 0;
@@ -207,9 +339,26 @@ function setPayStatus(message) {
   if ($payStatus) $payStatus.textContent = message || "";
 }
 
+function showPaySuccess(amount) {
+  if (!$paySuccess) return;
+  if ($paySuccessAmount) $paySuccessAmount.textContent = formatPayAmount(amount);
+  if ($paySuccessConsumed) $paySuccessConsumed.textContent = formatPayAmount(amount);
+  $paySuccess.classList.add("is-show");
+  $paySuccess.setAttribute("aria-hidden", "false");
+  if ($app) $app.classList.add("is-pay-success-blur");
+}
+
+function hidePaySuccess() {
+  if (!$paySuccess) return;
+  $paySuccess.classList.remove("is-show");
+  $paySuccess.setAttribute("aria-hidden", "true");
+  if ($app) $app.classList.remove("is-pay-success-blur");
+}
+
 function setPayRotated(isRotated) {
   if (!$payRotator) return;
   $payRotator.classList.toggle("is-rotated", !!isRotated);
+  if (!isRotated) hidePaySuccess();
   syncPayButtons();
 }
 
@@ -303,9 +452,13 @@ async function handlePayCommit() {
     currentUser.points = Number(data.points || 0);
     persistCurrentUser();
     updateOOP();
+    showPaySuccess(payAmount);
+    setPayStatus("");
     setPayAmount(0);
-    setPayStatus("決済が完了しました。");
-    setPayRotated(false);
+    setTimeout(() => {
+      hidePaySuccess();
+      setPayRotated(false);
+    }, 4000);
   } catch (err) {
     showModalMessage("決済", "通信に失敗しました。");
     setPayStatus("通信に失敗しました。");
@@ -439,6 +592,7 @@ function render() {
   renderIndicator();
   updateOOP();
   syncChipsModalContent();
+  updateCompleteOverlay();
 
   if (!swipeBound) {
     bindSwipeEvents();
@@ -1435,6 +1589,11 @@ function populateDebugPanel(){
   controls.appendChild(dec);
   controls.appendChild(reset);
   panel.appendChild(controls);
+
+  const resetProgressBtn = document.createElement('button');
+  resetProgressBtn.textContent = '進捗リセット';
+  resetProgressBtn.addEventListener('click', resetProgressAndGoStamp);
+  panel.appendChild(resetProgressBtn);
 }
 
 // デバッグトグルの初期化
@@ -1662,6 +1821,8 @@ async function resetProgressAndGoStamp() {
   goldenActive = false;
   persistConsumed();
   persistGolden();
+  localStorage.removeItem(getBonusKey());
+  hideCompleteOverlay();
 
   render();
   applyGoldenClass();
@@ -1672,7 +1833,6 @@ async function resetProgressAndGoStamp() {
 }
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
-document.getElementById("resetBtn2").addEventListener("click", resetProgressAndGoStamp);
 
 
 $chipsBtn.addEventListener("click", () => openModal());
@@ -1713,8 +1873,22 @@ $siteInfoToggleLink?.addEventListener("click", () => {
   showSiteInfoForm(siteInfoAuthMode === "signup" ? "login" : "signup");
 });
 $siteInfoSubmitBtn?.addEventListener("click", handleSiteInfoAuth);
+$siteInfoUsername?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  $siteInfoPassword?.focus();
+});
 $siteInfoPassword?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") handleSiteInfoAuth();
+});
+$completeBonusBtn?.addEventListener("click", claimCompletionBonus);
+$rankingBtn?.addEventListener("click", openRankingModal);
+$rankingModal?.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.close) closeRankingModal();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeRankingModal();
 });
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !siteInfoLocked) closeSiteInfo();
