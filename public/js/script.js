@@ -716,30 +716,25 @@ function resetNfcState() {
  * NFCスキャンを開始する
  */
 async function startScan() {
-  // 1. 基礎チェック
-  if (!("NDEFReader" in window)) {
-    alert("このブラウザは Web NFC に対応していません。");
-    return;
-  }
-  if (!window.isSecureContext) {
-    alert("NFCはHTTPS環境でのみ利用できます。");
-    return;
-  }
+  if (nfcBusy) return; // 処理中なら何もしない
+  nfcBusy = true;
 
-  // 2. 二重起動防止：実行中の場合は一度止めてからやり直す
-  if (nfcScanning) {
-    resetNfcState();
-    // ブラウザが内部的にアンテナを解放するのを待つための微小な待機
-    await new Promise(r => setTimeout(r, 100));
-  }
+  // ボタン要素を取得（IDは適宜合わせてください）
+  const btn = document.getElementById("scanBtn");
+  if (btn) btn.disabled = true; // ボタンを無効化
 
   try {
-    // 3. インスタンスの生成（毎回新しく作るのが安定のコツ）
+    // 1. 既存のスキャンがあれば、まず中断して「完全に止まるまで」少し待つ
+    if (nfcAbort) {
+      nfcAbort.abort();
+      await new Promise(r => setTimeout(r, 300)); // 0.3秒待機（Androidの解放待ち）
+    }
+
     nfcAbort = new AbortController();
     nfcReader = new NDEFReader();
 
-    // 4. 【最優先】スキャンを即座に実行
-    // ボタンクリックの有効期限が切れる前に実行する
+    // 2. スキャン開始
+    // ここで失敗したら catch へ飛ぶ
     await nfcReader.scan({ signal: nfcAbort.signal });
     nfcScanning = true;
 
@@ -799,14 +794,22 @@ async function startScan() {
     toast("NFCスキャン準備完了");
 
   } catch (err) {
-    // InvalidStateError 等が発生した場合はリセット
-    resetNfcState();
     console.error("NFC Error:", err);
-
+    
     if (err.name === "InvalidStateError") {
-      alert("NFCが既に動作中のため、再試行します。もう一度ボタンを押してください。");
+      // このエラーが出た場合は、内部でリセットして「もう一度だけ自動実行」を試みる
+      console.warn("InvalidStateError検知。リセットして再試行します。");
+      nfcAbort.abort();
+      nfcAbort = null;
+      // ユーザーに再度押させるのではなく、内部的に少し待ってから状態をクリアする
+      setTimeout(() => {
+        nfcBusy = false;
+        if (btn) btn.disabled = false;
+      }, 500);
     } else {
-      alert(`NFCを開始できませんでした: ${err.name} - ${err.message}`);
+      alert(`エラー: ${err.name}\n${err.message}`);
+      nfcBusy = false;
+      if (btn) btn.disabled = false;
     }
   }
 }
