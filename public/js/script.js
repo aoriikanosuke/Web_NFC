@@ -694,9 +694,23 @@ function bindWheelSwipe() {
 }
 
 // ================== Web NFC（維持） ==================
+let nfcReader = null;
+let nfcAbort = null;
+let nfcScanning = false;
+
+function resetNfcState() {
+  nfcScanning = false;
+  nfcAbort = null;
+  nfcReader = null;
+}
+
 async function startScan() {
   if (!("NDEFReader" in window)) {
     alert("このブラウザは Web NFC に対応していません。");
+    return;
+  }
+  if (!window.isSecureContext) {
+    alert("NFCはHTTPSまたはlocalhostでのみ利用できます。");
     return;
   }
 
@@ -707,12 +721,14 @@ async function startScan() {
   }
 
   try {
-    const reader = new NDEFReader();
-    await reader.scan(); 
-    
-    // スキャン開始に成功してからメッセージを表示
-    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
-    toast("NFCスキャン準備完了");
+    if (nfcScanning && nfcReader) {
+      toast("すでにスキャン中です。");
+      return;
+    }
+
+    const reader = nfcReader || new NDEFReader();
+    nfcReader = reader;
+    nfcAbort = new AbortController();
 
     reader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
@@ -763,8 +779,15 @@ async function startScan() {
     };
 
     reader.onreadingerror = () => toast("読み取り失敗。再度タッチしてください。");
+    await reader.scan({ signal: nfcAbort.signal });
+    nfcScanning = true;
+    
+    // スキャン開始に成功してからメッセージを表示
+    showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
+    toast("NFCスキャン準備完了");
 
   } catch (err) {
+    resetNfcState();
     console.error("NFC Error:", err);
     alert(`NFCを開始できませんでした: ${err.message}`);
   }
