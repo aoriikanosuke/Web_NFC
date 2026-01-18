@@ -645,39 +645,61 @@ function updateSlidePosition(withAnim) {
   });
 }
 
-// ================== UID適用（維持） ==================
+// ================== UID 正規化（追加） ==================
+function normUid(x) {
+  return String(x || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^0-9A-F]/g, ""); // ":" や空白などを除去（16進のみ残す）
+}
+
+// ================== UID適用（変更） ==================
 function applyUid(uid) {
-  const u = String(uid || "").trim();
-  const hit = stamps.find(s => String(s.uid || "").trim().toUpperCase() === u.toUpperCase());
-  if (!hit) {
+  // ✅ デバッグ（確認終わったら消してOK）
+  console.log("applyUid HIT raw:", uid);
+
+  const key = normUid(uid);
+  console.log("applyUid HIT norm:", key);
+
+  // ✅ indexOf ではなく findIndex（参照違いでも確実に index が取れる）
+  const targetIndex = stamps.findIndex(s => normUid(s.uid) === key);
+
+  if (targetIndex === -1) {
     alert(`未登録のUIDです：${uid}\nscript.js の DEFAULT_STAMPS を確認してください。`);
     return;
   }
 
-  // ★ ここが重要：移動は常にやる
-  const targetIndex = stamps.indexOf(hit);
+  const hit = stamps[targetIndex];
 
+  // 新規獲得のときだけポイント加算や保存など
   if (!hit.flag) {
-    const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+    const prevTotal =
+      calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+
     hit.flag = true;
 
     if (currentUser) {
-      currentUser.points = Number(currentUser.points || 0) + (Number(hit.points) || 0);
+      currentUser.points =
+        Number(currentUser.points || 0) + (Number(hit.points) || 0);
       persistCurrentUser();
     }
+
     hit.justStamped = true;
     saveStamps();
 
-    const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+    const nextTotal =
+      calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
 
+    // DB反映（必要なときだけ）
     if (currentUser?.id) {
       (async () => {
         const r = await fetch("/api/stamps/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUser.id, uid: u }),
+          body: JSON.stringify({ userId: currentUser.id, uid: String(uid || "") }),
         });
         const data = await r.json().catch(() => null);
         if (r.ok && data) {
@@ -689,14 +711,15 @@ function applyUid(uid) {
     }
   }
 
-  currentIndex = targetIndex >= 0 ? targetIndex : 0;
-  // （必要なら）setPage("stamp"); ← 他ページにいると見えないので保険で入れるのもアリ
+  // ✅ ここが「stamp-frame / stamp-inner を動かす」本体
+  // render直後に transform が反映されない(Android)対策で 2段RAF
+  currentIndex = targetIndex;
   render();
-  // ✅ Android対策：次フレームで transform をもう一回当てる
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      updateSlidePosition(false);
-      syncChipsModalContent();
+      updateSlidePosition(false); // 瞬間移動
+      // syncChipsModalContent(); // 必要なら。未定義ならコメントのままでOK
     });
   });
 }
