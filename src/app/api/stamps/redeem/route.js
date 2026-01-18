@@ -1,3 +1,4 @@
+// src/app/api/stamps/redeem/route.js
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 
