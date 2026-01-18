@@ -105,6 +105,20 @@ function waitAfterStampAni(variant, options){
   return new Promise(resolve => setTimeout(resolve, delay));
 }
 
+let nfcReadInFlight = false;
+let lastReadKey = "";
+let lastReadAt = 0;
+
+function shouldIgnoreRead(key) {
+  const now = Date.now();
+  if (nfcReadInFlight) return true;
+  if (key && key === lastReadKey && (now - lastReadAt) < 2500) return true; // 2.5秒同じの無視
+  lastReadKey = key;
+  lastReadAt = now;
+  return false;
+}
+
+
 // ================== 永続化（維持） ==================
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
@@ -1125,6 +1139,7 @@ async function startScan() {
       const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
       
       try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
+      await waitAfterStampAni(variant); 
       applyUid(uid);
     };
 
