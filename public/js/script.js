@@ -694,8 +694,10 @@ function applyUid(uid) {
   render();
   // ✅ Android対策：次フレームで transform をもう一回当てる
   requestAnimationFrame(() => {
-    updateSlidePosition(false);
-    syncChipsModalContent();
+    requestAnimationFrame(() => {
+      updateSlidePosition(false);
+      syncChipsModalContent();
+    });
   });
 }
 
