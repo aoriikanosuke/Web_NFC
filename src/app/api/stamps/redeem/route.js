@@ -59,6 +59,7 @@ export async function POST(request) {
       stamp_progress: stampsResult.rows.map((row) => row.stamp_id),
     });
   } catch (error) {
+    console.error("[redeem] error:", error); 
     return NextResponse.json({ error: 'サーバーエラーが発生しました。' }, { status: 500 });
   }
 }
