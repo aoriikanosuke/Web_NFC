@@ -1052,6 +1052,20 @@ function resetNfcState() {
   console.log("NFC状態をリセットしました");
 }
 
+// ===== UIDの多重発火ガード（startScanの外：グローバル）=====
+let uidInFlight = false;
+let lastUid = "";
+let lastUidAt = 0;
+
+function ignoreSameUid(uid) {
+  const now = Date.now();
+  if (uidInFlight) return true;
+  if (uid === lastUid && (now - lastUidAt) < 2000) return true; // 2秒以内の同一UIDは無視
+  lastUid = uid;
+  lastUidAt = now;
+  return false;
+}
+
 /**
  * NFCスキャンを開始する
  */
@@ -1134,13 +1148,23 @@ async function startScan() {
         toast("UIDが取得できませんでした。");
         return;
       }
+
+      if (ignoreSameUid(uid)) return;
+      uidInFlight = true;
       
-      const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
-      const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
-      
-      try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
-      await waitAfterStampAni(variant); 
-      applyUid(uid);
+      try {
+        const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
+        const duration = (typeof STAMP_ANI_DURATION_UID !== "undefined") ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
+        const variant = owned ? "owned" : "new";
+
+        console.log("[NFC uid] owned=", owned, "variant=", variant, "uid=", uid);
+
+        try { await showStampAni(duration, variant); } catch (e) {}
+        await waitAfterStampAni(variant);   // ★UIDでも待つ
+        applyUid(uid);
+      } finally {
+        setTimeout(() => { uidInFlight = false; }, 200);
+      }
     };
 
     nfcReader.onreadingerror = () => {
@@ -1150,7 +1174,6 @@ async function startScan() {
     // 6. ユーザーへの通知
     showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     toast("NFCスキャン準備完了");
-
   } catch (err) {
     console.error("NFC Error:", err);
     
@@ -1171,6 +1194,7 @@ async function startScan() {
     }
   }
 }
+
 
 // ================== Modal ==================
 let modalResolve = null;
