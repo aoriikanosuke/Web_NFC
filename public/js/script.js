@@ -647,36 +647,37 @@ function updateSlidePosition(withAnim) {
 
 // ================== UID適用（維持） ==================
 function applyUid(uid) {
-  const hit = stamps.find(s => s.uid.toUpperCase() === uid.toUpperCase());
+  const u = String(uid || "").trim();
+  const hit = stamps.find(s => String(s.uid || "").trim().toUpperCase() === u.toUpperCase());
   if (!hit) {
     alert(`未登録のUIDです：${uid}\nscript.js の DEFAULT_STAMPS を確認してください。`);
     return;
   }
+
+  // ★ ここが重要：移動は常にやる
+  const targetIndex = stamps.indexOf(hit);
+
   if (!hit.flag) {
     const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     hit.flag = true;
+
     if (currentUser) {
-      // まず見た目を即反映（楽観加算）
       currentUser.points = Number(currentUser.points || 0) + (Number(hit.points) || 0);
       persistCurrentUser();
     }
     hit.justStamped = true;
     saveStamps();
 
-    currentIndex = stamps.indexOf(hit);
-    if (currentIndex < 0) currentIndex = 0;
-
-    render();
     const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
-    // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
+
     if (currentUser?.id) {
       (async () => {
         const r = await fetch("/api/stamps/acquire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUser.id, uid }),
+          body: JSON.stringify({ userId: currentUser.id, uid: u }),
         });
         const data = await r.json().catch(() => null);
         if (r.ok && data) {
@@ -687,6 +688,10 @@ function applyUid(uid) {
       })();
     }
   }
+
+  currentIndex = targetIndex >= 0 ? targetIndex : 0;
+  // （必要なら）setPage("stamp"); ← 他ページにいると見えないので保険で入れるのもアリ
+  render();
 }
 
 function isStampOwnedByUid(uid) {
