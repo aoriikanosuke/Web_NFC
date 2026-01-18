@@ -1172,7 +1172,7 @@ async function startScan() {
         console.log("[NFC uid] owned=", owned, "variant=", variant, "uid=", uid);
 
         try { await showStampAni(duration, variant); } catch (e) {}
-        await waitAfterStampAni(variant);   // ★UIDでも待つ
+        // await waitAfterStampAni(variant);   // ★UIDでも待つ
         applyUid(uid);
       } finally {
         setTimeout(() => { uidInFlight = false; }, 200);
