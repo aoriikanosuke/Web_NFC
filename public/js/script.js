@@ -636,13 +636,40 @@ function preloadStampImages() {
 }
 
 function updateSlidePosition(withAnim) {
-  if (!$track) return;
-  $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
-  $track.style.transform = `translateX(-${currentIndex * 100}%)`;
+  // ✅ DOM描き直し後に参照が古くなる対策：毎回（または切断時）取り直す
+  if (!$track || !$track.isConnected) {
+    $track =
+      document.querySelector(".stamp-inner .stamp-track") ||
+      document.querySelector(".stamp-track");
+  }
+  if (!$indicator || !$indicator.isConnected) {
+    $indicator =
+      document.querySelector(".stamp-indicator") ||
+      document.querySelector(".indicator") ||
+      document.getElementById("indicator");
+  }
 
-  $indicator.querySelectorAll(".dot").forEach((d, i) => {
-    d.classList.toggle("is-active", i === currentIndex);
-  });
+  if (!$track) return;
+
+  // ✅ 念のためindexを範囲内に丸める
+  const max = Math.max(0, (stamps?.length || 0) - 1);
+  if (!Number.isFinite(currentIndex)) currentIndex = 0;
+  if (currentIndex < 0) currentIndex = 0;
+  if (currentIndex > max) currentIndex = max;
+
+  // ✅ Androidで反映が安定しやすい（GPUに乗りやすい）
+  $track.style.transition = withAnim ? "transform 0.25s ease-out" : "none";
+
+  // （withAnim=true を確実に効かせたい場合の保険：不要なら消してOK）
+  if (withAnim) void $track.offsetWidth;
+
+  $track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
+
+  if ($indicator) {
+    $indicator.querySelectorAll(".dot").forEach((d, i) => {
+      d.classList.toggle("is-active", i === currentIndex);
+    });
+  }
 }
 
 // ================== UID 正規化（追加） ==================
