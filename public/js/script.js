@@ -602,8 +602,12 @@ function render() {
   track.innerHTML = stamps.map(stampPageHTML).join("");
   $track = track;
 
-  updateSlidePosition(false);
+  // ✅ 先にインジケータを作る（.dotを作り直すならここが先）
   renderIndicator();
+
+  // ✅ その後に位置反映（ここで stamp-track が確実に動く）
+  updateSlidePosition(false);
+
   updateOOP();
   syncChipsModalContent();
   updateCompleteOverlay();
@@ -622,6 +626,9 @@ function render() {
 
   // clear one-shot animation flags
   stamps.forEach(s => { if (s.justStamped) s.justStamped = false; });
+
+  // ✅ Androidで描画が落ちる保険：最後にもう一回だけ位置を当てる
+  requestAnimationFrame(() => updateSlidePosition(false));
 }
 
 function preloadStampImages() {
