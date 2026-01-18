@@ -1,12 +1,12 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 // token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "./images/stamp1.png", flag: false, points: 10, location: "本部前：入口付近" },
-  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "./images/stamp2.png",     flag: false, points: 10, location: "ラウンジ：階段横" },
-  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "./images/stamp3.png",               flag: false, points: 15, location: "図書館：受付横" },
-  { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "./images/stamp4.png",               flag: false, points: 15, location: "学内コンビニ：入口付近" },
-  { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "./images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
-  { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "./images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
+  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
+  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
+  { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "/images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
+  { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "/images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
+  { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "/images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
+  { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "/images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
 ];
 
 
@@ -1019,48 +1019,74 @@ function bindWheelSwipe() {
 }
 
 // ================== Web NFC（維持） ==================
+// --- グローバル変数（関数の外に配置） ---
 let nfcReader = null;
 let nfcAbort = null;
 let nfcScanning = false;
+let nfcBusy = false;
 
+/**
+ * NFCの状態を完全にリセットする
+ */
 function resetNfcState() {
-  nfcScanning = false;
-  nfcAbort = null;
+  if (nfcAbort) {
+    nfcAbort.abort(); // 前のスキャンを強制終了
+  }
   nfcReader = null;
+  nfcAbort = null;
+  nfcScanning = false;
+  console.log("NFC状態をリセットしました");
 }
 
+/**
+ * NFCスキャンを開始する
+ */
 async function startScan() {
-  if (!("NDEFReader" in window)) {
-    alert("このブラウザは Web NFC に対応していません。");
-    return;
-  }
-  if (!window.isSecureContext) {
-    alert("NFCはHTTPSまたはlocalhostでのみ利用できます。");
-    return;
-  }
+  if (nfcBusy) return;
+  nfcBusy = true;
 
-  // iframe チェック
-  if (window.self !== window.top) {
-    alert("エラー: Vercelツールバー等の影響で iframe 内で動作しています。URLを直接入力して開き直してください。");
-    return;
-  }
+  const btn = document.getElementById("scanBtn");
+  if (btn) btn.disabled = true;
 
   try {
-    if (nfcScanning && nfcReader) {
-      toast("すでにスキャン中です。");
+    // ✅ 追加：Web NFC対応チェック（ReferenceError回避）
+    const hasNdef = typeof window !== "undefined" && typeof window.NDEFReader !== "undefined";
+    if (!hasNdef) {
+      showModalMessage(
+        "NFC非対応",
+        "この端末/ブラウザはWeb NFCに対応していません。AndroidのChrome / Samsung Internet / Operaで開いてください（iPhoneは非対応）。"
+      );
+      toast("NFC非対応の環境です");
+      return;
+    }
+    if (!window.isSecureContext) {
+      showModalMessage("HTTPSが必要", "Web NFCはHTTPS（またはlocalhost）でのみ動作します。");
+      toast("HTTPSで開いてください");
       return;
     }
 
-    const reader = nfcReader || new NDEFReader();
-    nfcReader = reader;
+    // 既存スキャンを止める…
+    if (nfcAbort) {
+      nfcAbort.abort();
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
     nfcAbort = new AbortController();
 
-    reader.onreading = async (event) => {
+    // ✅ 修正：グローバルを直接参照しない
+    nfcReader = new window.NDEFReader();
+    
+    // 2. スキャン開始
+    // ここで失敗したら catch へ飛ぶ
+    await nfcReader.scan({ signal: nfcAbort.signal });
+    nfcScanning = true;
+
+    // 5. 読み取りイベントの設定
+    nfcReader.onreading = async (event) => {
       console.log("NFCタグ検知:", event.serialNumber);
       try { showNfcRipple(); } catch (e) {}
 
       let token = "";
-      // トークン取得試行
       if (event.message && event.message.records) {
         for (const record of event.message.records) {
           const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
@@ -1073,7 +1099,7 @@ async function startScan() {
         }
       }
 
-      // A: トークンがある場合
+      // --- トークン(URL)方式 ---
       if (token) {
         const result = await redeemToken(token, { deferApply: true });
         if (result && result.ok) {
@@ -1085,10 +1111,10 @@ async function startScan() {
             applyStampProgress(result.stampProgress);
           }
         }
-        return; // トークン処理完了
+        return;
       }
 
-      // B: トークンがない場合は UID 方式へ（ここが壊れていました）
+      // --- UID方式 ---
       const uid = event.serialNumber || "";
       if (!uid) {
         toast("UIDが取得できませんでした。");
@@ -1099,22 +1125,35 @@ async function startScan() {
       const duration = (typeof STAMP_ANI_DURATION_UID !== 'undefined') ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
       
       try { await showStampAni(duration, owned ? "owned" : "new"); } catch (e) {}
-      console.log("NFC UID 適用:", uid);
       applyUid(uid);
     };
 
-    reader.onreadingerror = () => toast("読み取り失敗。再度タッチしてください。");
-    await reader.scan({ signal: nfcAbort.signal });
-    nfcScanning = true;
-    
-    // スキャン開始に成功してからメッセージを表示
+    nfcReader.onreadingerror = () => {
+      toast("読み取り失敗。再度タッチしてください。");
+    };
+
+    // 6. ユーザーへの通知
     showModalMessage("NFC", "スキャンを開始しました。タグをかざしてください。");
     toast("NFCスキャン準備完了");
 
   } catch (err) {
-    resetNfcState();
     console.error("NFC Error:", err);
-    alert(`NFCを開始できませんでした: ${err.message}`);
+    
+    if (err.name === "InvalidStateError") {
+      // このエラーが出た場合は、内部でリセットして「もう一度だけ自動実行」を試みる
+      console.warn("InvalidStateError検知。リセットして再試行します。");
+      nfcAbort.abort();
+      nfcAbort = null;
+      // ユーザーに再度押させるのではなく、内部的に少し待ってから状態をクリアする
+      setTimeout(() => {
+        nfcBusy = false;
+        if (btn) btn.disabled = false;
+      }, 500);
+    } else {
+      alert(`エラー: ${err.name}\n${err.message}`);
+      nfcBusy = false;
+      if (btn) btn.disabled = false;
+    }
   }
 }
 
@@ -1782,7 +1821,8 @@ async function resetDBProgressIfLoggedIn() {
 }
 
 // ================== UIイベント ==================
-document.getElementById("scanBtn").addEventListener("click", startScan);
+const scanBtnEl = document.getElementById("scanBtn");
+if (scanBtnEl) scanBtnEl.addEventListener("click", startScan);
 
 async function resetProgressAndGoStamp() {
   const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
@@ -1834,8 +1874,7 @@ async function resetProgressAndGoStamp() {
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
 
-
-$chipsBtn.addEventListener("click", () => openModal());
+if ($chipsBtn) $chipsBtn.addEventListener("click", () => openModal());
 if ($oopInfo) {
   $oopInfo.addEventListener("click", () => {
     openModal({
@@ -1844,6 +1883,7 @@ if ($oopInfo) {
     });
   });
 }
+
 $siteInfoTrigger?.addEventListener("click", () => {
   toggleSiteInfo();
 });
@@ -1894,12 +1934,14 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !siteInfoLocked) closeSiteInfo();
 });
 $modal.addEventListener("click", (e) => {
+
   const t = e.target;
   if (t && t.dataset && t.dataset.close) closeModal();
 });
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
+
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setPage(btn.dataset.target));
@@ -1928,12 +1970,14 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   updateGoldenUI();
   if(goldenActive) startGoldenSparks();
   updateOOP();
+
   consumeTokenFromUrlAndPending();
   if (!currentUser?.id) {
     openSiteInfo({ locked: true, forced: true });
   } else if (!localStorage.getItem(LS_SITEINFO_SEEN)) {
     openSiteInfo({ locked: false, forced: false });
   }
+
 
 })();
 
@@ -1947,6 +1991,27 @@ const authChoice = document.getElementById('auth-choice');
 const authForm = document.getElementById('auth-form');
 const authLoginChoice = document.getElementById('auth-login-choice');
 const authRegisterChoice = document.getElementById('auth-register-choice');
+
+// ---- Next.js対応: inline onclick を使わずにイベントをバインド ----
+const authTriggerBtnEl = document.getElementById('auth-trigger-btn');
+if (authTriggerBtnEl) authTriggerBtnEl.addEventListener('click', openAuthModal);
+
+const authSubmitBtnEl = document.getElementById('auth-submit-btn');
+if (authSubmitBtnEl) authSubmitBtnEl.addEventListener('click', handleAuth);
+
+const authToggleTextEl = document.getElementById('auth-toggle-text');
+if (authToggleTextEl) authToggleTextEl.addEventListener('click', toggleAuthMode);
+
+const logoutBtnEl = document.getElementById('logout-btn');
+if (logoutBtnEl) logoutBtnEl.addEventListener('click', logout);
+
+// auth modal close/backdrop
+try {
+  const authBackdropEl = authModal ? authModal.querySelector('.modal-backdrop') : null;
+  const authCloseBtnEl = authModal ? authModal.querySelector('.modal-close') : null;
+  if (authBackdropEl) authBackdropEl.addEventListener('click', closeAuthModal);
+  if (authCloseBtnEl) authCloseBtnEl.addEventListener('click', closeAuthModal);
+} catch {}
 
 function showAuthChoice() {
   isLoginMode = true;
@@ -1999,8 +2064,8 @@ function initAuthEnterShortcuts() {
 }
 
 // 初期化：ログイン状態ならUIを更新
-document.addEventListener('DOMContentLoaded', () => {
-  if (currentUser) {
+function initAfterDomReady(){
+if (currentUser) {
     updateUIForLoggedInUser();
     // 必要に応じてDBから最新状態を取得し同期
     syncFromDB();
@@ -2024,7 +2089,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthEnterShortcuts();
   initZoomGuards();
   consumeTokenFromUrlAndPending();
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAfterDomReady, { once: true });
+} else {
+  initAfterDomReady();
+}
+
 
 function openAuthModal() {
   if (!authModal) return;
@@ -2084,9 +2155,12 @@ async function handleAuth() {
 }
 
 function updateUIForLoggedInUser() {
-  document.getElementById('auth-trigger-btn').style.display = 'none';
-  document.getElementById('user-info').style.display = 'block';
-  document.getElementById('display-username').innerText = currentUser.username;
+  const a = document.getElementById('auth-trigger-btn');
+  if (a) a.style.display = 'none';
+  const ui = document.getElementById('user-info');
+  if (ui) ui.style.display = 'block';
+  const du = document.getElementById('display-username');
+  if (du) du.innerText = currentUser.username;
 }
 
 function logout() {
