@@ -22,7 +22,17 @@ https://172.20.10.2:3000
 以下を参考にしてね
 https://qiita.com/TetsuTaka/items/5ab227a8bd2cd7106833
 
-これで作成して
-git branch -b nfc_"番号"/"branch名"
+1:ブランチを作成
+git checkout -b 作成するブランチ名
+2:ブランチをリモートに登録
+git push -u origin 作成したブランチ名
 
-## aatest
+ブランチの一覧を見る
+git branch -a
+
+## リモートにあるブランチをローカルに持ってくる（他人が作ったブランチをもってくる）
+https://hato-it.hatenablog.com/entry/2021/08/08/111643
+
+git fetch
+git branch ブランチ名 origin/ブランチ名
+git checkout ブランチ名
