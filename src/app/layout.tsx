@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NFCスタンプラリー",
   description: "Web NFCを使用したスタンプラリーアプリ",
+  themeColor: "#9ebbe6", // index.html の theme-color
 };
 
 export const viewport: Viewport = {
@@ -30,9 +31,20 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        {/* CSSを public/css/stylesheet.css から直接読み込む */}
+        {/* index.html 相当 */}
+        <meta charSet="utf-8" />
+        <meta name="theme-color" content="#9ebbe6" />
+
+        {/* Google Font（index.html） */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
+
+        {/* CSSを public/css/stylesheet.css から読み込む */}
         <link rel="stylesheet" href="/css/stylesheet.css" />
       </head>
+
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>

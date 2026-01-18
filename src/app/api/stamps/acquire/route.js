@@ -6,18 +6,7 @@ export const runtime = "nodejs"; // pgを使うのでnode固定
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-async function computePoints(client, userId) {
-  const { rows } = await client.query(
-    `
-    SELECT COALESCE(SUM(w.value), 0)::int AS points
-    FROM user_stamps us
-    JOIN web_nfc w ON w.id = us.stamp_id
-    WHERE us.user_id = $1
-    `,
-    [userId]
-  );
-  return rows[0]?.points ?? 0;
-}
+
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -41,10 +30,11 @@ export async function GET(request) {
       [userId]
     );
 
-    const points = await computePoints(client, userId);
-
-    // users.points を常に整合させたいならここで更新（任意だけど便利）
-    await client.query(`UPDATE users SET points = $2 WHERE id = $1`, [userId, points]);
+    const pointsRes = await client.query(
+      `SELECT points FROM users WHERE id = $1`,
+      [userId]
+    );
+    const points = pointsRes.rows[0]?.points ?? 0;
 
     return NextResponse.json({
       userId,
@@ -119,11 +109,20 @@ export async function POST(request) {
     }
 
     // 3) points 再計算して users.points を更新
-    const points = await computePoints(client, userId);
-    const upd = await client.query(
-      `UPDATE users SET points = $2 WHERE id = $1 RETURNING points`,
-      [userId, points]
-    );
+    let points = null;
+    if (acquired) {
+      const upd = await client.query(
+        `UPDATE users SET points = COALESCE(points, 0) + $2 WHERE id = $1 RETURNING points`,
+        [userId, Number(stamp.value) || 0]
+      );
+      points = upd.rows[0]?.points ?? 0;
+    } else {
+      const pointsRes = await client.query(
+        `SELECT points FROM users WHERE id = $1`,
+        [userId]
+      );
+      points = pointsRes.rows[0]?.points ?? 0;
+    }
 
     await client.query("COMMIT");
 
@@ -131,7 +130,7 @@ export async function POST(request) {
       userId,
       acquired,
       stamp,
-      points: upd.rows[0]?.points ?? points,
+      points,
     });
   } catch (e) {
     try {

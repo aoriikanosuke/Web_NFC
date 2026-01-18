@@ -16,10 +16,9 @@ export async function POST(request) {
     }
 
     const stampResult = await pool.query(
-      `SELECT s.id, s.points
-       FROM nfc_tags t
-       JOIN stamps s ON s.id = t.stamp_id
-       WHERE t.token = $1`,
+      `SELECT id, value AS points
+       FROM web_nfc
+       WHERE token = $1`,
       [token]
     );
     const stamp = stampResult.rows[0];
@@ -59,6 +58,7 @@ export async function POST(request) {
       stamp_progress: stampsResult.rows.map((row) => row.stamp_id),
     });
   } catch (error) {
+    console.error("[redeem] error:", error); 
     return NextResponse.json({ error: 'サーバーエラーが発生しました。' }, { status: 500 });
   }
 }

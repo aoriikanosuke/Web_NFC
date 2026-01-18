@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#9ebbe6" />
   <title>NFCスタンプラリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/stylesheet.css" />
 </head>
 <body>
@@ -81,7 +82,7 @@
       </div>
       <!-- Header -->
       <header class="header">
-        <div class="title">
+        <div id="siteInfoTrigger" class="title is-clickable" role="button" tabindex="0" aria-label="サイト説明を表示">
           <img class="title-png" src="./images/NEW_title.png" alt="NFCスタンプラリー">
           <!-- <div class="title-big">NFC</div>
           <div class="title-sub">スタンプラリー</div> -->
@@ -120,9 +121,51 @@
 
         <!-- Pay -->
         <section id="page-pay" class="page" aria-label="決済">
-          <div class="page-center glass">
-            <h2 class="page-title">決済</h2>
-            <p class="page-desc">ここに決済UI（100 / 200 など）を実装できます。</p>
+          <div class="pay-shell glass">
+            <div id="payRotator" class="pay-rotator" aria-live="polite">
+              <div class="pay-view pay-view--customer">
+                <div class="pay-header">
+                  <div class="pay-title">決済</div>
+                  <div class="pay-balance">利用可能 <span id="payAvailable">0</span>P</div>
+                </div>
+
+                <div class="pay-display">
+                  <div id="payAmount" class="pay-amount">0</div>
+                  <div class="pay-currency">P</div>
+                </div>
+
+                <div id="payKeypad" class="pay-keypad" aria-label="金額入力テンキー">
+                  <button class="pay-key glass" data-paykey="1" type="button">1</button>
+                  <button class="pay-key glass" data-paykey="2" type="button">2</button>
+                  <button class="pay-key glass" data-paykey="3" type="button">3</button>
+                  <button class="pay-key glass" data-paykey="4" type="button">4</button>
+                  <button class="pay-key glass" data-paykey="5" type="button">5</button>
+                  <button class="pay-key glass" data-paykey="6" type="button">6</button>
+                  <button class="pay-key glass" data-paykey="7" type="button">7</button>
+                  <button class="pay-key glass" data-paykey="8" type="button">8</button>
+                  <button class="pay-key glass" data-paykey="9" type="button">9</button>
+                  <button class="pay-key glass" data-paykey="clear" type="button">C</button>
+                  <button class="pay-key glass" data-paykey="0" type="button">0</button>
+                  <button class="pay-key glass" data-paykey="back" type="button">←</button>
+                </div>
+
+                <div class="pay-actions">
+                  <button id="payConfirmBtn" class="pay-primary pay-primary--wide" type="button">決定</button>
+                </div>
+              </div>
+
+              <div class="pay-view pay-view--staff" aria-label="店員確認画面">
+                <div class="pay-display pay-display--staff">
+                  <div id="payConfirmAmount" class="pay-amount">0</div>
+                  <div class="pay-currency">P</div>
+                </div>
+                <div class="pay-actions pay-actions--staff">
+                  <button id="payCommitBtn" class="pay-primary pay-primary--staff" type="button">決済確定</button>
+                  <button id="payBackBtn" class="pay-action pay-action--staff glass" type="button">キャンセル</button>
+                </div>
+                <div id="payStatus" class="pay-status" aria-live="polite"></div>
+              </div>
+            </div>
           </div>
 
         </section>
@@ -133,10 +176,12 @@
             <h2 class="page-title">プロフィール</h2>
             <div id="user-info" style="display: none;">
               <p>ようこそ、<span id="display-username"></span>さん</p>
-              <button class="chips-btn glass" type="button" onclick="logout()">ログアウト</button>
+              <div class="profile-actions">
+                <button class="chips-btn glass danger" type="button" onclick="logout()">ログアウト</button>
+                <button id="rankingBtn" class="chips-btn glass" type="button">ランキング</button>
+              </div>
             </div>
             <button id="auth-trigger-btn" class="chips-btn glass" type="button" onclick="openAuthModal()">ログイン/会員登録</button>
-            <button class="danger" type="button" id="resetBtn2">進捗リセット</button>
           </div>
 
           <div id="auth-modal" class="modal" aria-hidden="true">
@@ -164,9 +209,19 @@
               </div>
             </div>
           </div>
+          <div id="rankingModal" class="ranking-modal" aria-hidden="true">
+            <div class="ranking-backdrop" data-close="1"></div>
+            <div class="ranking-panel glass" role="dialog" aria-modal="true" aria-label="ランキング">
+              <div class="ranking-head">
+                <div class="ranking-title">ランキング</div>
+                <button class="modal-close" type="button" data-close="1">?</button>
+              </div>
+              <div id="rankingList" class="ranking-list"></div>
+            </div>
+          </div>
 
           <!-- Subtle Golden Card tucked bottom-right of profile page -->
-          <div class="golden-card glass" aria-hidden="true">
+          <!-- <div class="golden-card glass" aria-hidden="true">
             <div class="golden-head">
               <h4 style="margin:0; font-weight:800; font-size:15px;">ゴールデンモード</h4>
               <div id="goldenStatus" style="font-weight:700; font-size:13px;">未解禁</div>
@@ -179,7 +234,7 @@
             </div>
             <div class="golden-sparks" aria-hidden="true">
             </div>
-          </div>
+          </div> -->
         </section>
       </main>
 
@@ -212,6 +267,49 @@
           <div id="modalBody" class="modal-body"></div>
         </div>
       </div>
+      <div id="paySuccess" class="pay-success" aria-hidden="true">
+        <div class="pay-success-card">
+          <div class="pay-success-title">決済完了</div>
+          <div class="pay-success-amount">
+            <span id="paySuccessAmount">0</span>
+            <span class="pay-success-unit">P</span>
+          </div>
+          <div class="pay-success-sub">ご利用ありがとうございました</div>
+          <div class="pay-success-consumed">
+            消費ポイント <span id="paySuccessConsumed">0</span>P
+          </div>
+        </div>
+      </div>
+      <div id="completeOverlay" class="complete-overlay" aria-hidden="true">
+        <div class="complete-card glass">
+          <div class="complete-title">congratulation!!</div>
+          <div class="complete-text">全てのスタンプを獲得しました。</div>
+          <button id="completeBonusBtn" class="pay-primary" type="button">100Pを受け取る</button>
+        </div>
+      </div>
+      <div id="siteInfoOverlay" class="site-info" aria-hidden="true">
+        <div class="site-info-top">
+          <img class="site-info-title" src="./images/NEW_title.png" alt="NFCスタンプラリー">
+          <p class="site-info-text">NFCスタンプを集めてポイントをため、<br>決済で使えるスタンプラリーアプリです。</p>
+        </div>
+        <div class="site-info-flow">
+          <button id="siteInfoStartBtn" class="site-info-btn site-info-btn--start" type="button">はじめる</button>
+          <div class="site-info-actions" aria-label="ログインまたは会員登録">
+            <button id="siteInfoLoginBtn" class="site-info-btn" type="button">ログイン</button>
+            <button id="siteInfoSignupBtn" class="site-info-btn" type="button">会員登録</button>
+          </div>
+          <div id="siteInfoForm" class="site-info-form" aria-hidden="true">
+            <div id="siteInfoFormTitle" class="site-info-form-title" aria-hidden="true"></div>
+            <div class="site-info-form-fields">
+              <input id="siteInfoUsername" class="site-info-input" type="text" placeholder="ユーザー名">
+              <input id="siteInfoPassword" class="site-info-input" type="password" placeholder="パスワード">
+            </div>
+            <button id="siteInfoSubmitBtn" class="site-info-btn site-info-btn--submit" type="button">ログイン</button>
+            <button id="siteInfoToggleLink" class="site-info-link" type="button">会員登録の場合はこちら</button>
+            <div id="siteInfoFormError" class="site-info-error" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- デバッグUI（デスクトップ時のみ表示） -->
     <div class="debug-tools" aria-hidden="true">
@@ -224,3 +322,5 @@
   <script src="./js/script.js?v=20250115" defer></script>
 </body>
 </html>
+
+

@@ -1,4 +1,4 @@
-:root{
+﻿:root{
   --app-bg: linear-gradient(-45deg, #d8e6f6 0%, #a9c9ee 30%, #6ea9e2 62%, #2f73c7 100%);
   background: var(--app-bg);
   background-size: 400% 400%;
@@ -28,17 +28,20 @@
   }
 }
 
-/* 縦スクロール不可（スマホ比率前提） */
+/* 邵ｦ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ荳榊庄・医せ繝槭・豈皮紫蜑肴署・・*/
 html, body{
   height:100%;
   min-height: 100dvh;
   margin:0;
   overflow:hidden;
-  font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  font-family: "M PLUS 1p", sans-serif;
   -webkit-text-size-adjust: 100%;
   background: var(--app-bg);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
+}
+*, *::before, *::after{
+  font-family: "M PLUS 1p", sans-serif;
 }
 input, textarea, select{
   font-size: 16px;
@@ -67,8 +70,8 @@ input, textarea, [contenteditable="true"]{
   -webkit-user-select: text;
 }
 
-/* ====== スマホ枠プレビュー（PCだけON） ====== */
-/* スマホでは通常表示になるよう “ベースは素” */
+/* ====== 繧ｹ繝槭・譫繝励Ξ繝薙Η繝ｼ・・C縺縺前N・・====== */
+/* 繧ｹ繝槭・縺ｧ縺ｯ騾壼ｸｸ陦ｨ遉ｺ縺ｫ縺ｪ繧九ｈ縺・窶懊・繝ｼ繧ｹ縺ｯ邏窶・*/
 .device, .phone{
   width: 100%;
   height: 100%;
@@ -83,7 +86,7 @@ input, textarea, [contenteditable="true"]{
   animation: gradient 15s ease infinite;
 }
 
-/* HTMLに .phone を入れるのが前提（PCで中央にスマホ表示するため） */
+/* HTML縺ｫ .phone 繧貞・繧後ｋ縺ｮ縺悟燕謠撰ｼ・C縺ｧ荳ｭ螟ｮ縺ｫ繧ｹ繝槭・陦ｨ遉ｺ縺吶ｋ縺溘ａ・・*/
 .phone{
   width: 100%;
   height: 100%;
@@ -95,7 +98,7 @@ input, textarea, [contenteditable="true"]{
 }
 .phone::before, .phone::after{ content:none; }
 
-/* PCだけ：中央にスマホ枠（暗い余白＝プレゼン意識） */
+/* PC縺縺托ｼ壻ｸｭ螟ｮ縺ｫ繧ｹ繝槭・譫・域囓縺・ｽ咏區・昴・繝ｬ繧ｼ繝ｳ諢剰ｭ假ｼ・*/
 @media (min-width: 900px){
   .device{
     min-height: 100vh;
@@ -111,11 +114,11 @@ input, textarea, [contenteditable="true"]{
 
   .phone{
     width: min(420px, 92vw);
-    /* ビューポート高さに合わせ上限を設定（.device の上下パディング 56px ×2 を考慮） */
+    /* 繝薙Η繝ｼ繝昴・繝磯ｫ倥＆縺ｫ蜷医ｏ縺帑ｸ企剞繧定ｨｭ螳夲ｼ・device 縺ｮ荳贋ｸ九ヱ繝・ぅ繝ｳ繧ｰ 56px ﾃ・ 繧定・・・・*/
     height: min(920px, calc(100dvh - 112px));
     max-height: calc(100dvh - 112px);
     aspect-ratio: 9 / 19.5;
-    padding: 14px;                 /* ベゼル厚 */
+    padding: 14px;                 /* 繝吶ぞ繝ｫ蜴・*/
     box-sizing: border-box;
     border-radius: 44px;
     background: transparent;
@@ -134,13 +137,13 @@ input, textarea, [contenteditable="true"]{
     pointer-events:none;
   }
 
-  /* デスクトップ専用：デバッグツール（スマホ枠外の背景に固定表示） */
+  /* 繝・せ繧ｯ繝医ャ繝怜ｰら畑・壹ョ繝舌ャ繧ｰ繝・・繝ｫ・医せ繝槭・譫螟悶・閭梧勹縺ｫ蝗ｺ螳夊｡ｨ遉ｺ・・*/
   .debug-tools{
     display:block;
     position: fixed;
-    /* スマホ枠の右外側に配置：中央を基準に phone の右端 + オフセット */
-    left: calc(50% + min(420px, 92vw) / 2 + 44px); /* 右に押し出す（さらに移動） */
-    /* 少し上へ移動（枠と被らないように上寄せ） */
+    /* 繧ｹ繝槭・譫縺ｮ蜿ｳ螟門・縺ｫ驟咲ｽｮ・壻ｸｭ螟ｮ繧貞渕貅悶↓ phone 縺ｮ蜿ｳ遶ｯ + 繧ｪ繝輔そ繝・ヨ */
+    left: calc(50% + min(420px, 92vw) / 2 + 44px); /* 蜿ｳ縺ｫ謚ｼ縺怜・縺呻ｼ医＆繧峨↓遘ｻ蜍包ｼ・*/
+    /* 蟆代＠荳翫∈遘ｻ蜍包ｼ域棧縺ｨ陲ｫ繧峨↑縺・ｈ縺・↓荳雁ｯ・○・・*/
     top: calc(50vh - min(200px, 34vh) - 36px);
     z-index: 30;
     display: flex;
@@ -166,7 +169,7 @@ input, textarea, [contenteditable="true"]{
   .debug-panel button{ padding: 8px 10px; border-radius: 8px; font-weight:700; }
 
 
-  /* PC表示ではスマホ内にルートと同じアニメート背景を適用 */
+  /* PC陦ｨ遉ｺ縺ｧ縺ｯ繧ｹ繝槭・蜀・↓繝ｫ繝ｼ繝医→蜷後§繧｢繝九Γ繝ｼ繝郁レ譎ｯ繧帝←逕ｨ */
   .app{
     background: linear-gradient(-45deg, #d8e6f6 0%, #b2d0f2 22%, #6ea9e2 62%, #2f73c7 100%);
     background-size: 400% 400%;
@@ -179,7 +182,7 @@ input, textarea, [contenteditable="true"]{
 
 /* ====== App ====== */
 .app{
-  position: relative; /* ← bottom navを枠内に固定するため重要 */
+  position: relative; /* 竊・bottom nav繧呈棧蜀・↓蝗ｺ螳壹☆繧九◆繧・㍾隕・*/
   height:100%;
   display:flex;
   flex-direction:column;
@@ -189,7 +192,7 @@ input, textarea, [contenteditable="true"]{
   border-radius: 0;
 }
 
-/* PCでは画面にも角丸（ベゼル内） */
+/* PC縺ｧ縺ｯ逕ｻ髱｢縺ｫ繧りｧ剃ｸｸ・医・繧ｼ繝ｫ蜀・ｼ・*/
 @media (min-width: 900px){
   .app{
     border-radius: 30px;
@@ -200,7 +203,7 @@ input, textarea, [contenteditable="true"]{
   }
 }
 
-/* ===== 背景オーブ ===== */
+/* ===== 閭梧勹繧ｪ繝ｼ繝・===== */
 .bg-orbs{
   position:absolute;
   inset:0;
@@ -288,7 +291,7 @@ input, textarea, [contenteditable="true"]{
 .orb.o2{ right:-180px; top: 38%; background: radial-gradient(circle, rgba(255,255,255,.55), rgba(60,120,215,0) 62%); }
 .orb.o3{ left: 20%; bottom:-220px; background: radial-gradient(circle, rgba(255,255,255,.50), rgba(0,0,0,0) 65%); }
 
-/* 前面レイヤ */
+/* 蜑埼擇繝ｬ繧､繝､ */
 .header, .main, .bottom-nav, .modal{ position: relative; z-index: 2; }
 
 /* ===== Header ===== */
@@ -310,6 +313,12 @@ input, textarea, [contenteditable="true"]{
   position: relative;
   padding-top: 6px;
   padding-left: 6px;
+}
+.title.is-clickable{ cursor: pointer; }
+.title.is-clickable:focus-visible{
+  outline: 2px solid rgba(255,255,255,.7);
+  outline-offset: 6px;
+  border-radius: 12px;
 }
 
 /* .title-big{
@@ -335,8 +344,8 @@ input, textarea, [contenteditable="true"]{
 
 .oop-pill{
   border-radius: 999px;
-  padding: 12px 12px; /* 横パディングを少し減らして幅を小さく */
-  min-width: 120px;   /* 横幅を少し小さくに調整 */
+  padding: 12px 12px; /* 讓ｪ繝代ョ繧｣繝ｳ繧ｰ繧貞ｰ代＠貂帙ｉ縺励※蟷・ｒ蟆上＆縺・*/
+  min-width: 120px;   /* 讓ｪ蟷・ｒ蟆代＠蟆上＆縺上↓隱ｿ謨ｴ */
   display:flex;
   align-items:center;
   justify-content:center;
@@ -446,7 +455,7 @@ input, textarea, [contenteditable="true"]{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
 
 .page{
@@ -492,6 +501,268 @@ input, textarea, [contenteditable="true"]{
 
 .page-title{ margin:0 0 8px; font-size:20px; }
 .page-desc{ margin:0; line-height:1.6; }
+
+/* ===== Pay ===== */
+.pay-shell{
+  width: 100%;
+  max-width: 520px;
+  border-radius: 20px;
+  padding: 18px 16px;
+  color: #0b1c2a;
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+.pay-rotator{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform: rotate(0deg);
+  transition: transform 520ms cubic-bezier(.2,.8,.2,1);
+}
+.pay-rotator.is-rotated{
+  transform: rotate(180deg);
+}
+.pay-view{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.pay-view--customer{
+  opacity: 1;
+  pointer-events: auto;
+}
+.pay-rotator.is-rotated .pay-view--customer{
+  opacity: 0;
+  pointer-events: none;
+}
+.pay-rotator.is-rotated .pay-view--staff{
+  opacity: 1;
+  pointer-events: auto;
+}
+.pay-header{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 800;
+}
+.pay-title{
+  font-size: 18px;
+  letter-spacing: .6px;
+}
+.pay-balance{
+  font-size: 13px;
+  color: rgba(0,0,0,.65);
+  font-weight: 700;
+}
+.pay-display{
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.82);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.08);
+}
+.pay-display--staff{
+  background: rgba(255,255,255,.92);
+  min-height: 180px;
+  align-items: center;
+}
+.pay-display--staff .pay-amount{
+  font-size: clamp(54px, 16vw, 78px);
+  line-height: 1;
+}
+.pay-display--staff .pay-currency{
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.pay-amount{
+  font-size: clamp(34px, 10vw, 52px);
+  font-weight: 900;
+  letter-spacing: .8px;
+  font-variant-numeric: tabular-nums;
+}
+.pay-currency{
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.pay-keypad{
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.pay-key{
+  height: 54px;
+  border: none;
+  border-radius: 999px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0b1c2a;
+  cursor: pointer;
+}
+.pay-actions{
+  width: 100%;
+  display: flex;
+  gap: 12px;
+}
+.pay-actions--staff{
+  flex-direction: column;
+  gap: 16px;
+}
+.pay-primary--staff{
+  height: 700px;
+  font-size: 70px;
+  letter-spacing: .6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+.pay-action--staff{
+  height: 58px;
+  font-size: 16px;
+  letter-spacing: .4px;
+}
+.pay-action{
+  flex: 1;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 900;
+  color: #0b1c2a;
+  cursor: pointer;
+}
+.pay-primary{
+  flex: 1.2;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, #0b5ad6, #30a0ff);
+  box-shadow: 0 12px 24px rgba(11,90,214,.28);
+  cursor: pointer;
+}
+.pay-primary--wide{
+  width: 100%;
+  height: 58px;
+  font-size: 18px;
+  letter-spacing: .6px;
+}
+.pay-primary:disabled,
+.pay-action:disabled{
+  opacity: .5;
+  cursor: not-allowed;
+}
+.pay-staff-label{
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(0,0,0,.6);
+  letter-spacing: .6px;
+}
+.pay-status{
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,.7);
+  min-height: 18px;
+}
+.pay-success{
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  z-index: 5;
+}
+.pay-success-card{
+  transform: translateZ(0);
+}
+@media (min-width: 900px){
+  .pay-success{
+    transform: rotate(180deg);
+  }
+  .pay-success-card{
+    transform: rotate(180deg);
+  }
+}
+.pay-success.is-show{
+  opacity: 1;
+  pointer-events: auto;
+}
+.app.is-pay-success-blur .header,
+.app.is-pay-success-blur .main,
+.app.is-pay-success-blur .bottom-nav,
+.app.is-pay-success-blur #bg-wrap,
+.app.is-pay-success-blur .bg-orbs,
+.app.is-pay-success-blur .nfc-hint,
+.app.is-pay-success-blur .golden-overlay{
+  filter: blur(10px) brightness(0.8);
+  transition: filter 220ms ease;
+}
+.pay-success-card{
+  width: min(320px, 80%);
+  padding: 22px 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.92);
+  color: #0b1c2a;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  animation: pay-success-pop 420ms cubic-bezier(.2,.9,.2,1) both;
+}
+.pay-success-title{
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: .6px;
+}
+.pay-success-amount{
+  font-size: 40px;
+  font-weight: 900;
+  margin: 6px 0 8px;
+}
+.pay-success-unit{ font-size: 18px; margin-left: 2px; }
+.pay-success-sub{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,.65);
+}
+.pay-success-consumed{
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0b1c2a;
+}
+@keyframes pay-success-pop{
+  0%{ transform: translateY(16px) scale(0.9); opacity: 0; }
+  70%{ transform: translateY(-4px) scale(1.04); opacity: 1; }
+  100%{ transform: translateY(0) scale(1); opacity: 1; }
+}
+@media (max-height: 740px){
+  .pay-shell{ min-height: 500px; }
+  .pay-key{ height: 48px; }
+}
 
 /* ===== Stamp card ===== */
 .stamp-card{
@@ -627,7 +898,7 @@ input, textarea, [contenteditable="true"]{
   padding: 0 6px;
 }
 
-/* .below-row を stamp-card 内に配置した場合のオーバーレイ位置 */
+/* .below-row 繧・stamp-card 蜀・↓驟咲ｽｮ縺励◆蝣ｴ蜷医・繧ｪ繝ｼ繝舌・繝ｬ繧､菴咲ｽｮ */
 .below-row.inside-card{
   position: absolute;
   right: 12px;
@@ -688,6 +959,12 @@ input, textarea, [contenteditable="true"]{
   padding: 12px 14px;
   cursor:pointer;
 }
+.profile-actions{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
 .auth-trigger-btn{
   background: #4aa8ff;
@@ -728,13 +1005,13 @@ input, textarea, [contenteditable="true"]{
   pointer-events: none;
 }
 
-/* ===== Bottom Nav：app中央下部（枠内に収まる） ===== */
+/* ===== Bottom Nav・啾pp荳ｭ螟ｮ荳矩Κ・域棧蜀・↓蜿弱∪繧具ｼ・===== */
 .bottom-nav{
-  position: absolute; /* ← fixedではなく app基準 */
+  position: absolute; /* 竊・fixed縺ｧ縺ｯ縺ｪ縺・app蝓ｺ貅・*/
   left: 50%;
   bottom: calc(12px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 2;
 
   width: min(360px, calc(100% - 24px));
   height: 64px;
@@ -751,7 +1028,7 @@ input, textarea, [contenteditable="true"]{
 
 @media (max-height: 740px){
   .main{
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
@@ -771,7 +1048,7 @@ input, textarea, [contenteditable="true"]{
   }
 }
 
-/* nav自体をガラス強め */
+/* nav閾ｪ菴薙ｒ繧ｬ繝ｩ繧ｹ蠑ｷ繧・*/
 .glass-nav{
   background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
   border: 1px solid rgba(255,255,255,0.28);
@@ -799,7 +1076,7 @@ input, textarea, [contenteditable="true"]{
   width: 84px;
   height: 48px;
   border: none;
-  background: transparent !important; /* 赤くなる事故防止 */
+  background: transparent !important; /* 襍､縺上↑繧倶ｺ区腐髦ｲ豁｢ */
   cursor:pointer;
   border-radius: 999px;
   display:grid;
@@ -813,11 +1090,11 @@ input, textarea, [contenteditable="true"]{
   box-shadow: 0 10px 30px rgba(6,24,40,0.14);
 }
 
-/* ピル本体 */
+/* 繝斐Ν譛ｬ菴・*/
 .bottom-nav .nav-btn.is-active::before{
   content:"";
   position:absolute;
-  /* 内側のピルをさらに広げ（外枠はそのまま）、アニメで拡大する */
+  /* 蜀・・縺ｮ繝斐Ν繧偵＆繧峨↓蠎・￡・亥､匁棧縺ｯ縺昴・縺ｾ縺ｾ・峨√い繝九Γ縺ｧ諡｡螟ｧ縺吶ｋ */
   /* make the active pill larger and more prominent */
   inset: 0 8px; /* reduce vertical inset to expand height, widen horizontally */
   border-radius: 999px;
@@ -833,7 +1110,7 @@ input, textarea, [contenteditable="true"]{
   -webkit-backdrop-filter: blur(22px) saturate(240%);
 }
 
-/* 反射 */
+/* 蜿榊ｰ・*/
 .bottom-nav .nav-btn.is-active::after{
   content:"";
   position:absolute;
@@ -855,7 +1132,7 @@ input, textarea, [contenteditable="true"]{
   font-size: 28px;
 }
 
-/* アイコン画像のサイズ調整 */
+/* 繧｢繧､繧ｳ繝ｳ逕ｻ蜒上・繧ｵ繧､繧ｺ隱ｿ謨ｴ */
 .bottom-nav .nav-ico-img{
   width: 36px;
   height: 36px;
@@ -864,7 +1141,7 @@ input, textarea, [contenteditable="true"]{
   transition: transform .18s ease;
 }
 
-/* アクティブ時に内側アイコンをさらに強調（外枠は変えない） */
+/* 繧｢繧ｯ繝・ぅ繝匁凾縺ｫ蜀・・繧｢繧､繧ｳ繝ｳ繧偵＆繧峨↓蠑ｷ隱ｿ・亥､匁棧縺ｯ螟峨∴縺ｪ縺・ｼ・*/
 .bottom-nav .nav-btn.is-active .nav-ico-img{
   transform: scale(1.12);
 }
@@ -873,6 +1150,340 @@ input, textarea, [contenteditable="true"]{
 .modal{ position: fixed; inset:0; display:none; z-index:50; align-items:center; justify-content:center; }
 .modal.is-open{ display:flex; }
 .modal-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.35); }
+
+.ranking-modal{ position: fixed; inset:0; display:none; z-index:60; align-items:center; justify-content:center; }
+.ranking-modal.is-open{ display:flex; }
+.ranking-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.45); }
+.ranking-panel{
+  position: relative;
+  width: min(420px, calc(100% - 32px));
+  border-radius: 18px;
+  color:#0b1c2a;
+  max-height: min(520px, calc(100% - 120px));
+  display:flex;
+  flex-direction: column;
+}
+.ranking-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+.ranking-title{ font-weight:900; }
+.ranking-list{
+  padding: 12px 14px;
+  overflow-y: auto;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ranking-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.8);
+  font-weight: 800;
+}
+.ranking-rank{ min-width: 3ch; }
+.ranking-name{ flex: 1; }
+.ranking-stamps{
+  display:flex;
+  gap: 4px;
+  align-items:center;
+  justify-content:center;
+  min-width: 140px;
+}
+.ranking-stamp{
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: .25;
+  filter: grayscale(1);
+}
+.ranking-stamp.is-active{
+  opacity: 1;
+  filter: none;
+}
+.ranking-points{
+  min-width: 5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.complete-overlay{
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.12), rgba(0,0,0,0.55));
+  z-index: 12;
+  overflow: hidden;
+}
+.complete-overlay.is-open{ display: flex; }
+.complete-overlay::before,
+.complete-overlay::after{
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(from 0deg, rgba(255,240,150,0.25), rgba(255,255,255,0) 45%, rgba(120,220,255,0.25), rgba(255,255,255,0) 70%, rgba(255,160,220,0.25));
+  animation: complete-spin 12s linear infinite;
+  filter: blur(12px);
+  opacity: 0.8;
+}
+.complete-overlay::after{
+  animation-duration: 18s;
+  opacity: 0.55;
+}
+.complete-card{
+  width: min(320px, 80%);
+  padding: 22px 18px;
+  border-radius: 18px;
+  color: #0b1c2a;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 30px 90px rgba(0,0,0,.35);
+  animation: complete-pop 600ms cubic-bezier(.2,.9,.2,1) both;
+}
+.complete-title{
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+.complete-text{
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0,0,0,.75);
+}
+@keyframes complete-spin{
+  from{ transform: rotate(0deg); }
+  to{ transform: rotate(360deg); }
+}
+@keyframes complete-pop{
+  0%{ transform: translateY(20px) scale(0.86); opacity: 0; }
+  60%{ transform: translateY(-4px) scale(1.04); opacity: 1; }
+  100%{ transform: translateY(0) scale(1); opacity: 1; }
+}
+.app.is-siteinfo-open .header,
+.app.is-siteinfo-open .main,
+.app.is-siteinfo-open .bottom-nav,
+.app.is-siteinfo-open #bg-wrap,
+.app.is-siteinfo-open .bg-orbs,
+.app.is-siteinfo-open .nfc-hint,
+.app.is-siteinfo-open .golden-overlay{
+  filter: blur(10px) brightness(0.75);
+  transition: filter 220ms ease;
+}
+
+.site-info{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms ease;
+  z-index: 10;
+}
+.site-info.is-open{
+  opacity: 1;
+  pointer-events: auto;
+}
+.site-info-top{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 170px;
+}
+.site-info-flow{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+  min-height: 240px;
+}
+.site-info-text{
+  max-width: min(320px, 80%);
+  text-align: center;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 6px 24px rgba(0,0,0,.45);
+  filter: blur(6px);
+  transform: translateY(0);
+  opacity: 0;
+  transition: filter 320ms ease, transform 320ms ease, opacity 320ms ease;
+}
+.site-info.is-open .site-info-text{
+  filter: blur(0px);
+  transform: translateY(0);
+  opacity: 1;
+}
+.site-info-btn{
+  margin-top: 16px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: .4px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 320ms ease, transform 320ms ease;
+  cursor: pointer;
+  pointer-events: none;
+}
+.site-info.is-forced.is-open .site-info-btn--start{
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info:not(.is-forced) .site-info-btn--start{ display: none; }
+.site-info-actions{
+  display: none;
+  gap: 12px;
+  margin-top: 16px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 320ms ease, transform 320ms ease;
+  pointer-events: none;
+}
+.site-info-actions .site-info-btn{
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+.site-info.is-auth-choice .site-info-actions{
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info.is-auth-choice .site-info-actions .site-info-btn{
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info.is-auth-choice .site-info-btn--start{
+  display: none;
+}
+.site-info.is-auth-form .site-info-actions{
+  display: none;
+}
+.site-info-form{
+  width: min(320px, 80%);
+  margin-top: 10px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+.site-info.is-auth-form .site-info-form{
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info.is-auth-form .site-info-btn--start{
+  display: none;
+}
+.site-info.is-auth-form .site-info-actions{
+  display: none;
+}
+.site-info.is-auth-form .site-info-btn--submit{
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info-form-title{
+  display: none;
+}
+.site-info-form-fields{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+.site-info-input{
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  font-weight: 800;
+  outline: none;
+  backdrop-filter: blur(10px);
+  position: relative;
+  left: -14px;
+}
+.site-info-input::placeholder{ color: rgba(255,255,255,0.7); }
+.site-info-btn--submit{
+  margin-top: 0;
+  align-self: stretch;
+  width: 100%;
+}
+.site-info-link{
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  font-weight: 800;
+  text-decoration: underline;
+  letter-spacing: .3px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 320ms ease, transform 320ms ease;
+  pointer-events: none;
+}
+.site-info.is-auth-form .site-info-link{
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-info-error{
+  min-height: 18px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,220,220,0.95);
+}
+.app.is-modal-blur .header,
+.app.is-modal-blur .main,
+.app.is-modal-blur .bottom-nav,
+.app.is-modal-blur #bg-wrap,
+.app.is-modal-blur .bg-orbs,
+.app.is-modal-blur .nfc-hint,
+.app.is-modal-blur .golden-overlay{
+  filter: blur(6px);
+  transition: filter 180ms ease;
+}
 
 .modal-panel{
   position:relative;
@@ -909,7 +1520,7 @@ input, textarea, [contenteditable="true"]{
   color: #d32f2f;
 }
 
-/* 認証フォーム用スタイル */
+/* 隱崎ｨｼ繝輔か繝ｼ繝逕ｨ繧ｹ繧ｿ繧､繝ｫ */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -929,7 +1540,7 @@ input, textarea, [contenteditable="true"]{
   color: #0b1c2a;
   border: 1px solid rgba(0,0,0,0.1);
   font-size: 16px;
-  box-sizing: border-box; /* はみ出し防止 */
+  box-sizing: border-box; /* 縺ｯ縺ｿ蜃ｺ縺鈴亟豁｢ */
 }
 .auth-actions {
   width: 100%;
@@ -946,7 +1557,7 @@ input, textarea, [contenteditable="true"]{
   cursor: pointer;
 }
 
-/* backdrop-filter 非対応フォールバック */
+/* backdrop-filter 髱槫ｯｾ蠢懊ヵ繧ｩ繝ｼ繝ｫ繝舌ャ繧ｯ */
 .no-backdrop .glass,
 .no-backdrop .glass-nav{
   background: rgba(255,255,255,.25);
@@ -954,7 +1565,7 @@ input, textarea, [contenteditable="true"]{
   -webkit-backdrop-filter:none;
 }
 
-/* NFC検知時のトップ中央から広がる波紋アニメーション */
+/* NFC讀懃衍譎ゅ・繝医ャ繝嶺ｸｭ螟ｮ縺九ｉ蠎・′繧区ｳ｢邏九い繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ */
 .nfc-ripple{
   position: absolute;
   top: 22px;
@@ -1006,7 +1617,7 @@ input, textarea, [contenteditable="true"]{
 /* ===== Golden Mode ===== */
 
 .app.golden{
-  /* 全体を金色調にオーバーレイ */
+  /* 蜈ｨ菴薙ｒ驥題牡隱ｿ縺ｫ繧ｪ繝ｼ繝舌・繝ｬ繧､ */
   background: linear-gradient(180deg, #fff6d6 0%, #ffe9a8 30%, #ffd24d 70%);
   color: #2b1f00;
 }
@@ -1247,7 +1858,7 @@ background: linear-gradient(-45deg, #e7a996 0%, #e9b5c9 28%, #95cde1 52%, #8cddb
   }
 }
 
-/* 縦スクロール不可（スマホ比率前提） */
+/* 邵ｦ繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ荳榊庄・医せ繝槭・豈皮紫蜑肴署・・*/
 html, body{
   height:100%;
   margin:0;
@@ -1255,8 +1866,8 @@ html, body{
   font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
 }
 
-/* ====== スマホ枠プレビュー（PCだけON） ====== */
-/* スマホでは通常表示になるよう “ベースは素” */
+/* ====== 繧ｹ繝槭・譫繝励Ξ繝薙Η繝ｼ・・C縺縺前N・・====== */
+/* 繧ｹ繝槭・縺ｧ縺ｯ騾壼ｸｸ陦ｨ遉ｺ縺ｫ縺ｪ繧九ｈ縺・窶懊・繝ｼ繧ｹ縺ｯ邏窶・*/
 .device, .phone{
   width: 100%;
   height: 100%;
@@ -1269,7 +1880,7 @@ html, body{
   background: transparent;
 }
 
-/* HTMLに .phone を入れるのが前提（PCで中央にスマホ表示するため） */
+/* HTML縺ｫ .phone 繧貞・繧後ｋ縺ｮ縺悟燕謠撰ｼ・C縺ｧ荳ｭ螟ｮ縺ｫ繧ｹ繝槭・陦ｨ遉ｺ縺吶ｋ縺溘ａ・・*/
 .phone{
   width: 100%;
   height: 100%;
@@ -1281,7 +1892,7 @@ html, body{
 }
 .phone::before, .phone::after{ content:none; }
 
-/* PCだけ：中央にスマホ枠（暗い余白＝プレゼン意識） */
+/* PC縺縺托ｼ壻ｸｭ螟ｮ縺ｫ繧ｹ繝槭・譫・域囓縺・ｽ咏區・昴・繝ｬ繧ｼ繝ｳ諢剰ｭ假ｼ・*/
 @media (min-width: 900px){
   .device{
     min-height: 100vh;
@@ -1297,11 +1908,11 @@ html, body{
 
   .phone{
     width: min(420px, 92vw);
-    /* ビューポート高さに合わせ上限を設定（.device の上下パディング 56px ×2 を考慮） */
+    /* 繝薙Η繝ｼ繝昴・繝磯ｫ倥＆縺ｫ蜷医ｏ縺帑ｸ企剞繧定ｨｭ螳夲ｼ・device 縺ｮ荳贋ｸ九ヱ繝・ぅ繝ｳ繧ｰ 56px ﾃ・ 繧定・・・・*/
     height: min(920px, calc(100dvh - 112px));
     max-height: calc(100dvh - 112px);
     aspect-ratio: 9 / 19.5;
-    padding: 14px;                 /* ベゼル厚 */
+    padding: 14px;                 /* 繝吶ぞ繝ｫ蜴・*/
     box-sizing: border-box;
     border-radius: 44px;
     background: transparent;
@@ -1320,13 +1931,13 @@ html, body{
     pointer-events:none;
   }
 
-  /* デスクトップ専用：デバッグツール（スマホ枠外の背景に固定表示） */
+  /* 繝・せ繧ｯ繝医ャ繝怜ｰら畑・壹ョ繝舌ャ繧ｰ繝・・繝ｫ・医せ繝槭・譫螟悶・閭梧勹縺ｫ蝗ｺ螳夊｡ｨ遉ｺ・・*/
   .debug-tools{
     display:block;
     position: fixed;
-    /* スマホ枠の右外側に配置：中央を基準に phone の右端 + オフセット */
-    left: calc(50% + min(420px, 92vw) / 2 + 44px); /* 右に押し出す（さらに移動） */
-    /* 少し上へ移動（枠と被らないように上寄せ） */
+    /* 繧ｹ繝槭・譫縺ｮ蜿ｳ螟門・縺ｫ驟咲ｽｮ・壻ｸｭ螟ｮ繧貞渕貅悶↓ phone 縺ｮ蜿ｳ遶ｯ + 繧ｪ繝輔そ繝・ヨ */
+    left: calc(50% + min(420px, 92vw) / 2 + 44px); /* 蜿ｳ縺ｫ謚ｼ縺怜・縺呻ｼ医＆繧峨↓遘ｻ蜍包ｼ・*/
+    /* 蟆代＠荳翫∈遘ｻ蜍包ｼ域棧縺ｨ陲ｫ繧峨↑縺・ｈ縺・↓荳雁ｯ・○・・*/
     top: calc(50vh - min(200px, 34vh) - 36px);
     z-index: 30;
     display: flex;
@@ -1352,7 +1963,7 @@ html, body{
   .debug-panel button{ padding: 8px 10px; border-radius: 8px; font-weight:700; }
 
 
-  /* PC表示ではスマホ内にルートと同じアニメート背景を適用 */
+  /* PC陦ｨ遉ｺ縺ｧ縺ｯ繧ｹ繝槭・蜀・↓繝ｫ繝ｼ繝医→蜷後§繧｢繝九Γ繝ｼ繝郁レ譎ｯ繧帝←逕ｨ */
   .app{
     background: linear-gradient(-45deg, #e7a996 0%, #e9a2bd 18%, #95cde1 52%, #91decc 100%);
     background-size: 400% 400%;
@@ -1365,7 +1976,7 @@ html, body{
 
 /* ====== App ====== */
 .app{
-  position: relative; /* ← bottom navを枠内に固定するため重要 */
+  position: relative; /* 竊・bottom nav繧呈棧蜀・↓蝗ｺ螳壹☆繧九◆繧・㍾隕・*/
   height:100%;
   display:flex;
   flex-direction:column;
@@ -1375,7 +1986,7 @@ html, body{
   border-radius: 0;
 }
 
-/* PCでは画面にも角丸（ベゼル内） */
+/* PC縺ｧ縺ｯ逕ｻ髱｢縺ｫ繧りｧ剃ｸｸ・医・繧ｼ繝ｫ蜀・ｼ・*/
 @media (min-width: 900px){
   .app{
     border-radius: 30px;
@@ -1386,7 +1997,7 @@ html, body{
   }
 }
 
-/* ===== 背景オーブ ===== */
+/* ===== 閭梧勹繧ｪ繝ｼ繝・===== */
 .bg-orbs{
   position:absolute;
   inset:0;
@@ -1408,7 +2019,7 @@ html, body{
 .orb.o2{ right:-180px; top: 38%; background: radial-gradient(circle, rgba(255,255,255,.55), rgba(127,227,198,0) 62%); }
 .orb.o3{ left: 20%; bottom:-220px; background: radial-gradient(circle, rgba(255,255,255,.50), rgba(0,0,0,0) 65%); }
 
-/* 前面レイヤ */
+/* 蜑埼擇繝ｬ繧､繝､ */
 .header, .main, .bottom-nav, .modal{ position: relative; z-index: 2; }
 
 /* ===== Header ===== */
@@ -1445,8 +2056,8 @@ html, body{
 
 .oop-pill{
   border-radius: 999px;
-  padding: 12px 12px;/* 横パディングを少し減らして幅を小さく */
-  min-width: 120px;   /* 横幅を少し小さくに調整 */
+  padding: 12px 12px;/* 讓ｪ繝代ョ繧｣繝ｳ繧ｰ繧貞ｰ代＠貂帙ｉ縺励※蟷・ｒ蟆上＆縺・*/
+  min-width: 120px;   /* 讓ｪ蟷・ｒ蟆代＠蟆上＆縺上↓隱ｿ謨ｴ */
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1457,8 +2068,8 @@ html, body{
 .oop-value{
   color: #373542;;
   font-weight: 900;
-  font-size: 24px; /* 文字を少しだけ大きく */
-  font-variant-numeric: tabular-nums; /* 桁幅を揃えて4桁収まるように */
+  font-size: 24px; /* 譁・ｭ励ｒ蟆代＠縺縺大､ｧ縺阪￥ */
+  font-variant-numeric: tabular-nums; /* 譯∝ｹ・ｒ謠・∴縺ｦ4譯∝庶縺ｾ繧九ｈ縺・↓ */
 }
 
 /* ===== Main/pages ===== */
@@ -1467,7 +2078,7 @@ html, body{
   display:flex;
   z-index: 1;
   padding: 0 18px;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom)); /* ← bottom nav分 */
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
 
 .page{
@@ -1636,7 +2247,7 @@ html, body{
   padding: 0 6px;
 }
 
-/* .below-row を stamp-card 内に配置した場合のオーバーレイ位置 */
+/* .below-row 繧・stamp-card 蜀・↓驟咲ｽｮ縺励◆蝣ｴ蜷医・繧ｪ繝ｼ繝舌・繝ｬ繧､菴咲ｽｮ */
 .below-row.inside-card{
   position: absolute;
   right: 12px;
@@ -1655,7 +2266,7 @@ html, body{
   box-shadow: 0 6px 14px rgba(0,0,0,.12);
 }
 
-/* ヘッダー下に置く SCAN ボタン */
+/* 繝倥ャ繝繝ｼ荳九↓鄂ｮ縺・SCAN 繝懊ち繝ｳ */
 .scan-top{
   position: absolute;
   right: 18px;
@@ -1668,7 +2279,7 @@ html, body{
   font-size: 14px;
 }
 
-/* scan をよりコンパクトに（視認性を保ちつつ収まるように） */
+/* scan 繧偵ｈ繧翫さ繝ｳ繝代け繝医↓・郁ｦ冶ｪ肴ｧ繧剃ｿ昴■縺､縺､蜿弱∪繧九ｈ縺・↓・・*/
 .below-row.inside-card .scan-mini{
   padding-left: 10px;
   padding-right: 10px;
@@ -1679,6 +2290,37 @@ html, body{
   border-radius: 10px;
   padding: 10px 16px;
   cursor:pointer;
+}
+.chips-btn.danger{
+  background: #ff4d4d;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(255,77,77,.35);
+}
+#rankingBtn{
+  background: linear-gradient(135deg, #ffd86a 0%, #fff1b3 35%, #ffc04d 60%, #ffe8a8 85%, #ffd86a 100%);
+  color: #5a2f00;
+  border: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 14px 30px rgba(255,195,70,.45);
+  position: relative;
+  overflow: hidden;
+}
+#rankingBtn::after{
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: -60%;
+  width: 40%;
+  height: 240%;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9), rgba(255,255,255,0));
+  transform: rotate(25deg);
+  animation: ranking-shine 2.4s linear infinite;
+  pointer-events: none;
+}
+@keyframes ranking-shine{
+  0%{ transform: translateX(-160%) rotate(25deg); opacity: 0; }
+  20%{ opacity: .8; }
+  60%{ opacity: .4; }
+  100%{ transform: translateX(220%) rotate(25deg); opacity: 0; }
 }
 .chips-btn{ color:#4aa8ff; }
 .scan-mini{ color:#08304b; }
@@ -1731,13 +2373,13 @@ html, body{
   pointer-events: none;
 }
 
-/* ===== Bottom Nav：app中央下部（枠内に収まる） ===== */
+/* ===== Bottom Nav・啾pp荳ｭ螟ｮ荳矩Κ・域棧蜀・↓蜿弱∪繧具ｼ・===== */
 .bottom-nav{
-  position: absolute; /* ← fixedではなく app基準 */
+  position: absolute; /* 竊・fixed縺ｧ縺ｯ縺ｪ縺・app蝓ｺ貅・*/
   left: 50%;
   bottom: calc(12px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 2;
 
   width: min(360px, calc(100% - 24px));
   height: 64px;
@@ -1754,7 +2396,7 @@ html, body{
 
 @media (max-height: 740px){
   .main{
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
   }
   .page{
     justify-content: flex-start;
@@ -1774,7 +2416,7 @@ html, body{
   }
 }
 
-/* nav自体をガラス強め */
+/* nav閾ｪ菴薙ｒ繧ｬ繝ｩ繧ｹ蠑ｷ繧・*/
 .glass-nav{
   background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
   border: 1px solid rgba(255,255,255,0.28);
@@ -1807,7 +2449,7 @@ html, body{
   width: 84px;
   height: 48px;
   border: none;
-  background: transparent !important; /* 赤くなる事故防止 */
+  background: transparent !important; /* 襍､縺上↑繧倶ｺ区腐髦ｲ豁｢ */
   cursor:pointer;
   border-radius: 999px;
   display:grid;
@@ -1821,11 +2463,11 @@ html, body{
   box-shadow: 0 10px 30px rgba(6,24,40,0.14);
 }
 
-/* ピル本体 */
+/* 繝斐Ν譛ｬ菴・*/
 .bottom-nav .nav-btn.is-active::before{
   content:"";
   position:absolute;
-  /* 内側のピルをさらに広げ（外枠はそのまま）、アニメで拡大する */
+  /* 蜀・・縺ｮ繝斐Ν繧偵＆繧峨↓蠎・￡・亥､匁棧縺ｯ縺昴・縺ｾ縺ｾ・峨√い繝九Γ縺ｧ諡｡螟ｧ縺吶ｋ */
   /* make the active pill larger and more prominent */
   inset: 0 8px; /* reduce vertical inset to expand height, widen horizontally */
   border-radius: 999px;
@@ -1841,7 +2483,7 @@ html, body{
   -webkit-backdrop-filter: blur(22px) saturate(240%);
 }
 
-/* 反射 */
+/* 蜿榊ｰ・*/
 .bottom-nav .nav-btn.is-active::after{
   content:"";
   position:absolute;
@@ -1863,7 +2505,7 @@ html, body{
   font-size: 28px;
 }
 
-/* アイコン画像のサイズ調整 */
+/* 繧｢繧､繧ｳ繝ｳ逕ｻ蜒上・繧ｵ繧､繧ｺ隱ｿ謨ｴ */
 .bottom-nav .nav-ico-img{
   width: 36px;
   height: 36px;
@@ -1872,7 +2514,7 @@ html, body{
   transition: transform .18s ease;
 }
 
-/* アクティブ時に内側アイコンをさらに強調（外枠は変えない） */
+/* 繧｢繧ｯ繝・ぅ繝匁凾縺ｫ蜀・・繧｢繧､繧ｳ繝ｳ繧偵＆繧峨↓蠑ｷ隱ｿ・亥､匁棧縺ｯ螟峨∴縺ｪ縺・ｼ・*/
 .bottom-nav .nav-btn.is-active .nav-ico-img{
   transform: scale(1.12);
 }
@@ -1904,7 +2546,7 @@ html, body{
 }
 .modal-body{ padding: 14px; line-height: 1.65; }
 
-/* backdrop-filter 非対応フォールバック */
+/* backdrop-filter 髱槫ｯｾ蠢懊ヵ繧ｩ繝ｼ繝ｫ繝舌ャ繧ｯ */
 .no-backdrop .glass,
 .no-backdrop .glass-nav{
   background: rgba(255,255,255,.25);
@@ -1912,7 +2554,7 @@ html, body{
   -webkit-backdrop-filter:none;
 }
 
-/* NFC検知時のトップ中央から広がる波紋アニメーション */
+/* NFC讀懃衍譎ゅ・繝医ャ繝嶺ｸｭ螟ｮ縺九ｉ蠎・′繧区ｳ｢邏九い繝九Γ繝ｼ繧ｷ繝ｧ繝ｳ */
 .nfc-ripple{
   position: absolute;
   top: 22px;
@@ -1964,7 +2606,7 @@ html, body{
 /* ===== Golden Mode ===== */
 
 .app.golden{
-  /* 全体を金色調にオーバーレイ */
+  /* 蜈ｨ菴薙ｒ驥題牡隱ｿ縺ｫ繧ｪ繝ｼ繝舌・繝ｬ繧､ */
   background: linear-gradient(180deg, #fff6d6 0%, #ffe9a8 30%, #ffd24d 70%);
   color: #2b1f00;
 }
@@ -2233,4 +2875,23 @@ html, body{
 }
 .bg-orbs{
   z-index: 1;
+}
+
+.site-info-title{
+  width: min(220px, 70%);
+  height: auto;
+  margin-bottom: 6px;
+  filter: blur(6px) drop-shadow(0 8px 22px rgba(0,0,0,.35));
+  opacity: 0;
+  transform: translateY(-14px);
+  transition: filter 320ms ease, opacity 320ms ease, transform 320ms ease;
+}
+.site-info.is-open .site-info-title{
+  filter: blur(0px) drop-shadow(0 10px 24px rgba(0,0,0,.45));
+  opacity: 0.95;
+  transform: translateY(0);
+}
+.site-info.is-open .site-info-title{
+  opacity: 0.95;
+  transform: translateY(0);
 }
