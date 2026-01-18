@@ -692,6 +692,11 @@ function applyUid(uid) {
   currentIndex = targetIndex >= 0 ? targetIndex : 0;
   // （必要なら）setPage("stamp"); ← 他ページにいると見えないので保険で入れるのもアリ
   render();
+  // ✅ Android対策：次フレームで transform をもう一回当てる
+  requestAnimationFrame(() => {
+    updateSlidePosition(false);
+    syncChipsModalContent();
+  });
 }
 
 function isStampOwnedByUid(uid) {
