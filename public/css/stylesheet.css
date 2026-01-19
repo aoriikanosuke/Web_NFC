@@ -1287,18 +1287,7 @@ body.is-siteinfo-open #bg-wrap,
 body.is-siteinfo-open .bg-orbs,
 body.is-siteinfo-open .nfc-hint,
 body.is-siteinfo-open .golden-overlay{
-  filter: blur(10px) brightness(0.75);
-  transition: filter 220ms ease;
-}
-body.force-unblur .header,
-body.force-unblur .main,
-body.force-unblur .bottom-nav,
-body.force-unblur #bg-wrap,
-body.force-unblur .bg-orbs,
-body.force-unblur .nfc-hint,
-body.force-unblur .golden-overlay,
-body.force-unblur .bg-layer{
-  filter: none !important;
+  filter: none;
 }
 
 .site-info{
