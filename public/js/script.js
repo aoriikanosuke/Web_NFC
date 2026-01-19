@@ -65,6 +65,84 @@ const $rankingBtn = document.getElementById("rankingBtn");
 const $rankingModal = document.getElementById("rankingModal");
 const $rankingList = document.getElementById("rankingList");
 
+// Loading UI helpers
+let appLoadingCount = 0;
+let appLoadingEl = null;
+
+function ensureAppLoadingEl() {
+  if (appLoadingEl) return appLoadingEl;
+  const app = document.querySelector(".app");
+  if (!app) return null;
+  const el = document.createElement("div");
+  el.id = "appLoading";
+  el.className = "app-loading";
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `
+    <div class="loading-badge glass">
+      <span class="loading-ring" aria-hidden="true"></span>
+      <span class="loading-label">読み込み中</span>
+      <span class="loading-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    </div>
+  `;
+  app.appendChild(el);
+  const badge = el.querySelector(".loading-badge");
+  if (badge) {
+    badge.style.setProperty("--gx", "40%");
+    badge.style.setProperty("--gy", "18%");
+  }
+  appLoadingEl = el;
+  return el;
+}
+
+function startAppLoading(label) {
+  const el = ensureAppLoadingEl();
+  appLoadingCount += 1;
+  if (!el) return;
+  const labelEl = el.querySelector(".loading-label");
+  if (labelEl) labelEl.textContent = label || "読み込み中";
+  el.classList.add("is-show");
+  el.setAttribute("aria-hidden", "false");
+}
+
+function stopAppLoading() {
+  if (appLoadingCount > 0) appLoadingCount -= 1;
+  if (appLoadingCount > 0) return;
+  const el = appLoadingEl || document.getElementById("appLoading");
+  if (!el) return;
+  el.classList.remove("is-show");
+  el.setAttribute("aria-hidden", "true");
+}
+
+function setButtonLoading(btn, isLoading, label) {
+  if (!btn) return;
+  if (isLoading) {
+    btn.classList.add("btn-loading", "is-loading");
+    btn.setAttribute("aria-busy", "true");
+    btn.setAttribute("data-loading-prev-disabled", btn.disabled ? "1" : "0");
+    btn.disabled = true;
+    let indicator = btn.querySelector(".loading-indicator");
+    if (!indicator) {
+      indicator = document.createElement("span");
+      indicator.className = "loading-indicator";
+      indicator.innerHTML = `
+        <span class="loading-ring" aria-hidden="true"></span>
+        <span class="loading-text"></span>
+      `;
+      btn.appendChild(indicator);
+    }
+    const text = indicator.querySelector(".loading-text");
+    if (text) text.textContent = label || "読み込み中";
+  } else {
+    btn.classList.remove("is-loading");
+    btn.removeAttribute("aria-busy");
+    const prev = btn.getAttribute("data-loading-prev-disabled");
+    if (prev === "0") btn.disabled = false;
+    btn.removeAttribute("data-loading-prev-disabled");
+    const indicator = btn.querySelector(".loading-indicator");
+    if (indicator) indicator.remove();
+  }
+}
+
 // Pay UI
 const $payAmount = document.getElementById("payAmount");
 const $payConfirmAmount = document.getElementById("payConfirmAmount");
@@ -163,26 +241,31 @@ function persistCurrentUser() {
 async function syncFromDB() {
   if (!currentUser?.id) return;
 
-  const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
-  if (!res.ok) return;
+  startAppLoading("同期中");
+  try {
+    const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
+    if (!res.ok) return;
 
-  const data = await res.json();
+    const data = await res.json();
 
-  // points をDBの正に合わせる
-  currentUser.points = Number(data.points || 0);
-  persistCurrentUser();
+    // points をDBの正に合わせる
+    currentUser.points = Number(data.points || 0);
+    persistCurrentUser();
 
-  // 取得済みUIDでスタンプflagを同期（DBを正にする）
-  const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
+    // 取得済みUIDでスタンプflagを同期（DBを正にする）
+    const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
 
-  // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
-  stamps = loadStamps();
-  stamps.forEach(s => {
-    s.flag = uidSet.has(String(s.uid).toUpperCase());
-  });
+    // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
+    stamps = loadStamps();
+    stamps.forEach(s => {
+      s.flag = uidSet.has(String(s.uid).toUpperCase());
+    });
 
-  saveStamps();
-  render();
+    saveStamps();
+    render();
+  } finally {
+    stopAppLoading();
+  }
 }
 
 
@@ -215,11 +298,20 @@ function setOOPValue(value) {
 // ================== Ranking ==================
 async function openRankingModal() {
   if (!$rankingModal || !$rankingList) return;
-  $rankingList.innerHTML = "読み込み中...";
+  setButtonLoading($rankingBtn, true, "読み込み中");
+  $rankingList.innerHTML = `
+    <div class="ranking-loading">
+      <div class="loading-row"></div>
+      <div class="loading-row"></div>
+      <div class="loading-row"></div>
+      <div class="loading-row"></div>
+    </div>
+  `;
   $rankingModal.classList.add("is-open");
   $rankingModal.setAttribute("aria-hidden", "false");
 
   try {
+    startAppLoading("ランキング取得中");
     const res = await fetch("/api/ranking");
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -253,6 +345,9 @@ async function openRankingModal() {
     }).join("");
   } catch {
     $rankingList.textContent = "ランキング取得に失敗しました。";
+  } finally {
+    stopAppLoading();
+    setButtonLoading($rankingBtn, false);
   }
 }
 
@@ -312,6 +407,8 @@ async function claimCompletionBonus() {
     return;
   }
   bonusClaiming = true;
+  setButtonLoading($completeBonusBtn, true, "付与中");
+  startAppLoading("ボーナス付与中");
   try {
     const res = await fetch("/api/bonus", {
       method: "POST",
@@ -332,6 +429,8 @@ async function claimCompletionBonus() {
     showModalMessage("ボーナス", "通信に失敗しました。");
   } finally {
     bonusClaiming = false;
+    stopAppLoading();
+    setButtonLoading($completeBonusBtn, false);
   }
 }
 
@@ -447,6 +546,8 @@ async function handlePayCommit() {
   }
 
   payBusy = true;
+  setButtonLoading($payCommitBtn, true, "処理中");
+  startAppLoading("決済処理中");
   syncPayButtons();
   setPayStatus("決済処理中...");
 
@@ -478,6 +579,8 @@ async function handlePayCommit() {
     setPayStatus("通信に失敗しました。");
   } finally {
     payBusy = false;
+    stopAppLoading();
+    setButtonLoading($payCommitBtn, false);
     syncPayButtons();
   }
 }
@@ -673,16 +776,21 @@ function applyUid(uid) {
     // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
     if (currentUser?.id) {
       (async () => {
-        const r = await fetch("/api/stamps/acquire", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUser.id, uid }),
-        });
-        const data = await r.json().catch(() => null);
-        if (r.ok && data) {
-          currentUser.points = Number(data.points || 0);
-          persistCurrentUser();
-          updateOOP();
+        startAppLoading("反映中");
+        try {
+          const r = await fetch("/api/stamps/acquire", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: currentUser.id, uid }),
+          });
+          const data = await r.json().catch(() => null);
+          if (r.ok && data) {
+            currentUser.points = Number(data.points || 0);
+            persistCurrentUser();
+            updateOOP();
+          }
+        } finally {
+          stopAppLoading();
         }
       })();
     }
@@ -892,6 +1000,7 @@ async function redeemToken(token, options) {
   }
 
   try {
+    startAppLoading("スタンプ取得中");
     const res = await fetch("/api/stamps/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -929,6 +1038,8 @@ async function redeemToken(token, options) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
     return { ok: false };
+  } finally {
+    stopAppLoading();
   }
 }
 
@@ -1391,6 +1502,8 @@ async function handleSiteInfoAuth() {
 
   const endpoint = siteInfoAuthMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
   try {
+    setButtonLoading($siteInfoSubmitBtn, true, siteInfoAuthMode === "signup" ? "登録中" : "ログイン中");
+    startAppLoading(siteInfoAuthMode === "signup" ? "会員登録中" : "ログイン中");
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1411,6 +1524,9 @@ async function handleSiteInfoAuth() {
     updateOOP();
   } catch {
     setSiteInfoError("通信に失敗しました。");
+  } finally {
+    stopAppLoading();
+    setButtonLoading($siteInfoSubmitBtn, false);
   }
 }
 
@@ -1906,48 +2022,53 @@ async function resetProgressAndGoStamp() {
   const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
   if (!ok) return;
 
-  // DB reset（ログイン中のみ）
-  const u =
-    (typeof currentUser !== "undefined" && currentUser)
-      ? currentUser
-      : JSON.parse(localStorage.getItem("user") || "null");
+  startAppLoading("リセット中");
+  try {
+    // DB reset（ログイン中のみ）
+    const u =
+      (typeof currentUser !== "undefined" && currentUser)
+        ? currentUser
+        : JSON.parse(localStorage.getItem("user") || "null");
 
-  if (u?.id) {
-    const r = await fetch("/api/stamps/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: u.id }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      alert(data?.error || "DBのリセットに失敗しました。");
-      return;
+    if (u?.id) {
+      const r = await fetch("/api/stamps/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: u.id }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert(data?.error || "DBのリセットに失敗しました。");
+        return;
+      }
+      if (typeof currentUser !== "undefined" && currentUser) {
+        currentUser.points = Number(data?.user?.points ?? 0);
+        localStorage.setItem("user", JSON.stringify(currentUser));
+      }
     }
-    if (typeof currentUser !== "undefined" && currentUser) {
-      currentUser.points = Number(data?.user?.points ?? 0);
-      localStorage.setItem("user", JSON.stringify(currentUser));
-    }
+
+    // local reset
+    stamps = structuredClone(DEFAULT_STAMPS);
+    saveStamps();
+    currentIndex = 0;
+
+    consumedPoints = 0;
+    goldenUnlocked = false;
+    goldenActive = false;
+    persistConsumed();
+    persistGolden();
+    localStorage.removeItem(getBonusKey());
+    hideCompleteOverlay();
+
+    render();
+    applyGoldenClass();
+    updateGoldenUI();
+    updateOOP();
+
+    setPage("stamp"); // ← 常に戻す
+  } finally {
+    stopAppLoading();
   }
-
-  // local reset
-  stamps = structuredClone(DEFAULT_STAMPS);
-  saveStamps();
-  currentIndex = 0;
-
-  consumedPoints = 0;
-  goldenUnlocked = false;
-  goldenActive = false;
-  persistConsumed();
-  persistGolden();
-  localStorage.removeItem(getBonusKey());
-  hideCompleteOverlay();
-
-  render();
-  applyGoldenClass();
-  updateGoldenUI();
-  updateOOP();
-
-  setPage("stamp"); // ← 常に戻す
 }
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
@@ -2212,28 +2333,35 @@ async function handleAuth() {
   const password = document.getElementById('auth-password').value;
   const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/signup';
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
+  try {
+    setButtonLoading(authSubmitBtnEl, true, isLoginMode ? "ログイン中" : "登録中");
+    startAppLoading(isLoginMode ? "ログイン中" : "会員登録中");
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  if (res.ok) {
-    const user = await res.json();
-    currentUser = user;
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem(LS_SITEINFO_SEEN, "1");
+    if (res.ok) {
+      const user = await res.json();
+      currentUser = user;
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem(LS_SITEINFO_SEEN, "1");
 
-    updateUIForLoggedInUser();
-    closeAuthModal();
-    closeSiteInfo();
+      updateUIForLoggedInUser();
+      closeAuthModal();
+      closeSiteInfo();
 
-    await syncFromDB(); // ← ここで stamps と points が揃う
+      await syncFromDB(); // ← ここで stamps と points が揃う
 
-    showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
-  } else {
-    const err = await res.json();
-    alert(err.error);
+      showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
+    } else {
+      const err = await res.json();
+      alert(err.error);
+    }
+  } finally {
+    stopAppLoading();
+    setButtonLoading(authSubmitBtnEl, false);
   }
 }
 
