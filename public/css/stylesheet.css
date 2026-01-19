@@ -1011,7 +1011,7 @@ input, textarea, [contenteditable="true"]{
   left: 50%;
   bottom: calc(12px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 2;
+  z-index: 0;
 
   width: min(360px, calc(100% - 24px));
   height: 64px;
@@ -1128,7 +1128,7 @@ input, textarea, [contenteditable="true"]{
 
 .bottom-nav .nav-ico{
   position: relative;
-  z-index: 2;
+  z-index: 1;
   font-size: 28px;
 }
 
