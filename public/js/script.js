@@ -647,7 +647,8 @@ function updateSlidePosition(withAnim) {
 
 // ================== UID適用（維持） ==================
 function applyUid(uid) {
-  const hit = stamps.find(s => s.uid.toUpperCase() === uid.toUpperCase());
+  const hitIndex = stamps.findIndex(s => s.uid.toUpperCase() === uid.toUpperCase());
+  const hit = hitIndex >= 0 ? stamps[hitIndex] : null;
   if (!hit) {
     alert(`未登録のUIDです：${uid}\nscript.js の DEFAULT_STAMPS を確認してください。`);
     return;
@@ -661,10 +662,9 @@ function applyUid(uid) {
       persistCurrentUser();
     }
     hit.justStamped = true;
+    if (hitIndex >= 0) currentIndex = hitIndex;
+    setPage("stamp");
     saveStamps();
-
-    currentIndex = stamps.indexOf(hit);
-    if (currentIndex < 0) currentIndex = 0;
 
     render();
     const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
@@ -853,13 +853,19 @@ function applyStampProgress(progress) {
   const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
   const prevFlags = new Set(stamps.filter(s => s.flag).map(s => s.id));
   const nextFlags = new Set(progress);
+  let firstNewIndex = -1;
 
-  stamps = DEFAULT_STAMPS.map(def => {
+  stamps = DEFAULT_STAMPS.map((def, idx) => {
     const was = prevFlags.has(def.id);
     const now = nextFlags.has(def.id);
+    if (now && !was && firstNewIndex === -1) firstNewIndex = idx;
     return { ...def, flag: now, justStamped: now && !was };
   });
 
+  if (firstNewIndex >= 0) {
+    currentIndex = firstNewIndex;
+    setPage("stamp");
+  }
   saveStamps();
   render();
 
