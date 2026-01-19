@@ -1270,6 +1270,7 @@ function setPage(name) {
   });
   if (name === "pay") updatePayAvailable();
   if (name !== "pay") setPayRotated(false);
+  if (currentUser?.id) closeSiteInfo();
 }
 
 // ================== Site info overlay ==================
