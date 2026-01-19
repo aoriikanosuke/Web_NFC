@@ -1270,6 +1270,7 @@ function setPage(name) {
   });
   if (name === "pay") updatePayAvailable();
   if (name !== "pay") setPayRotated(false);
+  if (currentUser?.id) closeSiteInfo();
 }
 
 // ================== Site info overlay ==================
@@ -1294,6 +1295,7 @@ function openSiteInfo(options) {
   if ($siteInfoFormError) $siteInfoFormError.textContent = "";
   $siteInfoOverlay.setAttribute("aria-hidden", "false");
   $app.classList.add("is-siteinfo-open");
+  document.body.classList.add("is-siteinfo-open");
 }
 
 function closeSiteInfo() {
@@ -1309,7 +1311,38 @@ function closeSiteInfo() {
   $siteInfoOverlay.classList.remove("is-auth-form");
   $siteInfoOverlay.setAttribute("aria-hidden", "true");
   $app.classList.remove("is-siteinfo-open");
+  document.body.classList.remove("is-siteinfo-open");
+  clearSiteInfoFilters();
   localStorage.setItem(LS_SITEINFO_SEEN, "1");
+}
+
+function syncSiteInfoBlur() {
+  if (!$siteInfoOverlay || !$app) return;
+  const open = $siteInfoOverlay.classList.contains("is-open");
+  if (!open) {
+    $app.classList.remove("is-siteinfo-open");
+    document.body.classList.remove("is-siteinfo-open");
+    clearSiteInfoFilters();
+  }
+}
+
+function clearSiteInfoFilters() {
+  [
+    ".header",
+    ".main",
+    ".bottom-nav",
+    "#bg-wrap",
+    ".bg-orbs",
+    ".nfc-hint",
+    ".golden-overlay",
+    ".bg-layer",
+  ].forEach((sel) => {
+    document.querySelectorAll(sel).forEach((el) => {
+      el.style.filter = "";
+    });
+  });
+  document.body.classList.add("force-unblur");
+  setTimeout(() => document.body.classList.remove("force-unblur"), 60);
 }
 
 function showSiteInfoAuthChoice() {
@@ -2113,6 +2146,10 @@ if (currentUser) {
     // renderStamps(); // 既存の描画関数
   }
 
+  if (currentUser?.id) {
+    closeSiteInfo();
+  }
+
   const pendingProgress = localStorage.getItem(LS_PENDING_PROGRESS);
   if (pendingProgress) {
     try { applyStampProgress(JSON.parse(pendingProgress)); } catch {}
@@ -2128,6 +2165,7 @@ if (currentUser) {
   initAuthEnterShortcuts();
   initZoomGuards();
   consumeTokenFromUrlAndPending();
+  syncSiteInfoBlur();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAfterDomReady, { once: true });
@@ -2200,6 +2238,8 @@ function updateUIForLoggedInUser() {
   if (ui) ui.style.display = 'block';
   const du = document.getElementById('display-username');
   if (du) du.innerText = currentUser.username;
+  closeSiteInfo();
+  syncSiteInfoBlur();
 }
 
 function logout() {
