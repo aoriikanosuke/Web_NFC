@@ -2881,17 +2881,13 @@ html, body{
   width: min(220px, 70%);
   height: auto;
   margin-bottom: 6px;
-  filter: blur(6px) drop-shadow(0 8px 22px rgba(0,0,0,.35));
+  filter: drop-shadow(0 8px 22px rgba(0,0,0,.35));
   opacity: 0;
   transform: translateY(-14px);
   transition: filter 320ms ease, opacity 320ms ease, transform 320ms ease;
 }
 .site-info.is-open .site-info-title{
-  filter: blur(0px) drop-shadow(0 10px 24px rgba(0,0,0,.45));
-  opacity: 0.95;
-  transform: translateY(0);
-}
-.site-info.is-open .site-info-title{
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,.45));
   opacity: 0.95;
   transform: translateY(0);
 }
