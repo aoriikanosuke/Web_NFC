@@ -2114,6 +2114,10 @@ if (currentUser) {
     // renderStamps(); // 既存の描画関数
   }
 
+  if (currentUser?.id) {
+    closeSiteInfo();
+  }
+
   const pendingProgress = localStorage.getItem(LS_PENDING_PROGRESS);
   if (pendingProgress) {
     try { applyStampProgress(JSON.parse(pendingProgress)); } catch {}
