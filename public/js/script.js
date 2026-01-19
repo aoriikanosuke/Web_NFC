@@ -574,11 +574,22 @@ function stampPageHTML(s) {
 }
 
 function renderIndicator() {
-  $indicator.innerHTML = stamps.map((_, i) => {
-    const active = i === currentIndex ? "is-active" : "";
-    const stamped = stamps[i] && stamps[i].flag ? "is-stamped" : "";
-    return `<div class="dot ${active} ${stamped}" data-i="${i}"></div>`;
-  }).join("");
+  // ✅ $indicator が古い/未取得でも落ちないように毎回ケア
+  if (!$indicator || !$indicator.isConnected) {
+    $indicator =
+      document.querySelector(".stamp-indicator") ||
+      document.querySelector(".indicator") ||
+      document.getElementById("indicator");
+  }
+  if (!$indicator) return;
+
+  $indicator.innerHTML = stamps
+    .map((_, i) => {
+      const active = i === currentIndex ? "is-active" : "";
+      const stamped = stamps[i] && stamps[i].flag ? "is-stamped" : "";
+      return `<div class="dot ${active} ${stamped}" data-i="${i}"></div>`;
+    })
+    .join("");
 
   $indicator.querySelectorAll(".dot").forEach(dot => {
     dot.addEventListener("click", () => {
