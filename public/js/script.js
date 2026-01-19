@@ -1341,6 +1341,8 @@ function clearSiteInfoFilters() {
       el.style.filter = "";
     });
   });
+  document.body.classList.add("force-unblur");
+  setTimeout(() => document.body.classList.remove("force-unblur"), 60);
 }
 
 function showSiteInfoAuthChoice() {
