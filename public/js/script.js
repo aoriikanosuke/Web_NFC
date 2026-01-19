@@ -663,9 +663,6 @@ function applyUid(uid) {
     hit.justStamped = true;
     saveStamps();
 
-    currentIndex = stamps.indexOf(hit);
-    if (currentIndex < 0) currentIndex = 0;
-
     render();
     const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
