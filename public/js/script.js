@@ -1312,6 +1312,7 @@ function closeSiteInfo() {
   $siteInfoOverlay.setAttribute("aria-hidden", "true");
   $app.classList.remove("is-siteinfo-open");
   document.body.classList.remove("is-siteinfo-open");
+  clearSiteInfoFilters();
   localStorage.setItem(LS_SITEINFO_SEEN, "1");
 }
 
@@ -1321,7 +1322,25 @@ function syncSiteInfoBlur() {
   if (!open) {
     $app.classList.remove("is-siteinfo-open");
     document.body.classList.remove("is-siteinfo-open");
+    clearSiteInfoFilters();
   }
+}
+
+function clearSiteInfoFilters() {
+  [
+    ".header",
+    ".main",
+    ".bottom-nav",
+    "#bg-wrap",
+    ".bg-orbs",
+    ".nfc-hint",
+    ".golden-overlay",
+    ".bg-layer",
+  ].forEach((sel) => {
+    document.querySelectorAll(sel).forEach((el) => {
+      el.style.filter = "";
+    });
+  });
 }
 
 function showSiteInfoAuthChoice() {
