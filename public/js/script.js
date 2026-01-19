@@ -1313,6 +1313,12 @@ function closeSiteInfo() {
   localStorage.setItem(LS_SITEINFO_SEEN, "1");
 }
 
+function syncSiteInfoBlur() {
+  if (!$siteInfoOverlay || !$app) return;
+  const open = $siteInfoOverlay.classList.contains("is-open");
+  if (!open) $app.classList.remove("is-siteinfo-open");
+}
+
 function showSiteInfoAuthChoice() {
   if (!$siteInfoOverlay) return;
   siteInfoAuthChoice = true;
@@ -2133,6 +2139,7 @@ if (currentUser) {
   initAuthEnterShortcuts();
   initZoomGuards();
   consumeTokenFromUrlAndPending();
+  syncSiteInfoBlur();
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAfterDomReady, { once: true });
@@ -2206,6 +2213,7 @@ function updateUIForLoggedInUser() {
   const du = document.getElementById('display-username');
   if (du) du.innerText = currentUser.username;
   closeSiteInfo();
+  syncSiteInfoBlur();
 }
 
 function logout() {
