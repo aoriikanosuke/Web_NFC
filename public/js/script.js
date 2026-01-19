@@ -2200,6 +2200,7 @@ function updateUIForLoggedInUser() {
   if (ui) ui.style.display = 'block';
   const du = document.getElementById('display-username');
   if (du) du.innerText = currentUser.username;
+  closeSiteInfo();
 }
 
 function logout() {
