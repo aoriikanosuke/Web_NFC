@@ -1279,7 +1279,14 @@ input, textarea, [contenteditable="true"]{
 .app.is-siteinfo-open #bg-wrap,
 .app.is-siteinfo-open .bg-orbs,
 .app.is-siteinfo-open .nfc-hint,
-.app.is-siteinfo-open .golden-overlay{
+.app.is-siteinfo-open .golden-overlay,
+body.is-siteinfo-open .header,
+body.is-siteinfo-open .main,
+body.is-siteinfo-open .bottom-nav,
+body.is-siteinfo-open #bg-wrap,
+body.is-siteinfo-open .bg-orbs,
+body.is-siteinfo-open .nfc-hint,
+body.is-siteinfo-open .golden-overlay{
   filter: blur(10px) brightness(0.75);
   transition: filter 220ms ease;
 }

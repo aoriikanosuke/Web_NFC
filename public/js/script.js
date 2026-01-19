@@ -1295,6 +1295,7 @@ function openSiteInfo(options) {
   if ($siteInfoFormError) $siteInfoFormError.textContent = "";
   $siteInfoOverlay.setAttribute("aria-hidden", "false");
   $app.classList.add("is-siteinfo-open");
+  document.body.classList.add("is-siteinfo-open");
 }
 
 function closeSiteInfo() {
@@ -1310,13 +1311,17 @@ function closeSiteInfo() {
   $siteInfoOverlay.classList.remove("is-auth-form");
   $siteInfoOverlay.setAttribute("aria-hidden", "true");
   $app.classList.remove("is-siteinfo-open");
+  document.body.classList.remove("is-siteinfo-open");
   localStorage.setItem(LS_SITEINFO_SEEN, "1");
 }
 
 function syncSiteInfoBlur() {
   if (!$siteInfoOverlay || !$app) return;
   const open = $siteInfoOverlay.classList.contains("is-open");
-  if (!open) $app.classList.remove("is-siteinfo-open");
+  if (!open) {
+    $app.classList.remove("is-siteinfo-open");
+    document.body.classList.remove("is-siteinfo-open");
+  }
 }
 
 function showSiteInfoAuthChoice() {
