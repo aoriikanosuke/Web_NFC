@@ -1009,7 +1009,7 @@ input, textarea, [contenteditable="true"]{
 .bottom-nav{
   position: absolute; /* 竊・fixed縺ｧ縺ｯ縺ｪ縺・app蝓ｺ貅・*/
   left: 50%;
-  bottom: calc(32px + env(safe-area-inset-bottom));
+  bottom: calc(32px + env(safe-area-inset-bottom) + 16px);
   transform: translateX(-50%);
   z-index: 0;
 
@@ -1023,7 +1023,7 @@ input, textarea, [contenteditable="true"]{
   padding: 8px 10px;
   border-radius: 999px;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.18));
-  margin-bottom: 0;
+  margin-bottom: 20px;
 }
 
 @media (max-height: 740px){
@@ -1035,8 +1035,9 @@ input, textarea, [contenteditable="true"]{
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(26px + env(safe-area-inset-bottom));
+    bottom: calc(26px + env(safe-area-inset-bottom) + 16px);
     height: 58px;
+    margin-bottom: 20px;
   }
   .bottom-nav .nav-btn{
     width: 76px;
