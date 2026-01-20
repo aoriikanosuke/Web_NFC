@@ -80,6 +80,10 @@
         <span class="nfc-ring r3"></span>
         <span class="nfc-tag"></span>
       </div>
+      <div id="noticePill" class="notice-pill glass" role="status" aria-live="polite" aria-hidden="true">
+        <span class="notice-dot" aria-hidden="true"></span>
+        <span id="noticeText" class="notice-text"></span>
+      </div>
       <!-- Header -->
       <header class="header">
         <div id="siteInfoTrigger" class="title is-clickable" role="button" tabindex="0" aria-label="サイト説明を表示">
@@ -308,6 +312,17 @@
             <button id="siteInfoToggleLink" class="site-info-link" type="button">会員登録の場合はこちら</button>
             <div id="siteInfoFormError" class="site-info-error" aria-live="polite"></div>
           </div>
+        </div>
+      </div>
+      <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+        <div class="loading-card glass">
+          <div class="loading-orbit" aria-hidden="true">
+            <span class="loading-dot d1"></span>
+            <span class="loading-dot d2"></span>
+            <span class="loading-dot d3"></span>
+          </div>
+          <div id="loadingTitle" class="loading-title">読み込み中</div>
+          <div id="loadingSub" class="loading-sub">しばらくお待ちください</div>
         </div>
       </div>
     </div>

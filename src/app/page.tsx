@@ -135,6 +135,11 @@ export default function Page() {
               <span className="nfc-tag"></span>
             </div>
 
+            <div id="noticePill" className="notice-pill glass" role="status" aria-live="polite" aria-hidden="true">
+              <span className="notice-dot" aria-hidden="true"></span>
+              <span id="noticeText" className="notice-text"></span>
+            </div>
+
             {/* Header */}
             <header className="header">
               <div
@@ -479,6 +484,22 @@ export default function Page() {
                   </button>
 
                   <div id="siteInfoFormError" className="site-info-error" aria-live="polite"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="loadingOverlay" className="loading-overlay" aria-hidden="true">
+              <div className="loading-card glass">
+                <div className="loading-orbit" aria-hidden="true">
+                  <span className="loading-dot d1"></span>
+                  <span className="loading-dot d2"></span>
+                  <span className="loading-dot d3"></span>
+                </div>
+                <div id="loadingTitle" className="loading-title">
+                  読み込み中
+                </div>
+                <div id="loadingSub" className="loading-sub">
+                  しばらくお待ちください
                 </div>
               </div>
             </div>

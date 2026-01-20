@@ -64,6 +64,11 @@ const $completeBonusBtn = document.getElementById("completeBonusBtn");
 const $rankingBtn = document.getElementById("rankingBtn");
 const $rankingModal = document.getElementById("rankingModal");
 const $rankingList = document.getElementById("rankingList");
+const $loadingOverlay = document.getElementById("loadingOverlay");
+const $loadingTitle = document.getElementById("loadingTitle");
+const $loadingSub = document.getElementById("loadingSub");
+const $noticePill = document.getElementById("noticePill");
+const $noticeText = document.getElementById("noticeText");
 
 // Pay UI
 const $payAmount = document.getElementById("payAmount");
@@ -138,6 +143,57 @@ function saveStamps() {
   localStorage.setItem(LS_KEY, JSON.stringify(stamps));
 }
 
+// ================== Loading / Notice UI ==================
+let loadingCount = 0;
+function setLoadingText(title, sub) {
+  if ($loadingTitle) $loadingTitle.textContent = title || "読み込み中";
+  if ($loadingSub) $loadingSub.textContent = sub || "しばらくお待ちください";
+}
+function showLoading(title, sub) {
+  loadingCount += 1;
+  setLoadingText(title, sub);
+  if ($loadingOverlay) {
+    $loadingOverlay.classList.add("is-show");
+    $loadingOverlay.setAttribute("aria-hidden", "false");
+  }
+}
+function hideLoading() {
+  loadingCount = Math.max(0, loadingCount - 1);
+  if (loadingCount !== 0) return;
+  if ($loadingOverlay) {
+    $loadingOverlay.classList.remove("is-show");
+    $loadingOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+async function runWithLoading(task, title, sub) {
+  showLoading(title, sub);
+  try {
+    return await task();
+  } finally {
+    hideLoading();
+  }
+}
+
+let noticeTimer = 0;
+function showNotice(message, options) {
+  if (!$noticePill || !$noticeText) {
+    if (message) console.log(message);
+    return;
+  }
+  const type = options?.type || "info";
+  $noticeText.textContent = message || "";
+  $noticePill.classList.toggle("is-error", type === "error");
+  $noticePill.classList.toggle("is-success", type === "success");
+  $noticePill.classList.add("is-show");
+  $noticePill.setAttribute("aria-hidden", "false");
+  clearTimeout(noticeTimer);
+  const duration = options?.duration ?? 2200;
+  noticeTimer = setTimeout(() => {
+    $noticePill.classList.remove("is-show", "is-error", "is-success");
+    $noticePill.setAttribute("aria-hidden", "true");
+  }, duration);
+}
+
 // ================== UI helpers ==================
 function calcPoints() {
   return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
@@ -163,26 +219,28 @@ function persistCurrentUser() {
 async function syncFromDB() {
   if (!currentUser?.id) return;
 
-  const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
-  if (!res.ok) return;
+  return runWithLoading(async () => {
+    const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
+    if (!res.ok) return;
 
-  const data = await res.json();
+    const data = await res.json();
 
-  // points をDBの正に合わせる
-  currentUser.points = Number(data.points || 0);
-  persistCurrentUser();
+    // points をDBの正に合わせる
+    currentUser.points = Number(data.points || 0);
+    persistCurrentUser();
 
-  // 取得済みUIDでスタンプflagを同期（DBを正にする）
-  const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
+    // 取得済みUIDでスタンプflagを同期（DBを正にする）
+    const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
 
-  // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
-  stamps = loadStamps();
-  stamps.forEach(s => {
-    s.flag = uidSet.has(String(s.uid).toUpperCase());
-  });
+    // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
+    stamps = loadStamps();
+    stamps.forEach(s => {
+      s.flag = uidSet.has(String(s.uid).toUpperCase());
+    });
 
-  saveStamps();
-  render();
+    saveStamps();
+    render();
+  }, "同期中", "スタンプとポイントを更新中");
 }
 
 
@@ -215,42 +273,49 @@ function setOOPValue(value) {
 // ================== Ranking ==================
 async function openRankingModal() {
   if (!$rankingModal || !$rankingList) return;
-  $rankingList.innerHTML = "読み込み中...";
+  $rankingList.innerHTML = `
+    <div class="loading-inline">
+      <span class="loading-dots"><i></i><i></i><i></i></span>
+      <span class="loading-text">ランキングを読み込み中</span>
+    </div>
+  `;
   $rankingModal.classList.add("is-open");
   $rankingModal.setAttribute("aria-hidden", "false");
 
   try {
-    const res = await fetch("/api/ranking");
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      $rankingList.textContent = data?.error || "ランキング取得に失敗しました。";
-      return;
-    }
-    const list = Array.isArray(data?.ranking) ? data.ranking : [];
-    if (list.length === 0) {
-      $rankingList.textContent = "ランキングデータがありません。";
-      return;
-    }
-    $rankingList.innerHTML = list.map((row, idx) => {
-      const name = row.username || "user";
-      const points = Number(row.points || 0);
-      const stampCount = Number(row.stamp_count || 0);
-      const iconCount = Math.max(0, Math.min(6, stampCount));
-      const icons = Array.from({ length: 6 }).map((_, i) => {
-        const active = i < iconCount ? "is-active" : "";
-        return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
-      }).join("");
-      return `
-        <div class="ranking-item">
-          <div class="ranking-rank">#${idx + 1}</div>
-          <div class="ranking-name">${name}</div>
-          <div class="ranking-stamps" aria-label="スタンプ所持数 ${stampCount}">
-            ${icons}
+    await runWithLoading(async () => {
+      const res = await fetch("/api/ranking");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        $rankingList.textContent = data?.error || "ランキング取得に失敗しました。";
+        return;
+      }
+      const list = Array.isArray(data?.ranking) ? data.ranking : [];
+      if (list.length === 0) {
+        $rankingList.textContent = "ランキングデータがありません。";
+        return;
+      }
+      $rankingList.innerHTML = list.map((row, idx) => {
+        const name = row.username || "user";
+        const points = Number(row.points || 0);
+        const stampCount = Number(row.stamp_count || 0);
+        const iconCount = Math.max(0, Math.min(6, stampCount));
+        const icons = Array.from({ length: 6 }).map((_, i) => {
+          const active = i < iconCount ? "is-active" : "";
+          return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
+        }).join("");
+        return `
+          <div class="ranking-item">
+            <div class="ranking-rank">#${idx + 1}</div>
+            <div class="ranking-name">${name}</div>
+            <div class="ranking-stamps" aria-label="スタンプ所持数 ${stampCount}">
+              ${icons}
+            </div>
+            <div class="ranking-points">${points}P</div>
           </div>
-          <div class="ranking-points">${points}P</div>
-        </div>
-      `;
-    }).join("");
+        `;
+      }).join("");
+    }, "\u30e9\u30f3\u30ad\u30f3\u30b0\u53d6\u5f97\u4e2d", "\u30e9\u30f3\u30ad\u30f3\u30b0\u3092\u66f4\u65b0\u4e2d");
   } catch {
     $rankingList.textContent = "ランキング取得に失敗しました。";
   }
@@ -312,6 +377,7 @@ async function claimCompletionBonus() {
     return;
   }
   bonusClaiming = true;
+  showLoading("ボーナス処理中", "ポイントを付与しています");
   try {
     const res = await fetch("/api/bonus", {
       method: "POST",
@@ -332,6 +398,7 @@ async function claimCompletionBonus() {
     showModalMessage("ボーナス", "通信に失敗しました。");
   } finally {
     bonusClaiming = false;
+    hideLoading();
   }
 }
 
@@ -349,8 +416,10 @@ function getAvailablePayPoints() {
   return Math.max(0, Number(getDisplayedTotal() || 0));
 }
 
-function setPayStatus(message) {
-  if ($payStatus) $payStatus.textContent = message || "";
+function setPayStatus(message, options) {
+  if (!$payStatus) return;
+  $payStatus.textContent = message || "";
+  $payStatus.classList.toggle("is-loading", !!(options && options.loading));
 }
 
 function showPaySuccess(amount) {
@@ -448,7 +517,8 @@ async function handlePayCommit() {
 
   payBusy = true;
   syncPayButtons();
-  setPayStatus("決済処理中...");
+  setPayStatus("決済処理中...", { loading: true });
+  showLoading("決済処理中", "通信中です");
 
   try {
     const res = await fetch("/api/pay", {
@@ -479,6 +549,7 @@ async function handlePayCommit() {
   } finally {
     payBusy = false;
     syncPayButtons();
+    hideLoading();
   }
 }
 
@@ -673,17 +744,20 @@ function applyUid(uid) {
     // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
     if (currentUser?.id) {
       (async () => {
-        const r = await fetch("/api/stamps/acquire", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUser.id, uid }),
-        });
-        const data = await r.json().catch(() => null);
-        if (r.ok && data) {
-          currentUser.points = Number(data.points || 0);
-          persistCurrentUser();
-          updateOOP();
-        }
+        showNotice("スタンプを同期中...", { duration: 1400 });
+        await runWithLoading(async () => {
+          const r = await fetch("/api/stamps/acquire", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: currentUser.id, uid }),
+          });
+          const data = await r.json().catch(() => null);
+          if (r.ok && data) {
+            currentUser.points = Number(data.points || 0);
+            persistCurrentUser();
+            updateOOP();
+          }
+        }, "\u540c\u671f\u4e2d", "\u30b9\u30bf\u30f3\u30d7\u3092\u4fdd\u5b58\u4e2d");
       })();
     }
   }
@@ -892,6 +966,7 @@ async function redeemToken(token, options) {
   }
 
   try {
+    showLoading("スタンプ確認中", "NFCを確認しています");
     const res = await fetch("/api/stamps/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -929,6 +1004,8 @@ async function redeemToken(token, options) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
     return { ok: false };
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1391,6 +1468,7 @@ async function handleSiteInfoAuth() {
 
   const endpoint = siteInfoAuthMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
   try {
+    showLoading("認証中", "アカウントを確認しています");
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1411,6 +1489,8 @@ async function handleSiteInfoAuth() {
     updateOOP();
   } catch {
     setSiteInfoError("通信に失敗しました。");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -1457,7 +1537,10 @@ function initKiran(){
 
 // ================== misc ==================
 function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
-function toast(msg) { console.log(msg); }
+function toast(msg) {
+  if (msg) console.log(msg);
+  showNotice(msg);
+}
 
 /* NFC読み取り時にトップ中央で派手な波紋を出す (DOM操作) */
 function showNfcRipple(){
@@ -1880,22 +1963,24 @@ async function resetDBProgressIfLoggedIn() {
 
   if (!u?.id) return { skipped: true };
 
-  const r = await fetch("/api/stamps/reset", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: u.id }),
-  });
+  return runWithLoading(async () => {
+    const r = await fetch("/api/stamps/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: u.id }),
+    });
 
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.error || "DB reset failed");
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || "DB reset failed");
 
-  // pointsを0に反映（DBを正にするなら必須）
-  if (typeof currentUser !== "undefined" && currentUser) {
-    currentUser.points = 0;
-    localStorage.setItem("user", JSON.stringify(currentUser));
-  }
+    // pointsを0に反映（DBを正にするなら必須）
+    if (typeof currentUser !== "undefined" && currentUser) {
+      currentUser.points = 0;
+      localStorage.setItem("user", JSON.stringify(currentUser));
+    }
 
-  return data; // { ok, deletedCount, user... } など
+    return data; // { ok, deletedCount, user... } など
+  }, "リセット中", "進捗を初期化しています");
 }
 
 // ================== UIイベント ==================
@@ -1913,19 +1998,27 @@ async function resetProgressAndGoStamp() {
       : JSON.parse(localStorage.getItem("user") || "null");
 
   if (u?.id) {
-    const r = await fetch("/api/stamps/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: u.id }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      alert(data?.error || "DBのリセットに失敗しました。");
+    showLoading("リセット中", "進捗を初期化しています");
+    try {
+      const r = await fetch("/api/stamps/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: u.id }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert(data?.error || "DBのリセットに失敗しました。");
+        return;
+      }
+      if (typeof currentUser !== "undefined" && currentUser) {
+        currentUser.points = Number(data?.user?.points ?? 0);
+        localStorage.setItem("user", JSON.stringify(currentUser));
+      }
+    } catch {
+      alert("DBのリセットに失敗しました。");
       return;
-    }
-    if (typeof currentUser !== "undefined" && currentUser) {
-      currentUser.points = Number(data?.user?.points ?? 0);
-      localStorage.setItem("user", JSON.stringify(currentUser));
+    } finally {
+      hideLoading();
     }
   }
 
@@ -2212,28 +2305,33 @@ async function handleAuth() {
   const password = document.getElementById('auth-password').value;
   const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/signup';
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
+  showLoading("認証中", "アカウントを確認しています");
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  if (res.ok) {
-    const user = await res.json();
-    currentUser = user;
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem(LS_SITEINFO_SEEN, "1");
+    if (res.ok) {
+      const user = await res.json();
+      currentUser = user;
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem(LS_SITEINFO_SEEN, "1");
 
-    updateUIForLoggedInUser();
-    closeAuthModal();
-    closeSiteInfo();
+      updateUIForLoggedInUser();
+      closeAuthModal();
+      closeSiteInfo();
 
-    await syncFromDB(); // ← ここで stamps と points が揃う
+      await syncFromDB(); // ← ここで stamps と points が揃う
 
-    showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
-  } else {
-    const err = await res.json();
-    alert(err.error);
+      showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
+    } else {
+      const err = await res.json();
+      alert(err.error);
+    }
+  } finally {
+    hideLoading();
   }
 }
 
