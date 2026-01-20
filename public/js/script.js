@@ -1686,27 +1686,7 @@ function populateDebugPanel(){
   });
   panel.appendChild(group);
 
-  // ポイント増減
-  const controls = document.createElement('div');
-  controls.style.display = 'flex';
-  controls.style.gap = '8px';
-  controls.style.marginTop = '8px';
-
-  const inc = document.createElement('button');
-  inc.textContent = '+10P';
-  inc.addEventListener('click', () => adjustDebugPoints(10));
-  const dec = document.createElement('button');
-  dec.textContent = '-10P';
-  dec.addEventListener('click', () => adjustDebugPoints(-10));
-  const reset = document.createElement('button');
-  reset.textContent = 'リセットP';
-  reset.addEventListener('click', () => { window.debugPointsOffset = 0; updateOOP(); });
-
-  controls.appendChild(inc);
-  controls.appendChild(dec);
-  controls.appendChild(reset);
-  panel.appendChild(controls);
-
+//進捗リセットボタン
   const resetProgressBtn = document.createElement('button');
   resetProgressBtn.textContent = '進捗リセット';
   resetProgressBtn.addEventListener('click', resetProgressAndGoStamp);
