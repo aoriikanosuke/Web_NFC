@@ -2423,6 +2423,7 @@ html, body{
   .bottom-nav{
     bottom: calc(6px + env(safe-area-inset-bottom));
     height: 58px;
+    margin-bottom: 20px;
   }
   .bottom-nav .nav-btn{
     width: 76px;
