@@ -293,6 +293,11 @@ function hideCompleteOverlay() {
 }
 
 function updateCompleteOverlay() {
+  // ✅ ログアウト中はボーナスの表示をしない
+  if (!currentUser?.id) {
+    hideCompleteOverlay();
+    return;
+  }
   if (!allStampsCollected()) {
     hideCompleteOverlay();
     return;
