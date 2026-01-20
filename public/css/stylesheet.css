@@ -1009,7 +1009,7 @@ input, textarea, [contenteditable="true"]{
 .bottom-nav{
   position: absolute; /* 竊・fixed縺ｧ縺ｯ縺ｪ縺・app蝓ｺ貅・*/
   left: 50%;
-  bottom: calc(12px + env(safe-area-inset-bottom));
+  bottom: calc(32px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 0;
 
@@ -1035,7 +1035,7 @@ input, textarea, [contenteditable="true"]{
     padding-top: 8px;
   }
   .bottom-nav{
-    bottom: calc(6px + env(safe-area-inset-bottom));
+    bottom: calc(26px + env(safe-area-inset-bottom));
     height: 58px;
   }
   .bottom-nav .nav-btn{
