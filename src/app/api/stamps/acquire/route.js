@@ -80,36 +80,20 @@ export async function POST(request) {
     }
 
     // 2) user_stamps にINSERT（重複は無視）
-    // ※(user_id, stamp_id) に UNIQUE か PK がある前提だと安全
-    let acquired = false;
-    try {
-      const ins = await client.query(
-        `
-        INSERT INTO user_stamps (user_id, stamp_id)
-        VALUES ($1, $2)
-        ON CONFLICT (user_id, stamp_id) DO NOTHING
-        RETURNING acquired_at
-        `,
-        [userId, stamp.id]
-      );
-      acquired = ins.rowCount === 1;
-    } catch (err) {
-      // UNIQUEが無い環境用フォールバック（最低限の重複防止）
-      const exists = await client.query(
-        `SELECT 1 FROM user_stamps WHERE user_id = $1 AND stamp_id = $2 LIMIT 1`,
-        [userId, stamp.id]
-      );
-      if (exists.rowCount === 0) {
-        await client.query(
-          `INSERT INTO user_stamps (user_id, stamp_id) VALUES ($1, $2)`,
-          [userId, stamp.id]
-        );
-        acquired = true;
-      }
-    }
+    const { rowCount } = await client.query(
+      `
+      INSERT INTO user_stamps (user_id, stamp_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, stamp_id) DO NOTHING
+      RETURNING acquired_at
+      `,
+      [userId, stamp.id]
+    );
 
-    // 3) points 再計算して users.points を更新
-    let points = null;
+    const acquired = rowCount === 1;
+
+    // 3) points 計算して users.points を更新
+    let points = 0;
     if (acquired) {
       const upd = await client.query(
         `UPDATE users SET points = COALESCE(points, 0) + $2 WHERE id = $1 RETURNING points`,
