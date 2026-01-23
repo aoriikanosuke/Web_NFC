@@ -174,7 +174,7 @@ function ensureLoggedInForToken(token) {
   } catch {}
   if (token) localStorage.setItem(LS_PENDING_TOKEN, token);
   localStorage.setItem(LS_OPEN_AUTH, "1");
-  showModalMessage("NFC", "先にログインしてからスタンプを押してください。");
+  showModalMessage("NFC", "ログインが必要です。ログイン後、再度お試しください。");
   try { openAuthModal(); } catch {}
   return false;
 }
