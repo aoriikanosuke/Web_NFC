@@ -1,8 +1,8 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 // token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
-  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
+  { id: 1, name: "本部前",            uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
+  { id: 2, name: "ラウンジ",        uid: "04:18:bd:aa:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
   { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "/images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
   { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "/images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
   { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "/images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
@@ -10,8 +10,8 @@ const DEFAULT_STAMPS = [
 ];
 
 const DEBUG_SHOPS = [
-  { name: "A", uid: "04:18:B8:AA:96:20:90", token: "k9QmT2vN7xR_p4LdZsW-1aHc" },
-  { name: "B", uid: "04:18:B7:AA:96:20:90", token: "P3uXvG8n0Jt_y6KeRmQ-9fNd" },
+  { name: "A", uid: "04:18:b8:aa:96:20:90", token: "k9QmT2vN7xR_p4LdZsW-1aHc" },
+  { name: "B", uid: "04:18:b7:aa:96:20:90", token: "P3uXvG8n0Jt_y6KeRmQ-9fNd" },
 ];
 
 
@@ -1670,6 +1670,10 @@ function setPage(name) {
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("is-active", btn.dataset.target === name);
   });
+  if ($app) $app.classList.toggle("is-pay-layout", name === "pay");
+  if (name === "pay") {
+    updatePayHeaderOffset();
+  }
   if (name === "pay") {
     resetPayFlow();
     updatePayAvailable();
@@ -1679,6 +1683,18 @@ function setPage(name) {
     clearPaySuccessBlur();
   }
   if (currentUser?.id) closeSiteInfo();
+}
+
+function updatePayHeaderOffset() {
+  if (!$app) return;
+  const header = document.querySelector(".header");
+  if (!header) return;
+  const rect = header.getBoundingClientRect();
+  const styles = window.getComputedStyle(header);
+  const mt = Number.parseFloat(styles.marginTop || "0") || 0;
+  const mb = Number.parseFloat(styles.marginBottom || "0") || 0;
+  const offset = Math.max(0, rect.height + mt + mb);
+  $app.style.setProperty("--pay-header-offset", `${Math.round(offset)}px`);
 }
 
 // ================== Site info overlay ==================
@@ -2445,6 +2461,10 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
 
+window.addEventListener("resize", () => {
+  if (currentPage === "pay") updatePayHeaderOffset();
+});
+
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setPage(btn.dataset.target));
@@ -2468,6 +2488,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   initDebugUI();
   initKiran();
   initPayUI();
+  updatePayHeaderOffset();
   // golden 初期化
   applyGoldenClass();
   updateGoldenUI();
