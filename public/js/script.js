@@ -261,61 +261,79 @@ function closeRankingModal() {
   $rankingModal.classList.remove("is-open");
   $rankingModal.setAttribute("aria-hidden", "true");
 }
-// ================== Completion bonus ==================
+/* ================== Completion bonus (DB-backed) ==================
+   DB側の users.bonus_claimed を真実として扱う版
+   - localStorage の bonusClaimed は使わない
+   - /api/bonus で初回のみ +100 & bonus_claimed=true にする
+=============================================================== */
+
 let bonusClaiming = false;
 
-function getBonusKey() {
-  return `${LS_BONUS_CLAIMED}_${currentUser?.id || "guest"}`;
-}
-
-function isBonusClaimed() {
-  return localStorage.getItem(getBonusKey()) === "1";
-}
-
-function setBonusClaimed() {
-  localStorage.setItem(getBonusKey(), "1");
-}
-
+/** 全スタンプ取得判定（既存のままでOK） */
 function allStampsCollected() {
   return Array.isArray(stamps) && stamps.length > 0 && stamps.every(s => s.flag);
 }
 
+/** DBから「ボーナス受け取り済み」とポイントを同期する（ログイン中のみ） */
+async function fetchBonusStatus() {
+  if (!currentUser?.id) return { ok: false };
+
+  try {
+    const url = `/api/bonus?userId=${encodeURIComponent(currentUser.id)}`;
+    const res = await fetch(url, { method: "GET" });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) return { ok: false, error: data.error };
+
+    // ✅ サーバの状態をローカルに同期
+    currentUser.points = Number(data.points || 0);
+    currentUser.bonus_claimed = !!data.bonusClaimed;
+
+    persistCurrentUser();
+    updateOOP();
+
+    return { ok: true, bonusClaimed: !!data.bonusClaimed, points: currentUser.points };
+  } catch {
+    return { ok: false, error: "通信に失敗しました。" };
+  }
+}
+
+/** 受け取り済み判定（DB同期後の currentUser を参照） */
+function isBonusClaimed() {
+  return !!currentUser?.bonus_claimed;
+}
+
+/** コンプリートオーバーレイ表示（未ログイン・受け取り済みなら表示しない） */
 function showCompleteOverlay() {
   if (!$completeOverlay) return;
+
+  // ✅ ログアウト中は表示しない
+  if (!currentUser?.id) return;
+
+  // ✅ 既に受け取り済みなら表示しない
+  if (isBonusClaimed()) return;
+
   $completeOverlay.classList.add("is-open");
   $completeOverlay.setAttribute("aria-hidden", "false");
 }
 
-function hideCompleteOverlay() {
-  if (!$completeOverlay) return;
-  $completeOverlay.classList.remove("is-open");
-  $completeOverlay.setAttribute("aria-hidden", "true");
-}
-
-function updateCompleteOverlay() {
-  // ✅ ログアウト中はボーナスの表示をしない
-  if (!currentUser?.id) {
-    hideCompleteOverlay();
-    return;
-  }
-  if (!allStampsCollected()) {
-    hideCompleteOverlay();
-    return;
-  }
-  if (isBonusClaimed()) {
-    hideCompleteOverlay();
-    return;
-  }
-  showCompleteOverlay();
-}
-
+/** コンプリートボーナスを受け取る（DB側で初回のみ付与＆フラグON） */
 async function claimCompletionBonus() {
   if (bonusClaiming) return;
+
+  // ✅ ログイン必須
   if (!currentUser?.id) {
     showModalMessage("ボーナス", "ログインが必要です。");
     try { openAuthModal(); } catch {}
     return;
   }
+
+  // ✅ そもそも受け取り済みなら何もしない（ローカルの状態）
+  if (isBonusClaimed()) {
+    hideCompleteOverlay();
+    return;
+  }
+
   bonusClaiming = true;
   try {
     const res = await fetch("/api/bonus", {
@@ -323,15 +341,24 @@ async function claimCompletionBonus() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: currentUser.id }),
     });
+
     const data = await res.json().catch(() => ({}));
+
     if (!res.ok || !data.ok) {
       showModalMessage("ボーナス", data.error || "ボーナス付与に失敗しました。");
       return;
     }
+
+    // ✅ サーバから返ってきた最新ポイントを採用
     currentUser.points = Number(data.points || 0);
+
+    // ✅ サーバ側で受け取り済みになっているのでローカルにも反映
+    // alreadyClaimed=true（すでに受け取り済み）でも bonus_claimed は true 扱いでOK
+    currentUser.bonus_claimed = true;
+
     persistCurrentUser();
     updateOOP();
-    setBonusClaimed();
+
     hideCompleteOverlay();
   } catch {
     showModalMessage("ボーナス", "通信に失敗しました。");
@@ -339,6 +366,7 @@ async function claimCompletionBonus() {
     bonusClaiming = false;
   }
 }
+
 
 // ================== Pay UI ==================
 const MAX_PAY_AMOUNT = 999999;
@@ -2041,6 +2069,11 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
     openSiteInfo({ locked: false, forced: false });
   }
 
+  (async () => {
+   if (currentUser?.id) {
+    await fetchBonusStatus();
+   }
+ })();
 
 })();
 
