@@ -602,7 +602,7 @@ input, textarea, [contenteditable="true"]{
   padding: 18px 16px;
   color: #0b1c2a;
   position: relative;
-  min-height: 620px;
+  min-height: 700px;
   display: flex;
   align-items: stretch;
   justify-content: center;
