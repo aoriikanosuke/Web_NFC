@@ -365,7 +365,7 @@ export default function Page() {
                     <div className="ranking-head">
                       <div className="ranking-title">ランキング</div>
                       <button className="modal-close" type="button" data-close="1">
-                        ?
+                        ✕
                       </button>
                     </div>
                     <div id="rankingList" className="ranking-list"></div>
