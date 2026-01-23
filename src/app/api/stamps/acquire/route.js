@@ -23,7 +23,7 @@ export async function GET(request) {
         w.id, w.uid, w.name, w.value,
         us.acquired_at
       FROM user_stamps us
-      JOIN web_nfc w ON w.id = us.stamp_id
+      JOIN stamps w ON w.id = us.stamp_id
       WHERE us.user_id = $1
       ORDER BY us.acquired_at ASC
       `,
@@ -62,11 +62,11 @@ export async function POST(request) {
 
     await client.query("BEGIN");
 
-    // 1) uid -> web_nfc.id/value 取得
+    // 1) uid -> stamps.id/value 取得
     const stampRes = await client.query(
       `
       SELECT id, uid, name, value
-      FROM web_nfc
+      FROM stamps
       WHERE UPPER(uid) = UPPER($1)
       LIMIT 1
       `,

@@ -18,7 +18,7 @@ export async function POST(request) {
 
     const stampResult = await pool.query(
       `SELECT id, value AS points
-       FROM web_nfc
+       FROM stamps
        WHERE token = $1`,
       [token]
     );
