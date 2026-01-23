@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+ï»¿import { NextResponse } from "next/server";
 import { Pool } from "pg";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export async function POST(request) {
     const token = body?.token ? String(body.token) : "";
 
     if (!uid && !token) {
-      return NextResponse.json({ ok: false, error: "uid ‚Ü‚½‚Í token ‚ª•K—v‚Å‚·B" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "uid ã¾ãŸã¯ token ãŒå¿…è¦ã§ã™ã€‚" }, { status: 400 });
     }
 
     const key = uid || token;
@@ -23,12 +23,12 @@ export async function POST(request) {
     );
 
     if (res.rowCount === 0) {
-      return NextResponse.json({ ok: false, error: "–¢“o˜^‚ÌNFC‚Å‚·B" }, { status: 404 });
+      return NextResponse.json({ ok: false, error: "æœªç™»éŒ²ã®NFCã§ã™ã€‚" }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true, shop: res.rows[0] });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: "“X•Ü‚Ìæ“¾‚É¸”s‚µ‚Ü‚µ‚½B" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "åº—èˆ—ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚" }, { status: 500 });
   } finally {
     client.release();
   }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+ï»¿import { NextResponse } from "next/server";
 import { Pool } from "pg";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function POST(request) {
 
     if (!userId || !shopId || !Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
       return NextResponse.json(
-        { ok: false, error: "amount, userId, shopId ‚ª•K—v‚Å‚·B" },
+        { ok: false, error: "amount, userId, shopId ãŒå¿…è¦ã§ã™ã€‚" },
         { status: 400 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request) {
     );
     if (userRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, error: "ƒ†[ƒU[‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB" }, { status: 404 });
+      return NextResponse.json({ ok: false, error: "ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚" }, { status: 404 });
     }
 
     const shopRes = await client.query(
@@ -37,7 +37,7 @@ export async function POST(request) {
     );
     if (shopRes.rowCount === 0) {
       await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, error: "“X•Ü‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB" }, { status: 404 });
+      return NextResponse.json({ ok: false, error: "åº—èˆ—ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚" }, { status: 404 });
     }
 
     const currentUserPoints = Number(userRes.rows[0]?.points || 0);
@@ -45,7 +45,7 @@ export async function POST(request) {
     if (currentUserPoints < amount) {
       await client.query("ROLLBACK");
       return NextResponse.json(
-        { ok: false, error: "ƒ|ƒCƒ“ƒg‚ª•s‘«‚µ‚Ä‚¢‚Ü‚·B", userPoints: currentUserPoints },
+        { ok: false, error: "ãƒã‚¤ãƒ³ãƒˆãŒä¸è¶³ã—ã¦ã„ã¾ã™ã€‚", userPoints: currentUserPoints },
         { status: 400 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(request) {
     try {
       await client.query("ROLLBACK");
     } catch {}
-    return NextResponse.json({ ok: false, error: "ŒˆÏ‚ÉŽ¸”s‚µ‚Ü‚µ‚½B" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "æ±ºæ¸ˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚" }, { status: 500 });
   } finally {
     client.release();
   }
