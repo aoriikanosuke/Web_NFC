@@ -411,11 +411,20 @@ function showPaySuccess(amount) {
   if ($app) $app.classList.add("is-pay-success-blur");
 }
 
+function clearPaySuccessBlur() {
+  if ($app) $app.classList.remove("is-pay-success-blur");
+  document.querySelectorAll(
+    ".header, .main, .bottom-nav, #bg-wrap, .bg-orbs, .nfc-hint, .golden-overlay"
+  ).forEach(el => {
+    if (el && el.style) el.style.filter = "";
+  });
+}
+
 function hidePaySuccess() {
   if (!$paySuccess) return;
   $paySuccess.classList.remove("is-show");
   $paySuccess.setAttribute("aria-hidden", "true");
-  if ($app) $app.classList.remove("is-pay-success-blur");
+  clearPaySuccessBlur();
 }
 
 function setPayRotated(isRotated) {
@@ -1334,7 +1343,10 @@ function setPage(name) {
     btn.classList.toggle("is-active", btn.dataset.target === name);
   });
   if (name === "pay") updatePayAvailable();
-  if (name !== "pay") setPayRotated(false);
+  if (name !== "pay") {
+    setPayRotated(false);
+    clearPaySuccessBlur();
+  }
   if (currentUser?.id) closeSiteInfo();
 }
 
