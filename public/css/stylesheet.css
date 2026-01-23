@@ -383,13 +383,13 @@ input, textarea, [contenteditable="true"]{
 }
 .points-merge{
   position: fixed;
-  padding: 4px 8px;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 0;
   font-weight: 900;
-  font-size: 13px;
+  font-size: 20px;
   color: #d32f2f;
-  background: rgba(255,255,255,0.95);
-  box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  background: transparent;
+  box-shadow: none;
   pointer-events: none;
   z-index: 10000;
   white-space: nowrap;
