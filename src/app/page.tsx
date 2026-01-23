@@ -15,6 +15,16 @@ export default function Page() {
       <div className="device">
         <div className="phone">
           <div className="app">
+            <div id="topNotice" className="top-notice" role="status" aria-live="polite" aria-hidden="true">
+              <div className="top-notice-pill glass">
+                <span className="top-notice-dots" aria-hidden="true">
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                </span>
+                <span id="topNoticeText" className="top-notice-text">読み込み中</span>
+              </div>
+            </div>
             {/* 背景（ガラス映え用） */}
             <div id="bg-wrap" aria-hidden="true">
               <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">

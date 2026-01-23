@@ -305,6 +305,86 @@ input, textarea, [contenteditable="true"]{
   z-index: 5; /* keep scan button above main content */
 }
 
+/* ===== Top loading notice (iOS-style) ===== */
+.top-notice{
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  left: 50%;
+  transform: translate(-50%, -14px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 220ms ease, transform 260ms ease;
+}
+.top-notice.is-show{
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  animation: top-notice-pop 420ms cubic-bezier(.2,.9,.2,1);
+}
+.top-notice-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0b1c2a;
+  box-shadow: 0 10px 26px rgba(0,0,0,.18);
+}
+.top-notice-dots{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.top-notice-dots i{
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .55;
+  animation: top-notice-dot 900ms ease-in-out infinite;
+}
+.top-notice-dots i:nth-child(2){ animation-delay: 150ms; }
+.top-notice-dots i:nth-child(3){ animation-delay: 300ms; }
+@keyframes top-notice-pop{
+  0%{ transform: translate(-50%, -16px) scale(0.98); opacity: 0; }
+  100%{ transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+@keyframes top-notice-dot{
+  0%, 100%{ opacity: .35; transform: translateY(0); }
+  50%{ opacity: 1; transform: translateY(-2px); }
+}
+.tap-page .top-notice{
+  position: fixed;
+}
+
+/* Button dots (auth/login) */
+.btn-dots{
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+.btn-dots i{
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .55;
+  animation: top-notice-dot 900ms ease-in-out infinite;
+}
+.btn-dots i:nth-child(2){ animation-delay: 150ms; }
+.btn-dots i:nth-child(3){ animation-delay: 300ms; }
+.chips-btn.is-loading,
+.site-info-btn.is-loading{
+  opacity: .85;
+}
+.chips-btn.is-loading .btn-dots,
+.site-info-btn.is-loading .btn-dots{
+  display: inline-flex;
+}
+
 .title{
   flex: 1;
   display:flex;

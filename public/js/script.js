@@ -64,6 +64,9 @@ const $completeBonusBtn = document.getElementById("completeBonusBtn");
 const $rankingBtn = document.getElementById("rankingBtn");
 const $rankingModal = document.getElementById("rankingModal");
 const $rankingList = document.getElementById("rankingList");
+const $topNotice = document.getElementById("topNotice");
+const $topNoticeText = document.getElementById("topNoticeText");
+let topNoticeCount = 0;
 
 // Pay UI
 const $payAmount = document.getElementById("payAmount");
@@ -162,27 +165,31 @@ function persistCurrentUser() {
 
 async function syncFromDB() {
   if (!currentUser?.id) return;
+  showTopNotice("同期中");
+  try {
+    const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
+    if (!res.ok) return;
 
-  const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
-  if (!res.ok) return;
+    const data = await res.json();
 
-  const data = await res.json();
+    // points をDBの正に合わせる
+    currentUser.points = Number(data.points || 0);
+    persistCurrentUser();
 
-  // points をDBの正に合わせる
-  currentUser.points = Number(data.points || 0);
-  persistCurrentUser();
+    // 取得済みUIDでスタンプflagを同期（DBを正にする）
+    const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
 
-  // 取得済みUIDでスタンプflagを同期（DBを正にする）
-  const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
+    // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
+    stamps = loadStamps();
+    stamps.forEach(s => {
+      s.flag = uidSet.has(String(s.uid).toUpperCase());
+    });
 
-  // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
-  stamps = loadStamps();
-  stamps.forEach(s => {
-    s.flag = uidSet.has(String(s.uid).toUpperCase());
-  });
-
-  saveStamps();
-  render();
+    saveStamps();
+    render();
+  } finally {
+    hideTopNotice();
+  }
 }
 
 
@@ -212,6 +219,38 @@ function setOOPValue(value) {
   $oopValue.textContent = String(value);
 }
 
+function showTopNotice(message) {
+  if (!$topNotice) return;
+  if (message && $topNoticeText) $topNoticeText.textContent = message;
+  topNoticeCount += 1;
+  $topNotice.classList.add("is-show");
+  $topNotice.setAttribute("aria-hidden", "false");
+}
+
+function hideTopNotice() {
+  if (!$topNotice) return;
+  topNoticeCount = Math.max(0, topNoticeCount - 1);
+  if (topNoticeCount === 0) {
+    $topNotice.classList.remove("is-show");
+    $topNotice.setAttribute("aria-hidden", "true");
+  }
+}
+
+function setButtonLoading(button, isLoading) {
+  if (!button) return;
+  button.classList.toggle("is-loading", !!isLoading);
+  button.disabled = !!isLoading;
+  if (isLoading) button.setAttribute("aria-busy", "true");
+  else button.removeAttribute("aria-busy");
+}
+
+function setButtonLabel(button, text) {
+  if (!button) return;
+  const label = button.querySelector(".btn-label");
+  if (label) label.textContent = text;
+  else button.textContent = text;
+}
+
 // ================== Ranking ==================
 async function openRankingModal() {
   if (!$rankingModal || !$rankingList) return;
@@ -219,6 +258,7 @@ async function openRankingModal() {
   $rankingModal.classList.add("is-open");
   $rankingModal.setAttribute("aria-hidden", "false");
 
+  showTopNotice("ランキング取得中");
   try {
     const res = await fetch("/api/ranking");
     const data = await res.json().catch(() => ({}));
@@ -253,6 +293,8 @@ async function openRankingModal() {
     }).join("");
   } catch {
     $rankingList.textContent = "ランキング取得に失敗しました。";
+  } finally {
+    hideTopNotice();
   }
 }
 
@@ -317,6 +359,7 @@ async function claimCompletionBonus() {
     return;
   }
   bonusClaiming = true;
+  showTopNotice("ボーナス付与中");
   try {
     const res = await fetch("/api/bonus", {
       method: "POST",
@@ -337,6 +380,7 @@ async function claimCompletionBonus() {
     showModalMessage("ボーナス", "通信に失敗しました。");
   } finally {
     bonusClaiming = false;
+    hideTopNotice();
   }
 }
 
@@ -454,6 +498,7 @@ async function handlePayCommit() {
   payBusy = true;
   syncPayButtons();
   setPayStatus("決済処理中...");
+  showTopNotice("決済処理中");
 
   try {
     const res = await fetch("/api/pay", {
@@ -484,6 +529,7 @@ async function handlePayCommit() {
   } finally {
     payBusy = false;
     syncPayButtons();
+    hideTopNotice();
   }
 }
 
@@ -678,16 +724,21 @@ function applyUid(uid) {
     // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
     if (currentUser?.id) {
       (async () => {
-        const r = await fetch("/api/stamps/acquire", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: currentUser.id, uid }),
-        });
-        const data = await r.json().catch(() => null);
-        if (r.ok && data) {
-          currentUser.points = Number(data.points || 0);
-          persistCurrentUser();
-          updateOOP();
+        showTopNotice("スタンプ反映中");
+        try {
+          const r = await fetch("/api/stamps/acquire", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: currentUser.id, uid }),
+          });
+          const data = await r.json().catch(() => null);
+          if (r.ok && data) {
+            currentUser.points = Number(data.points || 0);
+            persistCurrentUser();
+            updateOOP();
+          }
+        } finally {
+          hideTopNotice();
         }
       })();
     }
@@ -897,6 +948,7 @@ async function redeemToken(token, options) {
   }
 
   try {
+    showTopNotice("スタンプ取得中");
     const res = await fetch("/api/stamps/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -934,6 +986,8 @@ async function redeemToken(token, options) {
     console.error(err);
     showModalMessage("NFC", "スタンプ取得に失敗しました。");
     return { ok: false };
+  } finally {
+    hideTopNotice();
   }
 }
 
@@ -1379,7 +1433,7 @@ function showSiteInfoForm(mode) {
   $siteInfoOverlay.classList.add("is-auth-form");
   $siteInfoOverlay.classList.remove("is-auth-choice");
   if ($siteInfoFormTitle) $siteInfoFormTitle.textContent = siteInfoAuthMode === "signup" ? "会員登録" : "ログイン";
-  if ($siteInfoSubmitBtn) $siteInfoSubmitBtn.textContent = siteInfoAuthMode === "signup" ? "会員登録" : "ログイン";
+  setButtonLabel($siteInfoSubmitBtn, siteInfoAuthMode === "signup" ? "会員登録" : "ログイン");
   updateSiteInfoToggleText();
   setSiteInfoError("");
   if ($siteInfoPassword) $siteInfoPassword.value = "";
@@ -1395,6 +1449,8 @@ async function handleSiteInfoAuth() {
   }
 
   const endpoint = siteInfoAuthMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
+  setButtonLoading($siteInfoSubmitBtn, true);
+  showTopNotice(siteInfoAuthMode === "signup" ? "登録中" : "ログイン中");
   try {
     const res = await fetch(endpoint, {
       method: "POST",
@@ -1416,6 +1472,9 @@ async function handleSiteInfoAuth() {
     updateOOP();
   } catch {
     setSiteInfoError("通信に失敗しました。");
+  } finally {
+    setButtonLoading($siteInfoSubmitBtn, false);
+    hideTopNotice();
   }
 }
 
@@ -1865,22 +1924,27 @@ async function resetDBProgressIfLoggedIn() {
 
   if (!u?.id) return { skipped: true };
 
-  const r = await fetch("/api/stamps/reset", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: u.id }),
-  });
+  showTopNotice("進捗リセット中");
+  try {
+    const r = await fetch("/api/stamps/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: u.id }),
+    });
 
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.error || "DB reset failed");
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || "DB reset failed");
 
-  // pointsを0に反映（DBを正にするなら必須）
-  if (typeof currentUser !== "undefined" && currentUser) {
-    currentUser.points = 0;
-    localStorage.setItem("user", JSON.stringify(currentUser));
+    // pointsを0に反映（DBを正にするなら必須）
+    if (typeof currentUser !== "undefined" && currentUser) {
+      currentUser.points = 0;
+      localStorage.setItem("user", JSON.stringify(currentUser));
+    }
+
+    return data; // { ok, deletedCount, user... } など
+  } finally {
+    hideTopNotice();
   }
-
-  return data; // { ok, deletedCount, user... } など
 }
 
 // ================== UIイベント ==================
@@ -1898,19 +1962,24 @@ async function resetProgressAndGoStamp() {
       : JSON.parse(localStorage.getItem("user") || "null");
 
   if (u?.id) {
-    const r = await fetch("/api/stamps/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: u.id }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      alert(data?.error || "DBのリセットに失敗しました。");
-      return;
-    }
-    if (typeof currentUser !== "undefined" && currentUser) {
-      currentUser.points = Number(data?.user?.points ?? 0);
-      localStorage.setItem("user", JSON.stringify(currentUser));
+    showTopNotice("進捗リセット中");
+    try {
+      const r = await fetch("/api/stamps/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: u.id }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert(data?.error || "DBのリセットに失敗しました。");
+        return;
+      }
+      if (typeof currentUser !== "undefined" && currentUser) {
+        currentUser.points = Number(data?.user?.points ?? 0);
+        localStorage.setItem("user", JSON.stringify(currentUser));
+      }
+    } finally {
+      hideTopNotice();
     }
   }
 
@@ -2100,7 +2169,7 @@ function showAuthForm(nextIsLogin) {
     authForm.style.display = 'block';
   }
   if (authTitle) authTitle.innerText = isLoginMode ? 'ログイン' : '新規会員登録';
-  if (authSubmitBtn) authSubmitBtn.innerText = isLoginMode ? 'ログイン' : '登録';
+  setButtonLabel(authSubmitBtn, isLoginMode ? 'ログイン' : '登録');
   if (authToggleText) authToggleText.innerText = isLoginMode ? '新規登録はこちら' : 'ログインはこちら';
 }
 
@@ -2197,28 +2266,35 @@ async function handleAuth() {
   const password = document.getElementById('auth-password').value;
   const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/signup';
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
+  setButtonLoading(authSubmitBtn, true);
+  showTopNotice(isLoginMode ? "ログイン中" : "登録中");
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  if (res.ok) {
-    const user = await res.json();
-    currentUser = user;
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem(LS_SITEINFO_SEEN, "1");
+    if (res.ok) {
+      const user = await res.json();
+      currentUser = user;
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem(LS_SITEINFO_SEEN, "1");
 
-    updateUIForLoggedInUser();
-    closeAuthModal();
-    closeSiteInfo();
+      updateUIForLoggedInUser();
+      closeAuthModal();
+      closeSiteInfo();
 
-    await syncFromDB(); // ← ここで stamps と points が揃う
+      await syncFromDB(); // ← ここで stamps と points が揃う
 
-    showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
-  } else {
-    const err = await res.json();
-    alert(err.error);
+      showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
+    } else {
+      const err = await res.json();
+      alert(err.error);
+    }
+  } finally {
+    setButtonLoading(authSubmitBtn, false);
+    hideTopNotice();
   }
 }
 
