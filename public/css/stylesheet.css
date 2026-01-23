@@ -811,7 +811,7 @@ input, textarea, [contenteditable="true"]{
 .app.is-pay-success-blur .bg-orbs,
 .app.is-pay-success-blur .nfc-hint,
 .app.is-pay-success-blur .golden-overlay{
-  filter: blur(10px) brightness(0.8);
+  filter: blur(6px);
   transition: filter 220ms ease;
 }
 .pay-success-card{
