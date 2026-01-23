@@ -1448,6 +1448,15 @@ async function startScan() {
       uidInFlight = true;
       
       try {
+        const stampHit = findStampByUid(uid);
+        if (!stampHit) {
+          await handlePayUidSelection(uid);
+          return;
+        }
+        if (isPaySelectingShop()) {
+          showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+          return;
+        }
         const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
         const duration = (typeof STAMP_ANI_DURATION_UID !== "undefined") ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
         const variant = owned ? "owned" : "new";
