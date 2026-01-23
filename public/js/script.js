@@ -163,6 +163,22 @@ function persistCurrentUser() {
   localStorage.setItem("user", JSON.stringify(currentUser));
 }
 
+function ensureLoggedInForToken(token) {
+  if (currentUser?.id) return true;
+  try {
+    const stored = JSON.parse(localStorage.getItem("user") || "null");
+    if (stored?.id) {
+      currentUser = stored;
+      return true;
+    }
+  } catch {}
+  if (token) localStorage.setItem(LS_PENDING_TOKEN, token);
+  localStorage.setItem(LS_OPEN_AUTH, "1");
+  showModalMessage("NFC", "先にログインしてからスタンプを押してください。");
+  try { openAuthModal(); } catch {}
+  return false;
+}
+
 async function syncFromDB() {
   if (!currentUser?.id) return;
   showTopNotice("同期中");
@@ -768,6 +784,7 @@ function isStampOwnedByUid(uid) {
 async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
+  if (!ensureLoggedInForToken(t)) return false;
   const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
   const hit = list.find(s => s.token === t);
   if (!hit) {
@@ -950,9 +967,7 @@ async function redeemToken(token, options) {
   const deferApply = !!(options && options.deferApply);
   const userRaw = localStorage.getItem("user");
   if (!userRaw) {
-    localStorage.setItem(LS_PENDING_TOKEN, token);
-    localStorage.setItem(LS_OPEN_AUTH, "1");
-    try { openAuthModal(); } catch {}
+    ensureLoggedInForToken(token);
     return { ok: false, needsAuth: true };
   }
 
@@ -966,9 +981,7 @@ async function redeemToken(token, options) {
     });
     const data = await res.json();
     if (res.status === 401) {
-      localStorage.setItem(LS_PENDING_TOKEN, token);
-      localStorage.setItem(LS_OPEN_AUTH, "1");
-      try { openAuthModal(); } catch {}
+      ensureLoggedInForToken(token);
       return { ok: false, needsAuth: true };
     }
     if (!res.ok || !data.ok) {
