@@ -890,6 +890,15 @@ input, textarea, [contenteditable="true"]{
   filter: blur(6px);
   transition: filter 220ms ease;
 }
+.pay-blur-reset .header,
+.pay-blur-reset .main,
+.pay-blur-reset .bottom-nav,
+.pay-blur-reset #bg-wrap,
+.pay-blur-reset .bg-orbs,
+.pay-blur-reset .nfc-hint,
+.pay-blur-reset .golden-overlay{
+  filter: none !important;
+}
 .pay-success-card{
   width: min(320px, 80%);
   padding: 22px 18px;

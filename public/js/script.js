@@ -489,6 +489,7 @@ function clearPaySuccessBlur() {
   const targets = document.querySelectorAll(
     ".header, .main, .bottom-nav, #bg-wrap, .bg-orbs, .nfc-hint, .golden-overlay"
   );
+  document.body.classList.add("pay-blur-reset");
   targets.forEach(el => {
     if (!el || !el.style) return;
     el.style.filter = "none";
@@ -499,6 +500,9 @@ function clearPaySuccessBlur() {
       if (!el || !el.style) return;
       el.style.filter = "";
       el.style.webkitFilter = "";
+    });
+    requestAnimationFrame(() => {
+      document.body.classList.remove("pay-blur-reset");
     });
   });
 }
