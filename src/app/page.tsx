@@ -164,10 +164,14 @@ export default function Page() {
                 <span className="oop-label">P</span>
               </button>
 
-              <div className="scan-top">
-                <button id="scanBtn" className="scan-mini glass" type="button">
-                  SCAN
+            <div className="scan-top">
+                <button id="scanBtn" className="scan-toggle glass is-off" type="button" aria-pressed="false">
+                  <span className="scan-toggle-label">SCAN</span>
+                  <span className="scan-toggle-track" aria-hidden="true">
+                    <span className="scan-toggle-thumb"></span>
+                  </span>
                 </button>
+                <div id="scanStatus" className="scan-status" aria-live="polite"></div>
               </div>
             </header>
 

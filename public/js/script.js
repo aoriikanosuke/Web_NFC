@@ -73,6 +73,7 @@ const $rankingList = document.getElementById("rankingList");
 const $topNotice = document.getElementById("topNotice");
 const $topNoticeText = document.getElementById("topNoticeText");
 let topNoticeCount = 0;
+const $scanStatus = document.getElementById("scanStatus");
 
 // Pay UI
 const $payAmount = document.getElementById("payAmount");
@@ -131,6 +132,24 @@ function shouldIgnoreRead(key) {
   lastReadKey = key;
   lastReadAt = now;
   return false;
+}
+
+function getNfcSupportInfo() {
+  const hasNdef = typeof window !== "undefined" && typeof window.NDEFReader !== "undefined";
+  const isSecure = !!window.isSecureContext;
+  return { hasNdef, isSecure };
+}
+
+function setScanStatus(message) {
+  if ($scanStatus) $scanStatus.textContent = message || "";
+}
+
+function updateScanToggleUI() {
+  const btn = document.getElementById("scanBtn");
+  if (!btn) return;
+  btn.classList.toggle("is-on", !!nfcScanning);
+  btn.classList.toggle("is-off", !nfcScanning);
+  btn.setAttribute("aria-pressed", nfcScanning ? "true" : "false");
 }
 
 function normalizeUid(value) {
@@ -1339,6 +1358,13 @@ function resetNfcState() {
   console.log("NFC状態をリセットしました");
 }
 
+function stopScan() {
+  resetNfcState();
+  nfcBusy = false;
+  updateScanToggleUI();
+  setScanStatus("スキャン停止");
+}
+
 function resetPayNfcState() {
   if (payNfcAbort) {
     payNfcAbort.abort();
@@ -1386,18 +1412,21 @@ async function startScan() {
 
   try {
     // ✅ 追加：Web NFC対応チェック（ReferenceError回避）
-    const hasNdef = typeof window !== "undefined" && typeof window.NDEFReader !== "undefined";
-    if (!hasNdef) {
-      showModalMessage(
-        "NFC非対応",
-        "この端末/ブラウザはWeb NFCに対応していません。AndroidのChrome / Samsung Internet / Operaで開いてください（iPhoneは非対応）。"
-      );
+    const support = getNfcSupportInfo();
+    if (!support.hasNdef) {
+      setScanStatus("この端末はWeb NFCに対応していません。iPhoneでも問題なく使えます。NFCタッチ後の通知を押してページを再読み込みしてください。");
       toast("NFC非対応の環境です");
+      nfcBusy = false;
+      if (btn) btn.disabled = true;
+      updateScanToggleUI();
       return;
     }
-    if (!window.isSecureContext) {
+    if (!support.isSecure) {
       showModalMessage("HTTPSが必要", "Web NFCはHTTPS（またはlocalhost）でのみ動作します。");
       toast("HTTPSで開いてください");
+      nfcBusy = false;
+      if (btn) btn.disabled = false;
+      updateScanToggleUI();
       return;
     }
 
@@ -1416,6 +1445,10 @@ async function startScan() {
     // ここで失敗したら catch へ飛ぶ
     await nfcReader.scan({ signal: nfcAbort.signal });
     nfcScanning = true;
+    nfcBusy = false;
+    if (btn) btn.disabled = false;
+    updateScanToggleUI();
+    setScanStatus("スキャン中");
 
     // 5. 読み取りイベントの設定
     nfcReader.onreading = async (event) => {
@@ -1484,6 +1517,7 @@ async function startScan() {
     toast("NFCスキャン準備完了");
   } catch (err) {
     console.error("NFC Error:", err);
+    nfcScanning = false;
     
     if (err.name === "InvalidStateError") {
       // このエラーが出た場合は、内部でリセットして「もう一度だけ自動実行」を試みる
@@ -1494,11 +1528,13 @@ async function startScan() {
       setTimeout(() => {
         nfcBusy = false;
         if (btn) btn.disabled = false;
+        updateScanToggleUI();
       }, 500);
     } else {
       alert(`エラー: ${err.name}\n${err.message}`);
       nfcBusy = false;
       if (btn) btn.disabled = false;
+      updateScanToggleUI();
     }
   }
 }
@@ -2339,8 +2375,30 @@ async function resetDBProgressIfLoggedIn() {
 }
 
 // ================== UIイベント ==================
+function handleScanToggle() {
+  const btn = document.getElementById("scanBtn");
+  const support = getNfcSupportInfo();
+  if (!support.hasNdef) {
+    showModalMessage(
+      "NFC非対応",
+      "この端末はWeb NFCに対応していません。iPhoneでも問題なく使えます。NFCタッチ後の通知を押してページを再読み込みしてください。"
+    );
+    return;
+  }
+  if (!support.isSecure) {
+    showModalMessage("HTTPSが必要", "Web NFCはHTTPS（またはlocalhost）でのみ動作します。");
+    return;
+  }
+  if (nfcScanning) {
+    stopScan();
+  } else {
+    setScanStatus("");
+    startScan();
+  }
+}
+
 const scanBtnEl = document.getElementById("scanBtn");
-if (scanBtnEl) scanBtnEl.addEventListener("click", startScan);
+if (scanBtnEl) scanBtnEl.addEventListener("click", handleScanToggle);
 
 async function resetProgressAndGoStamp() {
   const ok = await showModalConfirm("リセット", "進捗をリセットしてもよいですか？", "リセットする", "キャンセル");
@@ -2493,6 +2551,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   initKiran();
   initPayUI();
   updatePayHeaderOffset();
+  updateScanToggleUI();
   // golden 初期化
   applyGoldenClass();
   updateGoldenUI();
