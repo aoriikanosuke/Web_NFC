@@ -10,49 +10,70 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const userId = body?.userId;
+    const shopId = body?.shopId;
     const amount = Number(body?.amount);
 
-    if (!userId || !Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-      return NextResponse.json({ ok: false, error: "amount ã¨ userId ãŒå¿…è¦ã§ã™ã€‚" }, { status: 400 });
-    }
-
-    await client.query("BEGIN");
-
-    const currentRes = await client.query(
-      "SELECT points FROM users WHERE id = $1 FOR UPDATE",
-      [userId]
-    );
-    if (currentRes.rowCount === 0) {
-      await client.query("ROLLBACK");
-      return NextResponse.json({ ok: false, error: "ãƒ¦ãƒ¼ã‚¶ãƒ¼ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚" }, { status: 404 });
-    }
-
-    const currentPoints = Number(currentRes.rows[0]?.points || 0);
-    if (currentPoints < amount) {
-      await client.query("ROLLBACK");
+    if (!userId || !shopId || !Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
       return NextResponse.json(
-        { ok: false, error: "ãƒã‚¤ãƒ³ãƒˆãŒä¸è¶³ã—ã¦ã„ã¾ã™ã€‚", points: currentPoints },
+        { ok: false, error: "amount, userId, shopId ‚ª•K—v‚Å‚·B" },
         { status: 400 }
       );
     }
 
-    const nextPoints = currentPoints - amount;
-    const upd = await client.query(
+    await client.query("BEGIN");
+
+    const userRes = await client.query(
+      "SELECT points FROM users WHERE id = $1 FOR UPDATE",
+      [userId]
+    );
+    if (userRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ ok: false, error: "ƒ†[ƒU[‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB" }, { status: 404 });
+    }
+
+    const shopRes = await client.query(
+      "SELECT points FROM shop WHERE id = $1 FOR UPDATE",
+      [shopId]
+    );
+    if (shopRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ ok: false, error: "“X•Ü‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB" }, { status: 404 });
+    }
+
+    const currentUserPoints = Number(userRes.rows[0]?.points || 0);
+    const currentShopPoints = Number(shopRes.rows[0]?.points || 0);
+    if (currentUserPoints < amount) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { ok: false, error: "ƒ|ƒCƒ“ƒg‚ª•s‘«‚µ‚Ä‚¢‚Ü‚·B", userPoints: currentUserPoints },
+        { status: 400 }
+      );
+    }
+
+    const nextUserPoints = currentUserPoints - amount;
+    const nextShopPoints = currentShopPoints + amount;
+
+    const userUpd = await client.query(
       "UPDATE users SET points = $2 WHERE id = $1 RETURNING points",
-      [userId, nextPoints]
+      [userId, nextUserPoints]
+    );
+    const shopUpd = await client.query(
+      "UPDATE shop SET points = $2 WHERE id = $1 RETURNING points",
+      [shopId, nextShopPoints]
     );
 
     await client.query("COMMIT");
 
     return NextResponse.json({
       ok: true,
-      points: upd.rows[0]?.points ?? nextPoints,
+      userPoints: userUpd.rows[0]?.points ?? nextUserPoints,
+      shopPoints: shopUpd.rows[0]?.points ?? nextShopPoints,
     });
   } catch (e) {
     try {
       await client.query("ROLLBACK");
     } catch {}
-    return NextResponse.json({ ok: false, error: "æ±ºæ¸ˆã«å¤±æ•—ã—ã¾ã—ãŸã€‚" }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "ŒˆÏ‚ÉŽ¸”s‚µ‚Ü‚µ‚½B" }, { status: 500 });
   } finally {
     client.release();
   }

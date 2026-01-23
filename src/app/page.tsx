@@ -205,57 +205,79 @@ export default function Page() {
                           利用可能 <span id="payAvailable">0</span>P
                         </div>
                       </div>
-
-                      <div className="pay-display">
-                        <div id="payAmount" className="pay-amount">
-                          0
+                      <div id="paySelectStep" className="pay-step pay-step--select is-active">
+                        <p className="pay-step-title">店舗を選択</p>
+                        <p className="pay-step-lead">
+                          NFCをタッチして店舗を選択してください。
+                        </p>
+                        <div className="pay-step-actions">
+                          <button id="payScanBtn" className="pay-primary pay-primary--wide" type="button">
+                            店舗読み取り開始
+                          </button>
                         </div>
-                        <div className="pay-currency">P</div>
+                        <p className="pay-step-hint">iPhoneはNFCタグのURLで自動選択されます。</p>
                       </div>
 
-                      <div id="payKeypad" className="pay-keypad" aria-label="金額入力テンキー">
-                        <button className="pay-key glass" data-paykey="1" type="button">
-                          1
-                        </button>
-                        <button className="pay-key glass" data-paykey="2" type="button">
-                          2
-                        </button>
-                        <button className="pay-key glass" data-paykey="3" type="button">
-                          3
-                        </button>
-                        <button className="pay-key glass" data-paykey="4" type="button">
-                          4
-                        </button>
-                        <button className="pay-key glass" data-paykey="5" type="button">
-                          5
-                        </button>
-                        <button className="pay-key glass" data-paykey="6" type="button">
-                          6
-                        </button>
-                        <button className="pay-key glass" data-paykey="7" type="button">
-                          7
-                        </button>
-                        <button className="pay-key glass" data-paykey="8" type="button">
-                          8
-                        </button>
-                        <button className="pay-key glass" data-paykey="9" type="button">
-                          9
-                        </button>
-                        <button className="pay-key glass" data-paykey="clear" type="button">
-                          C
-                        </button>
-                        <button className="pay-key glass" data-paykey="0" type="button">
-                          0
-                        </button>
-                        <button className="pay-key glass" data-paykey="back" type="button">
-                          ←
-                        </button>
-                      </div>
+                      <div id="payAmountStep" className="pay-step pay-step--amount">
+                        <div id="payShopInfo" className="pay-shop-info glass">
+                          <div id="payShopName" className="pay-shop-name">未選択</div>
+                          <div id="payShopLocation" className="pay-shop-location"></div>
+                          <div className="pay-shop-points">
+                            店舗ポイント <span id="payShopPoints">0</span>P
+                          </div>
+                        </div>
 
-                      <div className="pay-actions">
-                        <button id="payConfirmBtn" className="pay-primary pay-primary--wide" type="button">
-                          決定
-                        </button>
+                        <div className="pay-display">
+                          <div id="payAmount" className="pay-amount">
+                            0
+                          </div>
+                          <div className="pay-currency">P</div>
+                        </div>
+
+                        <div id="payKeypad" className="pay-keypad" aria-label="金額入力テンキー">
+                          <button className="pay-key glass" data-paykey="1" type="button">
+                            1
+                          </button>
+                          <button className="pay-key glass" data-paykey="2" type="button">
+                            2
+                          </button>
+                          <button className="pay-key glass" data-paykey="3" type="button">
+                            3
+                          </button>
+                          <button className="pay-key glass" data-paykey="4" type="button">
+                            4
+                          </button>
+                          <button className="pay-key glass" data-paykey="5" type="button">
+                            5
+                          </button>
+                          <button className="pay-key glass" data-paykey="6" type="button">
+                            6
+                          </button>
+                          <button className="pay-key glass" data-paykey="7" type="button">
+                            7
+                          </button>
+                          <button className="pay-key glass" data-paykey="8" type="button">
+                            8
+                          </button>
+                          <button className="pay-key glass" data-paykey="9" type="button">
+                            9
+                          </button>
+                          <button className="pay-key glass" data-paykey="clear" type="button">
+                            C
+                          </button>
+                          <button className="pay-key glass" data-paykey="0" type="button">
+                            0
+                          </button>
+                          <button className="pay-key glass" data-paykey="back" type="button">
+                            ←
+                          </button>
+                        </div>
+
+                        <div className="pay-actions">
+                          <button id="payConfirmBtn" className="pay-primary pay-primary--wide" type="button">
+                            決定
+                          </button>
+                        </div>
                       </div>
                     </div>
 

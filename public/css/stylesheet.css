@@ -657,6 +657,62 @@ input, textarea, [contenteditable="true"]{
   color: rgba(0,0,0,.65);
   font-weight: 700;
 }
+.pay-step{
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.pay-step.is-active{
+  display: flex;
+}
+.pay-step--amount{
+  gap: 14px;
+}
+.pay-step-title{
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+.pay-step-lead{
+  margin: 0;
+  font-size: 13px;
+  color: rgba(0,0,0,.65);
+}
+.pay-step-hint{
+  margin: 0;
+  font-size: 12px;
+  color: rgba(0,0,0,.5);
+}
+.pay-step-actions{
+  width: 100%;
+  display: flex;
+}
+.pay-shop-info{
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-align: left;
+  background: rgba(255,255,255,.86);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 8px 18px rgba(0,0,0,.08);
+}
+.pay-shop-name{
+  font-weight: 900;
+  font-size: 16px;
+}
+.pay-shop-location{
+  font-size: 12px;
+  color: rgba(0,0,0,.65);
+  margin-top: 4px;
+}
+.pay-shop-points{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(0,0,0,.65);
+  margin-top: 6px;
+}
 .pay-display{
   width: 100%;
   display: flex;
