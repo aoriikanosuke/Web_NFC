@@ -596,13 +596,14 @@ input, textarea, [contenteditable="true"]{
 
 /* ===== Pay ===== */
 .pay-shell{
+  --pay-shell-min: 700px;
   width: 100%;
   max-width: 520px;
   border-radius: 20px;
   padding: 18px 16px;
   color: #0b1c2a;
   position: relative;
-  min-height: 700px;
+  min-height: var(--pay-shell-min);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -625,7 +626,6 @@ input, textarea, [contenteditable="true"]{
 }
 .app.is-pay-layout #page-pay .pay-shell{
   margin-top: 0;
-  min-height: 520px;
 }
 .pay-rotator{
   width: 100%;
@@ -928,12 +928,12 @@ input, textarea, [contenteditable="true"]{
   100%{ transform: translateY(0) scale(1); opacity: 1; }
 }
 @media (max-height: 740px){
-  .pay-shell{ min-height: 680px; }
+  .pay-shell{ --pay-shell-min: 680px; }
   .pay-key{ height: 48px; }
 }
 @media (max-height: 680px){
   #page-pay .pay-shell{
-    min-height: 620px;
+    --pay-shell-min: 620px;
     padding: 14px 12px;
   }
   #page-pay .pay-display{
@@ -3121,5 +3121,4 @@ html, body{
 }
 .app.is-pay-layout #page-pay .pay-shell{
   margin-top: 0;
-  min-height: 520px;
 }
