@@ -331,6 +331,7 @@ input, textarea, [contenteditable="true"]{
   font-weight: 800;
   color: #0b1c2a;
   box-shadow: 0 10px 26px rgba(0,0,0,.18);
+  white-space: nowrap;
 }
 .top-notice-dots{
   display: inline-flex;
@@ -357,6 +358,17 @@ input, textarea, [contenteditable="true"]{
 }
 .tap-page .top-notice{
   position: fixed;
+}
+
+@media (max-width: 899px){
+  .top-notice{
+    position: fixed;
+    width: max-content;
+    max-width: calc(100% - 24px);
+  }
+  .top-notice-pill{
+    padding: 7px 14px;
+  }
 }
 
 /* Button dots (auth/login) */
