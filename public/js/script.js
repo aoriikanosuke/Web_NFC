@@ -483,11 +483,23 @@ function showPaySuccess(amount) {
 }
 
 function clearPaySuccessBlur() {
-  if ($app) $app.classList.remove("is-pay-success-blur");
-  document.querySelectorAll(
+  document.querySelectorAll(".app").forEach(app => {
+    app.classList.remove("is-pay-success-blur");
+  });
+  const targets = document.querySelectorAll(
     ".header, .main, .bottom-nav, #bg-wrap, .bg-orbs, .nfc-hint, .golden-overlay"
-  ).forEach(el => {
-    if (el && el.style) el.style.filter = "";
+  );
+  targets.forEach(el => {
+    if (!el || !el.style) return;
+    el.style.filter = "none";
+    el.style.webkitFilter = "none";
+  });
+  requestAnimationFrame(() => {
+    targets.forEach(el => {
+      if (!el || !el.style) return;
+      el.style.filter = "";
+      el.style.webkitFilter = "";
+    });
   });
 }
 
