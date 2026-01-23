@@ -1206,26 +1206,7 @@ function extractTokenFromRecord(record) {
 async function handleTokenFromScan(token) {
   const t = String(token || "").trim();
   if (!t) return { ok: false };
-  if (findStampByToken(t)) {
-    if (isPaySelectingShop()) {
-      showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
-      return { ok: false, blocked: true, kind: "stamp" };
-    }
-    const result = await redeemToken(t, { deferApply: true });
-    if (result && result.ok) {
-      const owned = result.alreadyOwned === true;
-      const variant = owned ? "owned" : "new";
-      try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) {}
-      await waitAfterStampAni(variant);
-      if (Array.isArray(result.stampProgress)) {
-        applyStampProgress(result.stampProgress);
-      }
-    }
-    return { ok: !!(result && result.ok), kind: "stamp" };
-  }
-
-  const shopResult = await handlePayTokenSelection(t);
-  return { ok: shopResult.ok, kind: "shop" };
+  return handleTokenInput(t);
 }
 
 // ================== スワイプ（維持） ==================
