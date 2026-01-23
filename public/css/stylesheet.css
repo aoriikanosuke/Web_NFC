@@ -596,7 +596,7 @@ input, textarea, [contenteditable="true"]{
 
 /* ===== Pay ===== */
 .pay-shell{
-  --pay-shell-min: 540px;
+  --pay-shell-min: 590px;
   width: 100%;
   max-width: 520px;
   border-radius: 20px;
@@ -928,13 +928,13 @@ input, textarea, [contenteditable="true"]{
   100%{ transform: translateY(0) scale(1); opacity: 1; }
 }
 @media (max-height: 740px){
-  .pay-shell{ --pay-shell-min: 520px; min-height: 520px !important; }
+  .pay-shell{ --pay-shell-min: 570px; min-height: 570px !important; }
   .pay-key{ height: 48px; }
 }
 @media (max-height: 680px){
   #page-pay .pay-shell{
-    --pay-shell-min: 500px;
-    min-height: 500px !important;
+    --pay-shell-min: 550px;
+    min-height: 550px !important;
     padding: 14px 12px;
   }
   #page-pay .pay-display{
