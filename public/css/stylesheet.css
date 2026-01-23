@@ -928,12 +928,12 @@ input, textarea, [contenteditable="true"]{
   100%{ transform: translateY(0) scale(1); opacity: 1; }
 }
 @media (max-height: 740px){
-  .pay-shell{ min-height: 500px; }
+  .pay-shell{ min-height: 680px; }
   .pay-key{ height: 48px; }
 }
 @media (max-height: 680px){
   #page-pay .pay-shell{
-    min-height: 440px;
+    min-height: 620px;
     padding: 14px 12px;
   }
   #page-pay .pay-display{
