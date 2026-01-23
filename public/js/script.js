@@ -133,6 +133,10 @@ function shouldIgnoreRead(key) {
   return false;
 }
 
+function normalizeUid(value) {
+  return String(value || "").replace(/[^0-9a-f]/gi, "").toUpperCase();
+}
+
 
 // ================== 永続化（維持） ==================
 function loadStamps() {
@@ -805,7 +809,8 @@ function updateSlidePosition(withAnim) {
 
 // ================== UID適用（維持） ==================
 function applyUid(uid) {
-  const hitIndex = stamps.findIndex(s => s.uid.toUpperCase() === uid.toUpperCase());
+  const target = normalizeUid(uid);
+  const hitIndex = stamps.findIndex(s => normalizeUid(s.uid) === target);
   const hit = hitIndex >= 0 ? stamps[hitIndex] : null;
   if (!hit) {
     alert(`未登録のUIDです：${uid}\nscript.js の DEFAULT_STAMPS を確認してください。`);
@@ -854,14 +859,16 @@ function applyUid(uid) {
 
 function isStampOwnedByUid(uid) {
   if (!uid) return false;
-  const hit = stamps.find(s => s.uid.toUpperCase() === String(uid).toUpperCase());
+  const target = normalizeUid(uid);
+  const hit = stamps.find(s => normalizeUid(s.uid) === target);
   return !!(hit && hit.flag);
 }
 
 function findStampByUid(uid) {
   if (!uid) return null;
   const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
-  return list.find(s => String(s.uid).toUpperCase() === String(uid).toUpperCase()) || null;
+  const target = normalizeUid(uid);
+  return list.find(s => normalizeUid(s.uid) === target) || null;
 }
 
 function findStampByToken(token) {
@@ -1455,7 +1462,7 @@ async function startScan() {
           return;
         }
         const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
-        const duration = (typeof STAMP_ANI_DURATION_UID !== "undefined") ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
+        const duration = STAMP_ANI_DURATION;
         const variant = owned ? "owned" : "new";
 
         console.log("[NFC uid] owned=", owned, "variant=", variant, "uid=", uid);
