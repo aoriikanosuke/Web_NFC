@@ -855,6 +855,29 @@ input, textarea, [contenteditable="true"]{
   .pay-shell{ min-height: 500px; }
   .pay-key{ height: 48px; }
 }
+@media (max-height: 680px){
+  #page-pay .pay-shell{
+    min-height: 440px;
+    padding: 14px 12px;
+  }
+  #page-pay .pay-display{
+    padding: 10px 10px;
+  }
+  #page-pay .pay-amount{
+    font-size: clamp(30px, 9vw, 46px);
+  }
+  #page-pay .pay-keypad{
+    gap: 10px;
+  }
+  #page-pay .pay-key{
+    height: 44px;
+    font-size: 18px;
+  }
+  #page-pay .pay-primary--wide{
+    height: 52px;
+    font-size: 16px;
+  }
+}
 
 /* ===== Stamp card ===== */
 .stamp-card{
