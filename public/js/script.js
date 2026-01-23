@@ -1,12 +1,17 @@
 ﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
 // token を追加（iPhone用：/tap?t=token でスタンプ特定）
 const DEFAULT_STAMPS = [
-  { id: 1, name: "本部前",       uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
-  { id: 2, name: "ラウンジ",       uid: "04:18:BD:AA:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
+  { id: 1, name: "本部前",            uid: "04:18:be:aa:96:20:90", token: "F0RndRHI5PwsexmVVmRF-caM", image: "/images/stamp1.png", flag: false, points: 20, location: "本部前：入口付近" },
+  { id: 2, name: "ラウンジ",        uid: "04:18:bd:aa:96:20:90", token: "XDPwKf-pbQlJ7fTKfgz7qVeV", image: "/images/stamp2.png",     flag: false, points: 20, location: "ラウンジ：階段横" },
   { id: 3, name: "図書館",       uid: "04:18:bc:aa:96:20:90", token: "b5fHiG0d5qvx_1fvSWW-r-Ky", image: "/images/stamp3.png",               flag: false, points: 20, location: "図書館：受付横" },
   { id: 4, name: "学内コンビニ",         uid: "04:18:bb:aa:96:20:90", token: "0KmX7IT1tEODcvYhsL49NU9N", image: "/images/stamp4.png",               flag: false, points: 20, location: "学内コンビニ：入口付近" },
   { id: 5, name: "情報学科教務室前", uid: "04:18:ba:aa:96:20:90", token: "7XdBGRNM79aK42vman_PBDxn", image: "/images/stamp5.png",               flag: false, points: 20,  location: "情報学科教務室前：入口付近" },
   { id: 6, name: "受付", uid: "04:18:b9:aa:96:20:90", token: "vdaBmm2vfzHrZood2Gq5D7EF", image: "/images/stamp6.png",               flag: false, points: 20,  location: "受付：受付横" },
+];
+
+const DEBUG_SHOPS = [
+  { name: "A", uid: "04:18:b8:aa:96:20:90", token: "k9QmT2vN7xR_p4LdZsW-1aHc" },
+  { name: "B", uid: "04:18:b7:aa:96:20:90", token: "P3uXvG8n0Jt_y6KeRmQ-9fNd" },
 ];
 
 
@@ -20,6 +25,7 @@ const LS_TAB_ID = "nfc_tab_id";
 
 let stamps = loadStamps();
 let currentIndex = 0;
+let currentPage = "stamp";
 let $track = null;
 let swipeBound = false;
 const TAB_ID = (() => {
@@ -73,6 +79,12 @@ const $payAmount = document.getElementById("payAmount");
 const $payConfirmAmount = document.getElementById("payConfirmAmount");
 const $payAvailable = document.getElementById("payAvailable");
 const $payRotator = document.getElementById("payRotator");
+const $paySelectStep = document.getElementById("paySelectStep");
+const $payAmountStep = document.getElementById("payAmountStep");
+const $payShopName = document.getElementById("payShopName");
+const $payShopLocation = document.getElementById("payShopLocation");
+const $payShopPoints = document.getElementById("payShopPoints");
+const $payScanBtn = document.getElementById("payScanBtn");
 const $payKeypad = document.getElementById("payKeypad");
 const $payConfirmBtn = document.getElementById("payConfirmBtn");
 const $payBackBtn = document.getElementById("payBackBtn");
@@ -404,6 +416,8 @@ async function claimCompletionBonus() {
 const MAX_PAY_AMOUNT = 999999;
 let payAmount = 0;
 let payBusy = false;
+let payStep = "selectShop";
+let selectedShop = null;
 
 function formatPayAmount(value) {
   const num = Number(value || 0);
@@ -418,6 +432,47 @@ function setPayStatus(message) {
   if ($payStatus) $payStatus.textContent = message || "";
 }
 
+function updatePayShopInfo() {
+  if (!selectedShop) {
+    if ($payShopName) $payShopName.textContent = "未選択";
+    if ($payShopLocation) $payShopLocation.textContent = "";
+    if ($payShopPoints) $payShopPoints.textContent = "0";
+    return;
+  }
+  if ($payShopName) $payShopName.textContent = selectedShop.name || "店舗";
+  if ($payShopLocation) $payShopLocation.textContent = selectedShop.location || "";
+  if ($payShopPoints) $payShopPoints.textContent = formatPayAmount(selectedShop.points || 0);
+}
+
+function updatePayStepUI() {
+  if ($paySelectStep) $paySelectStep.classList.toggle("is-active", payStep === "selectShop");
+  if ($payAmountStep) $payAmountStep.classList.toggle("is-active", payStep === "inputAmount");
+  updatePayShopInfo();
+  syncPayButtons();
+}
+
+function setSelectedShop(shop) {
+  selectedShop = shop ? { ...shop } : null;
+  payStep = selectedShop ? "inputAmount" : "selectShop";
+  updatePayStepUI();
+}
+
+function resetPayFlow() {
+  selectedShop = null;
+  payStep = "selectShop";
+  resetPayNfcState();
+  payNfcBusy = false;
+  if ($payScanBtn) $payScanBtn.disabled = false;
+  setPayRotated(false);
+  setPayStatus("");
+  setPayAmount(0);
+  updatePayStepUI();
+}
+
+function isPaySelectingShop() {
+  return currentPage === "pay" && payStep === "selectShop";
+}
+
 function showPaySuccess(amount) {
   if (!$paySuccess) return;
   if ($paySuccessAmount) $paySuccessAmount.textContent = formatPayAmount(amount);
@@ -428,11 +483,27 @@ function showPaySuccess(amount) {
 }
 
 function clearPaySuccessBlur() {
-  if ($app) $app.classList.remove("is-pay-success-blur");
-  document.querySelectorAll(
+  document.querySelectorAll(".app").forEach(app => {
+    app.classList.remove("is-pay-success-blur");
+  });
+  const targets = document.querySelectorAll(
     ".header, .main, .bottom-nav, #bg-wrap, .bg-orbs, .nfc-hint, .golden-overlay"
-  ).forEach(el => {
-    if (el && el.style) el.style.filter = "";
+  );
+  document.body.classList.add("pay-blur-reset");
+  targets.forEach(el => {
+    if (!el || !el.style) return;
+    el.style.filter = "none";
+    el.style.webkitFilter = "none";
+  });
+  requestAnimationFrame(() => {
+    targets.forEach(el => {
+      if (!el || !el.style) return;
+      el.style.filter = "";
+      el.style.webkitFilter = "";
+    });
+    requestAnimationFrame(() => {
+      document.body.classList.remove("pay-blur-reset");
+    });
   });
 }
 
@@ -466,7 +537,8 @@ function updatePayAvailable() {
 function syncPayButtons() {
   const rotated = !!($payRotator && $payRotator.classList.contains("is-rotated"));
   const available = getAvailablePayPoints();
-  const canConfirm = payAmount > 0 && payAmount <= available && !payBusy;
+  const isAmountStep = payStep === "inputAmount" && !!selectedShop;
+  const canConfirm = isAmountStep && payAmount > 0 && payAmount <= available && !payBusy;
 
   if ($payConfirmBtn) $payConfirmBtn.disabled = rotated || !canConfirm;
   if ($payBackBtn) $payBackBtn.disabled = !rotated || payBusy;
@@ -474,7 +546,7 @@ function syncPayButtons() {
 
   if ($payKeypad) {
     $payKeypad.querySelectorAll("button").forEach((btn) => {
-      btn.disabled = rotated || payBusy;
+      btn.disabled = rotated || payBusy || !isAmountStep;
     });
   }
 }
@@ -501,6 +573,10 @@ async function handlePayConfirm() {
     try { openAuthModal(); } catch {}
     return;
   }
+  if (!selectedShop) {
+    showModalMessage("決済", "店舗を選択してください。");
+    return;
+  }
   if (payAmount <= 0) {
     showModalMessage("決済", "金額を入力してください。");
     return;
@@ -519,6 +595,10 @@ async function handlePayCommit() {
     showModalMessage("決済", "ログインが必要です。");
     return;
   }
+  if (!selectedShop) {
+    showModalMessage("決済", "店舗を選択してください。");
+    return;
+  }
 
   payBusy = true;
   syncPayButtons();
@@ -529,7 +609,7 @@ async function handlePayCommit() {
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id, amount: payAmount }),
+      body: JSON.stringify({ userId: currentUser.id, shopId: selectedShop.id, amount: payAmount }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -538,8 +618,12 @@ async function handlePayCommit() {
       return;
     }
 
-    currentUser.points = Number(data.points || 0);
+    currentUser.points = Number(data.userPoints || 0);
     persistCurrentUser();
+    if (selectedShop) {
+      selectedShop.points = Number(data.shopPoints || selectedShop.points || 0);
+      updatePayShopInfo();
+    }
     updateOOP();
     showPaySuccess(payAmount);
     setPayStatus("");
@@ -570,11 +654,9 @@ function initPayUI() {
     setPayStatus("");
   });
   if ($payCommitBtn) $payCommitBtn.addEventListener("click", handlePayCommit);
-
-  setPayAmount(0);
+  if ($payScanBtn) $payScanBtn.addEventListener("click", startPayScan);
+  resetPayFlow();
   updatePayAvailable();
-  setPayRotated(false);
-  setPayStatus("");
 }
 
 function spawnPointsFloat(amount) {
@@ -776,6 +858,99 @@ function isStampOwnedByUid(uid) {
   return !!(hit && hit.flag);
 }
 
+function findStampByUid(uid) {
+  if (!uid) return null;
+  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
+  return list.find(s => String(s.uid).toUpperCase() === String(uid).toUpperCase()) || null;
+}
+
+function findStampByToken(token) {
+  if (!token) return null;
+  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
+  return list.find(s => String(s.token) === String(token)) || null;
+}
+
+async function resolveShop(payload) {
+  const body = {};
+  if (payload?.uid) body.uid = String(payload.uid);
+  if (payload?.token) body.token = String(payload.token);
+  if (!body.uid && !body.token) return { ok: false, error: "識別子がありません。" };
+
+  try {
+    const res = await fetch("/api/shop/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error || "未登録のNFCです。" };
+    }
+    return { ok: true, shop: data.shop };
+  } catch {
+    return { ok: false, error: "通信に失敗しました。" };
+  }
+}
+
+async function handlePayUidSelection(uid) {
+  if (!uid) {
+    showModalMessage("決済", "UIDが取得できませんでした。");
+    return { ok: false };
+  }
+  if (findStampByUid(uid)) {
+    showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+    return { ok: false, blocked: true };
+  }
+  const resolved = await resolveShop({ uid });
+  if (!resolved.ok) {
+    showModalMessage("決済", resolved.error || "未登録のNFCです。");
+    return { ok: false };
+  }
+  setPage("pay");
+  setSelectedShop(resolved.shop);
+  resetPayNfcState();
+  payNfcBusy = false;
+  if ($payScanBtn) $payScanBtn.disabled = false;
+  return { ok: true, shop: resolved.shop };
+}
+
+async function handlePayTokenSelection(token) {
+  if (!token) return { ok: false };
+  if (findStampByToken(token)) {
+    showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+    return { ok: false, blocked: true };
+  }
+  const resolved = await resolveShop({ token });
+  if (!resolved.ok) {
+    showModalMessage("決済", resolved.error || "未登録のNFCです。");
+    return { ok: false };
+  }
+  setPage("pay");
+  setSelectedShop(resolved.shop);
+  resetPayNfcState();
+  payNfcBusy = false;
+  if ($payScanBtn) $payScanBtn.disabled = false;
+  return { ok: true, shop: resolved.shop };
+}
+
+async function handleTokenInput(token) {
+  const t = String(token || "").trim();
+  if (!t) return { ok: false };
+
+  const stampHit = findStampByToken(t);
+  if (stampHit) {
+    if (isPaySelectingShop()) {
+      showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+      return { ok: false, blocked: true, kind: "stamp" };
+    }
+    const applied = await applyToken(t);
+    return { ok: applied, kind: "stamp" };
+  }
+
+  const shopResult = await handlePayTokenSelection(t);
+  return { ok: shopResult.ok, kind: "shop", shop: shopResult.shop };
+}
+
 
 // Manual test (iPhone pseudo NFC):
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
@@ -810,11 +985,13 @@ function isDuplicateBroadcast(from, token) {
 }
 
 async function handleIncomingBroadcastToken(token) {
-  const applied = await applyToken(token);
-  if (applied) {
-    localStorage.removeItem(LS_PENDING_TOKEN);
-  } else {
-    localStorage.setItem(LS_PENDING_TOKEN, token);
+  const result = await handleTokenInput(token);
+  if (result.kind === "stamp") {
+    if (result.ok) {
+      localStorage.removeItem(LS_PENDING_TOKEN);
+    } else if (!result.blocked) {
+      localStorage.setItem(LS_PENDING_TOKEN, token);
+    }
   }
 }
 
@@ -915,9 +1092,11 @@ async function consumeTokenFromUrlAndPending() {
     try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
     return;
   }
-    const applied = await applyToken(t);
-    if (applied) localStorage.removeItem(LS_PENDING_TOKEN);
-    else localStorage.setItem(LS_PENDING_TOKEN, t);
+    const result = await handleTokenInput(t);
+    if (result.kind === "stamp") {
+      if (result.ok) localStorage.removeItem(LS_PENDING_TOKEN);
+      else if (!result.blocked) localStorage.setItem(LS_PENDING_TOKEN, t);
+    }
     url.searchParams.delete("t");
     const next = url.searchParams.toString();
     const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
@@ -926,7 +1105,8 @@ async function consumeTokenFromUrlAndPending() {
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
   if (pending && pending !== processedToken) {
-    if (await applyToken(pending)) localStorage.removeItem(LS_PENDING_TOKEN);
+    const result = await handleTokenInput(pending);
+    if (result.kind === "stamp" && result.ok) localStorage.removeItem(LS_PENDING_TOKEN);
   }
 }
 
@@ -1021,6 +1201,31 @@ function extractTokenFromRecord(record) {
     try { return new TextDecoder().decode(record.data); } catch {}
   }
   return "";
+}
+
+async function handleTokenFromScan(token) {
+  const t = String(token || "").trim();
+  if (!t) return { ok: false };
+  if (findStampByToken(t)) {
+    if (isPaySelectingShop()) {
+      showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+      return { ok: false, blocked: true, kind: "stamp" };
+    }
+    const result = await redeemToken(t, { deferApply: true });
+    if (result && result.ok) {
+      const owned = result.alreadyOwned === true;
+      const variant = owned ? "owned" : "new";
+      try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) {}
+      await waitAfterStampAni(variant);
+      if (Array.isArray(result.stampProgress)) {
+        applyStampProgress(result.stampProgress);
+      }
+    }
+    return { ok: !!(result && result.ok), kind: "stamp" };
+  }
+
+  const shopResult = await handlePayTokenSelection(t);
+  return { ok: shopResult.ok, kind: "shop" };
 }
 
 // ================== スワイプ（維持） ==================
@@ -1125,6 +1330,13 @@ let nfcReader = null;
 let nfcAbort = null;
 let nfcScanning = false;
 let nfcBusy = false;
+let payNfcReader = null;
+let payNfcAbort = null;
+let payNfcScanning = false;
+let payNfcBusy = false;
+let payReadInFlight = false;
+let payLastReadKey = "";
+let payLastReadAt = 0;
 
 /**
  * NFCの状態を完全にリセットする
@@ -1137,6 +1349,27 @@ function resetNfcState() {
   nfcAbort = null;
   nfcScanning = false;
   console.log("NFC状態をリセットしました");
+}
+
+function resetPayNfcState() {
+  if (payNfcAbort) {
+    payNfcAbort.abort();
+  }
+  payNfcReader = null;
+  payNfcAbort = null;
+  payNfcScanning = false;
+  payReadInFlight = false;
+  payLastReadKey = "";
+  payLastReadAt = 0;
+}
+
+function shouldIgnorePayRead(key) {
+  const now = Date.now();
+  if (payReadInFlight) return true;
+  if (key && key === payLastReadKey && (now - payLastReadAt) < 2500) return true;
+  payLastReadKey = key;
+  payLastReadAt = now;
+  return false;
 }
 
 // ===== UIDの多重発火ガード（startScanの外：グローバル）=====
@@ -1216,16 +1449,7 @@ async function startScan() {
 
       // --- トークン(URL)方式 ---
       if (token) {
-        const result = await redeemToken(token, { deferApply: true });
-        if (result && result.ok) {
-          const owned = result.alreadyOwned === true;
-          const variant = owned ? "owned" : "new";
-          try { await showStampAni(STAMP_ANI_DURATION, variant); } catch (e) {}
-          await waitAfterStampAni(variant);
-          if (Array.isArray(result.stampProgress)) {
-            applyStampProgress(result.stampProgress);
-          }
-        }
+        await handleTokenFromScan(token);
         return;
       }
 
@@ -1240,6 +1464,15 @@ async function startScan() {
       uidInFlight = true;
       
       try {
+        const stampHit = findStampByUid(uid);
+        if (!stampHit) {
+          await handlePayUidSelection(uid);
+          return;
+        }
+        if (isPaySelectingShop()) {
+          showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
+          return;
+        }
         const owned = typeof isStampOwnedByUid === "function" ? isStampOwnedByUid(uid) : false;
         const duration = (typeof STAMP_ANI_DURATION_UID !== "undefined") ? STAMP_ANI_DURATION_UID : STAMP_ANI_DURATION;
         const variant = owned ? "owned" : "new";
@@ -1278,6 +1511,103 @@ async function startScan() {
       alert(`エラー: ${err.name}\n${err.message}`);
       nfcBusy = false;
       if (btn) btn.disabled = false;
+    }
+  }
+}
+
+async function startPayScan() {
+  if (payNfcBusy) return;
+  payNfcBusy = true;
+
+  if ($payScanBtn) $payScanBtn.disabled = true;
+
+  try {
+    const hasNdef = typeof window !== "undefined" && typeof window.NDEFReader !== "undefined";
+    if (!hasNdef) {
+      showModalMessage(
+        "NFC非対応",
+        "この端末/ブラウザはWeb NFCに対応していません。AndroidのChrome / Samsung Internet / Operaで開いてください（iPhoneは非対応）。"
+      );
+      toast("NFC非対応の環境です");
+      payNfcBusy = false;
+      if ($payScanBtn) $payScanBtn.disabled = false;
+      return;
+    }
+    if (!window.isSecureContext) {
+      showModalMessage("HTTPSが必要", "Web NFCはHTTPS（またはlocalhost）でのみ動作します。");
+      toast("HTTPSで開いてください");
+      payNfcBusy = false;
+      if ($payScanBtn) $payScanBtn.disabled = false;
+      return;
+    }
+
+    if (payNfcAbort) {
+      payNfcAbort.abort();
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
+    payNfcAbort = new AbortController();
+    payNfcReader = new window.NDEFReader();
+    await payNfcReader.scan({ signal: payNfcAbort.signal });
+    payNfcScanning = true;
+
+    payNfcReader.onreading = async (event) => {
+      try { showNfcRipple(); } catch (e) {}
+
+      let token = "";
+      if (event.message && event.message.records) {
+        for (const record of event.message.records) {
+          const text = typeof extractTokenFromRecord === "function" ? extractTokenFromRecord(record) : "";
+          if (!text) continue;
+          try {
+            const url = new URL(text);
+            const t = url.searchParams.get("t");
+            if (t) { token = t; break; }
+          } catch (e) {}
+        }
+      }
+
+      if (token) {
+        await handlePayTokenSelection(token);
+        return;
+      }
+
+      const uid = event.serialNumber || "";
+      if (!uid) {
+        showModalMessage("決済", "UIDが取得できませんでした。");
+        return;
+      }
+
+      if (shouldIgnorePayRead(uid)) return;
+      payReadInFlight = true;
+      try {
+        await handlePayUidSelection(uid);
+      } finally {
+        setTimeout(() => { payReadInFlight = false; }, 200);
+      }
+    };
+
+    payNfcReader.onreadingerror = () => {
+      toast("読み取り失敗。再度タッチしてください。");
+    };
+
+    showModalMessage("決済", "店舗スキャンを開始しました。タグをタッチしてください。");
+    toast("店舗スキャン準備完了");
+  } catch (err) {
+    console.error("Pay NFC Error:", err);
+
+    if (err.name === "InvalidStateError") {
+      console.warn("InvalidStateError検知。リセットして再試行します。");
+      if (payNfcAbort) payNfcAbort.abort();
+      payNfcAbort = null;
+      setTimeout(() => {
+        payNfcBusy = false;
+        if ($payScanBtn) $payScanBtn.disabled = false;
+      }, 500);
+    } else {
+      alert(`エラー: ${err.name}\n${err.message}`);
+      payNfcBusy = false;
+      if ($payScanBtn) $payScanBtn.disabled = false;
     }
   }
 }
@@ -1349,18 +1679,38 @@ function showModalConfirm(title, body, okText, cancelText) {
 
 // ================== Bottom nav ==================
 function setPage(name) {
+  currentPage = name;
   ["stamp","pay","profile"].forEach(p => {
     document.getElementById(`page-${p}`).classList.toggle("is-active", p === name);
   });
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("is-active", btn.dataset.target === name);
   });
-  if (name === "pay") updatePayAvailable();
+  if ($app) $app.classList.toggle("is-pay-layout", name === "pay");
+  if (name === "pay") {
+    updatePayHeaderOffset();
+  }
+  if (name === "pay") {
+    resetPayFlow();
+    updatePayAvailable();
+  }
   if (name !== "pay") {
     setPayRotated(false);
     clearPaySuccessBlur();
   }
   if (currentUser?.id) closeSiteInfo();
+}
+
+function updatePayHeaderOffset() {
+  if (!$app) return;
+  const header = document.querySelector(".header");
+  if (!header) return;
+  const rect = header.getBoundingClientRect();
+  const styles = window.getComputedStyle(header);
+  const mt = Number.parseFloat(styles.marginTop || "0") || 0;
+  const mb = Number.parseFloat(styles.marginBottom || "0") || 0;
+  const offset = Math.max(0, rect.height + mt + mb);
+  $app.style.setProperty("--pay-header-offset", `${Math.round(offset)}px`);
 }
 
 // ================== Site info overlay ==================
@@ -1743,6 +2093,18 @@ async function simulateTouch(uid){
   applyUid(uid);
 }
 
+async function simulatePayShopTouch(uid) {
+  try { showNfcRipple(); } catch (e) {}
+  setPage("pay");
+  await handlePayUidSelection(uid);
+}
+
+async function simulatePayStampTouch() {
+  const stamp = DEFAULT_STAMPS[0];
+  if (!stamp) return;
+  await simulatePayShopTouch(stamp.uid);
+}
+
 function adjustDebugPoints(delta){
   // Adjust relative to the currently displayed OOP value so we never mutate base data
   const base = calcPoints() - (consumedPoints || 0);
@@ -1774,6 +2136,22 @@ function populateDebugPanel(){
     group.appendChild(b);
   });
   panel.appendChild(group);
+
+  const payGroup = document.createElement('div');
+  payGroup.style.display = 'flex';
+  payGroup.style.flexDirection = 'column';
+  payGroup.style.gap = '6px';
+  DEBUG_SHOPS.forEach(s => {
+    const b = document.createElement('button');
+    b.textContent = `決済: ${s.name} をタッチ`;
+    b.addEventListener('click', () => simulatePayShopTouch(s.uid));
+    payGroup.appendChild(b);
+  });
+  const payStampBtn = document.createElement('button');
+  payStampBtn.textContent = '決済: スタンプをタッチ(エラー確認)';
+  payStampBtn.addEventListener('click', simulatePayStampTouch);
+  payGroup.appendChild(payStampBtn);
+  panel.appendChild(payGroup);
 
 //進捗リセットボタン
   const resetProgressBtn = document.createElement('button');
@@ -2099,6 +2477,10 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
 
+window.addEventListener("resize", () => {
+  if (currentPage === "pay") updatePayHeaderOffset();
+});
+
 
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => setPage(btn.dataset.target));
@@ -2122,6 +2504,7 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   initDebugUI();
   initKiran();
   initPayUI();
+  updatePayHeaderOffset();
   // golden 初期化
   applyGoldenClass();
   updateGoldenUI();
