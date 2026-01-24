@@ -1862,7 +1862,7 @@ function showUsageGuide(options) {
   section3.className = "usage-section";
   section3.innerHTML = `
     <div class="usage-title">Androidの方</div>
-    <p>そのままでも使えますが、Web NFCをONにするとより楽しめます（iPhoneは非対応）。</p>
+    <p>このままでも使えますが、Web NFCをONにするとより快適にご利用できます。（iPhoneは非対応）</p>
     <img class="usage-image usage-image--small" src="/images/Web NFC_toggle.png" alt="Web NFCの設定例">
   `;
   wrap.appendChild(section3);
