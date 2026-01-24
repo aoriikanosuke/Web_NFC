@@ -65,6 +65,7 @@ const $siteInfoPassword = document.getElementById("siteInfoPassword");
 const $siteInfoSubmitBtn = document.getElementById("siteInfoSubmitBtn");
 const $siteInfoToggleLink = document.getElementById("siteInfoToggleLink");
 const $siteInfoFormError = document.getElementById("siteInfoFormError");
+const $siteUsageStartBtn = document.getElementById("siteUsageStartBtn");
 const $completeOverlay = document.getElementById("completeOverlay");
 const $completeBonusBtn = document.getElementById("completeBonusBtn");
 const $rankingBtn = document.getElementById("rankingBtn");
@@ -94,6 +95,26 @@ const $payStatus = document.getElementById("payStatus");
 const $paySuccess = document.getElementById("paySuccess");
 const $paySuccessAmount = document.getElementById("paySuccessAmount");
 const $paySuccessConsumed = document.getElementById("paySuccessConsumed");
+const $paySprite = document.getElementById("paySprite");
+
+const PAY_SPRITE_SRC = "/images/pay_ANI2.png";
+const PAY_SPRITE = { cols: 4, rows: 10, frames: 40, fps: 18 };
+let paySpriteTimer = null;
+let paySpriteIndex = 0;
+let paySpriteDir = 1;
+let paySpriteFrameW = 0;
+let paySpriteFrameH = 0;
+let paySpriteNaturalW = 0;
+let paySpriteNaturalH = 0;
+
+const paySpriteImage = new Image();
+paySpriteImage.decoding = "async";
+paySpriteImage.src = PAY_SPRITE_SRC;
+paySpriteImage.addEventListener("load", () => {
+  paySpriteNaturalW = paySpriteImage.naturalWidth || 0;
+  paySpriteNaturalH = paySpriteImage.naturalHeight || 0;
+  updatePaySpriteSizing();
+});
 
 // Sprite sheet config for stamp_ANI2/3.png
 const STAMP_ANI = { frames: 38, cols: 4, rows: 10, fps: 30 };
@@ -445,6 +466,90 @@ let selectedShop = null;
 function formatPayAmount(value) {
   const num = Number(value || 0);
   return Number.isFinite(num) ? num.toLocaleString("ja-JP") : "0";
+}
+
+function updatePaySpriteSizing() {
+  if (!$paySprite) return;
+  const rect = $paySprite.getBoundingClientRect();
+  let targetW = Math.round(rect.width);
+  let targetH = Math.round(rect.height);
+  if (targetW <= 1 || targetH <= 1) {
+    const styles = window.getComputedStyle($paySprite);
+    targetW = Math.round(parseFloat(styles.width) || 0);
+    targetH = Math.round(parseFloat(styles.height) || 0);
+  }
+  targetW = Math.max(1, targetW);
+  targetH = Math.max(1, targetH);
+
+  if (paySpriteNaturalW && paySpriteNaturalH) {
+    const baseFrameW = Math.round(paySpriteNaturalW / PAY_SPRITE.cols);
+    const baseFrameH = Math.round(paySpriteNaturalH / PAY_SPRITE.rows);
+    if (baseFrameW <= 0 || baseFrameH <= 0) {
+      paySpriteNaturalW = 0;
+      paySpriteNaturalH = 0;
+    } else {
+      if (targetW >= baseFrameW && targetH >= baseFrameH) {
+      const scaleW = Math.max(1, Math.round(targetW / baseFrameW));
+      const scaleH = Math.max(1, Math.round(targetH / baseFrameH));
+      const scale = Math.max(1, Math.min(scaleW, scaleH));
+      const frameW = baseFrameW * scale;
+      const frameH = baseFrameH * scale;
+
+      if (frameW === paySpriteFrameW && frameH === paySpriteFrameH) return;
+      paySpriteFrameW = frameW;
+      paySpriteFrameH = frameH;
+      $paySprite.style.backgroundSize = `${frameW * PAY_SPRITE.cols}px ${frameH * PAY_SPRITE.rows}px`;
+      return;
+      }
+    }
+  }
+
+  if (targetW === paySpriteFrameW && targetH === paySpriteFrameH) return;
+  paySpriteFrameW = targetW;
+  paySpriteFrameH = targetH;
+  $paySprite.style.backgroundSize = `${targetW * PAY_SPRITE.cols}px ${targetH * PAY_SPRITE.rows}px`;
+}
+
+function setPaySpriteFrame(index) {
+  if (!$paySprite) return;
+  const col = index % PAY_SPRITE.cols;
+  const row = Math.floor(index / PAY_SPRITE.cols);
+  if (!paySpriteFrameW || !paySpriteFrameH) updatePaySpriteSizing();
+  const x = -col * paySpriteFrameW;
+  const y = -row * paySpriteFrameH;
+  $paySprite.style.backgroundPosition = `${x}px ${y}px`;
+}
+
+function stepPaySprite() {
+  setPaySpriteFrame(paySpriteIndex);
+  paySpriteIndex += paySpriteDir;
+  if (paySpriteIndex >= PAY_SPRITE.frames - 1) {
+    paySpriteIndex = PAY_SPRITE.frames - 1;
+    paySpriteDir = -1;
+  } else if (paySpriteIndex <= 0) {
+    paySpriteIndex = 0;
+    paySpriteDir = 1;
+  }
+}
+
+function startPaySprite() {
+  if (!$paySprite) return;
+  stopPaySprite();
+  if (!$paySprite.style.backgroundImage) {
+    $paySprite.style.backgroundImage = `url("${PAY_SPRITE_SRC}")`;
+  }
+  updatePaySpriteSizing();
+  paySpriteIndex = 0;
+  paySpriteDir = 1;
+  setPaySpriteFrame(0);
+  const interval = Math.max(40, Math.round(1000 / PAY_SPRITE.fps));
+  paySpriteTimer = window.setInterval(stepPaySprite, interval);
+}
+
+function stopPaySprite() {
+  if (!paySpriteTimer) return;
+  clearInterval(paySpriteTimer);
+  paySpriteTimer = null;
 }
 
 function getAvailablePayPoints() {
@@ -1684,6 +1789,16 @@ function closeModal(result) {
   $modal.setAttribute("aria-hidden", "true");
   modalBlurActive = false;
   if ($app) $app.classList.remove("is-modal-blur");
+  document.querySelectorAll(".app").forEach(app => {
+    app.classList.remove("is-modal-blur");
+  });
+  if ($siteInfoOverlay && !$siteInfoOverlay.classList.contains("is-open")) {
+    document.body.classList.remove("is-siteinfo-open");
+    document.querySelectorAll(".app").forEach(app => {
+      app.classList.remove("is-siteinfo-open");
+    });
+    clearSiteInfoFilters();
+  }
   if (modalResolve) {
     const resolve = modalResolve;
     modalResolve = null;
@@ -1721,6 +1836,51 @@ function showModalConfirm(title, body, okText, cancelText) {
   });
 }
 
+function showUsageGuide(options) {
+  if (!currentUser?.id) return;
+  const wrap = document.createElement("div");
+  wrap.className = "usage-guide";
+
+  const section1 = document.createElement("div");
+  section1.className = "usage-section";
+  section1.innerHTML = `
+    <div class="usage-title">利用方法</div>
+    <p>端末のスキャンエリアにNFCスタンプをタッチしてスタンプを取得します。</p>
+  `;
+  wrap.appendChild(section1);
+
+  const section2 = document.createElement("div");
+  section2.className = "usage-section";
+  section2.innerHTML = `
+    <div class="usage-title">iPhoneの方</div>
+    <p>タッチ後に表示される通知を開き、ページを再読み込みしてください。</p>
+    <img class="usage-image" src="/images/iPhone_banner.png" alt="iPhoneの通知例">
+  `;
+  wrap.appendChild(section2);
+
+  const section3 = document.createElement("div");
+  section3.className = "usage-section";
+  section3.innerHTML = `
+    <div class="usage-title">Androidの方</div>
+    <p>そのままでも使えますが、Web NFCをONにするとより楽しめます（iPhoneは非対応）。</p>
+    <img class="usage-image usage-image--small" src="/images/Web NFC_toggle.png" alt="Web NFCの設定例">
+  `;
+  wrap.appendChild(section3);
+
+  const actions = document.createElement("div");
+  actions.className = "usage-actions";
+  const startBtn = document.createElement("button");
+  startBtn.type = "button";
+  startBtn.className = "chips-btn glass usage-start";
+  startBtn.textContent = "了解";
+  actions.appendChild(startBtn);
+  wrap.appendChild(actions);
+
+  openModal({ title: "使い方ガイド", bodyNode: wrap, blur: true });
+
+  startBtn.addEventListener("click", () => closeModal(true), { once: true });
+}
+
 // ================== Bottom nav ==================
 function setPage(name) {
   currentPage = name;
@@ -1737,10 +1897,12 @@ function setPage(name) {
   if (name === "pay") {
     resetPayFlow();
     updatePayAvailable();
+    startPaySprite();
   }
   if (name !== "pay") {
     setPayRotated(false);
     clearPaySuccessBlur();
+    stopPaySprite();
   }
   if (currentUser?.id) closeSiteInfo();
 }
@@ -1764,6 +1926,7 @@ let siteInfoLocked = false;
 let siteInfoForced = false;
 let siteInfoAuthChoice = false;
 let siteInfoAuthMode = "login";
+let siteInfoUsage = false;
 
 function openSiteInfo(options) {
   if (!$siteInfoOverlay || !$app) return;
@@ -1772,10 +1935,12 @@ function openSiteInfo(options) {
   siteInfoLocked = siteInfoForced || !!(options && options.locked);
   siteInfoAuthChoice = false;
   siteInfoAuthMode = "login";
+  siteInfoUsage = false;
   $siteInfoOverlay.classList.add("is-open");
   $siteInfoOverlay.classList.toggle("is-forced", siteInfoForced);
   $siteInfoOverlay.classList.toggle("is-auth-choice", siteInfoAuthChoice);
   $siteInfoOverlay.classList.remove("is-auth-form");
+  $siteInfoOverlay.classList.remove("is-usage");
   if ($siteInfoFormError) $siteInfoFormError.textContent = "";
   $siteInfoOverlay.setAttribute("aria-hidden", "false");
   $app.classList.add("is-siteinfo-open");
@@ -1789,10 +1954,12 @@ function closeSiteInfo() {
   siteInfoForced = false;
   siteInfoAuthChoice = false;
   siteInfoAuthMode = "login";
+  siteInfoUsage = false;
   $siteInfoOverlay.classList.remove("is-open");
   $siteInfoOverlay.classList.remove("is-forced");
   $siteInfoOverlay.classList.remove("is-auth-choice");
   $siteInfoOverlay.classList.remove("is-auth-form");
+  $siteInfoOverlay.classList.remove("is-usage");
   $siteInfoOverlay.setAttribute("aria-hidden", "true");
   $app.classList.remove("is-siteinfo-open");
   document.body.classList.remove("is-siteinfo-open");
@@ -1889,6 +2056,7 @@ async function handleSiteInfoAuth() {
     closeSiteInfo();
     await syncFromDB();
     updateOOP();
+    showUsageGuide({ greeting: siteInfoAuthMode === "signup" ? "登録が完了しました" : "ログインしました" });
   } catch {
     setSiteInfoError("通信に失敗しました。");
   } finally {
@@ -2545,6 +2713,7 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("resize", () => {
   if (currentPage === "pay") updatePayHeaderOffset();
+  if (currentPage === "pay") updatePaySpriteSizing();
 });
 
 
@@ -2762,7 +2931,7 @@ async function handleAuth() {
 
       await syncFromDB(); // ← ここで stamps と points が揃う
 
-      showModalMessage("アカウント", isLoginMode ? "ログインしました" : "登録が完了しました");
+      showUsageGuide({ greeting: isLoginMode ? "ログインしました" : "登録が完了しました" });
     } else {
       const err = await res.json();
       alert(err.error);

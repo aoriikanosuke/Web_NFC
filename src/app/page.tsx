@@ -204,22 +204,26 @@ export default function Page() {
                   <div id="payRotator" className="pay-rotator" aria-live="polite">
                     <div className="pay-view pay-view--customer">
                       <div className="pay-header">
-                        <div className="pay-title">決済</div>
+                        <div className="pay-title">ポイント決済</div>
                         <div className="pay-balance">
                           利用可能 <span id="payAvailable">0</span>P
                         </div>
                       </div>
                       <div id="paySelectStep" className="pay-step pay-step--select is-active">
-                        <p className="pay-step-title">店舗を選択</p>
-                        <p className="pay-step-lead">
-                          NFCをタッチして店舗を選択してください。
-                        </p>
-                        <div className="pay-step-actions">
-                          <button id="payScanBtn" className="pay-primary pay-primary--wide" type="button">
-                            店舗読み取り開始
-                          </button>
+                        <div className="pay-select-card">
+                          <div className="pay-select-body">
+                            <div className="pay-select-visual" aria-hidden="true">
+                              <div id="paySprite" className="pay-sprite"></div>
+                            </div>
+                            <div className="pay-select-copy">
+                              <p className="pay-step-title">店舗を選択</p>
+                              <div className="pay-select-hint">
+                                <span className="pay-select-dot"></span>
+                                <span className="pay-select-hint-text">端末をかざすと自動で認識します</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <p className="pay-step-hint">iPhoneはNFCタグのURLで自動選択されます。</p>
                       </div>
 
                       <div id="payAmountStep" className="pay-step pay-step--amount">
@@ -515,6 +519,36 @@ export default function Page() {
                   </button>
 
                   <div id="siteInfoFormError" className="site-info-error" aria-live="polite"></div>
+                </div>
+              </div>
+
+              <div className="site-usage glass">
+                <div className="site-usage-head">
+                  <div className="site-usage-title">使い方ガイド</div>
+                  <p className="site-usage-lead">
+                    NFCスタンプは、タッチするだけで集められます。
+                  </p>
+                </div>
+                <div className="site-usage-body">
+                  <div className="site-usage-card">
+                    <h4>利用方法</h4>
+                    <p>端末のスキャンエリアにNFCスタンプをタッチしてスタンプを取得します。</p>
+                  </div>
+                  <div className="site-usage-card">
+                    <h4>iPhoneの方</h4>
+                    <p>タッチ後に表示される通知を開き、ページを再読み込みしてください。</p>
+                    <img className="site-usage-image" src="/images/iPhone_banner.png" alt="iPhoneの通知例" />
+                  </div>
+                  <div className="site-usage-card">
+                    <h4>Androidの方</h4>
+                    <p>このままでも使えますが、Web NFCをONにするとより快適にご利用できます。（iPhoneは非対応）</p>
+                    <img className="site-usage-image" src="/images/Web NFC_toggle.png" alt="Web NFCの設定例" />
+                  </div>
+                </div>
+                <div className="site-usage-actions">
+                  <button id="siteUsageStartBtn" className="site-info-btn site-info-btn--start" type="button">
+                    はじめる
+                  </button>
                 </div>
               </div>
             </div>
