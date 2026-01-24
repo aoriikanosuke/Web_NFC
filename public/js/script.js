@@ -863,7 +863,8 @@ function renderIndicator() {
   $indicator.innerHTML = stamps.map((_, i) => {
     const active = i === currentIndex ? "is-active" : "";
     const stamped = stamps[i] && stamps[i].flag ? "is-stamped" : "";
-    return `<div class="dot ${active} ${stamped}" data-i="${i}"></div>`;
+    const linked = stamps[i] && stamps[i].flag && stamps[i + 1] && stamps[i + 1].flag ? "is-linked" : "";
+    return `<div class="dot ${active} ${stamped} ${linked}" data-i="${i}"></div>`;
   }).join("");
 
   $indicator.querySelectorAll(".dot").forEach(dot => {
