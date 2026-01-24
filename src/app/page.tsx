@@ -166,7 +166,7 @@ export default function Page() {
 
             <div className="scan-top">
                 <button id="scanBtn" className="scan-toggle glass is-off" type="button" aria-pressed="false">
-                  <span className="scan-toggle-label">SCAN</span>
+                  <span className="scan-toggle-label">WebNFC</span>
                   <span className="scan-toggle-track" aria-hidden="true">
                     <span className="scan-toggle-thumb"></span>
                   </span>
