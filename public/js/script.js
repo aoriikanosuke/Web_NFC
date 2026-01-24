@@ -27,7 +27,11 @@ let stamps = loadStamps();
 let currentIndex = 0;
 let currentPage = "stamp";
 let $track = null;
+let $pageBase = null;
+let $pageOverlay = null;
 let swipeBound = false;
+let isFlipping = false;
+let flipTimer = 0;
 const TAB_ID = (() => {
   const existing = sessionStorage.getItem(LS_TAB_ID);
   if (existing) return existing;
@@ -880,7 +884,7 @@ function renderIndicator() {
 
 function syncChipsModalContent() {
   const s = stamps[currentIndex];
-  $modalTitle.textContent = `${s.name} の location`;
+  $modalTitle.textContent = "ロケーション";
   $modalBody.textContent = s.location || "location情報が未設定です。";
 }
 

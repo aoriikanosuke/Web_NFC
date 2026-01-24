@@ -188,7 +188,7 @@ export default function Page() {
 
                   <div className="below-row inside-card">
                     <button id="chipsBtn" className="chips-btn glass" type="button">
-                      Chips
+                      TIPS
                     </button>
                   </div>
                 </div>

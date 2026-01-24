@@ -221,31 +221,31 @@ input, textarea, [contenteditable="true"]{
   top: calc(env(safe-area-inset-top) - 30px);
   left: 50%;
   transform: translateX(-50%);
-  width: 110px;
-  height: 110px;
-  overflow: hidden;
-  z-index: 3;
+  width: 130px;
+  height: 130px;
+  overflow: visible;
+  z-index: 1;
   pointer-events: none;
 }
 @media (max-width: 899px){
   .nfc-hint{
     top: calc(env(safe-area-inset-top) - 26px);
-    width: 104px;
-    height: 104px;
-    z-index: 6;
+    width: 120px;
+    height: 120px;
+    z-index: 1;
   }
 }
 @media (min-width: 900px){
   .nfc-hint{
     top: -26px;
-    width: 120px;
-    height: 120px;
-    z-index: 6;
+    width: 150px;
+    height: 150px;
+    z-index: 1;
   }
 }
 .nfc-ring{
   position: absolute;
-  inset: 0;
+  inset: -12%;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.75);
   box-shadow: 0 0 28px rgba(95,183,255,0.38);
@@ -1323,24 +1323,23 @@ input, textarea, [contenteditable="true"]{
   padding: 10px 0 4px;
 }
 .dot{
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
-  background: transparent;
+  background: rgba(11,90,214,0.35);
   border: none;
-  box-shadow: none;
+  box-shadow: 0 4px 10px rgba(6,24,40,0.18);
   position: relative;
 }
 .dot.is-stamped{
   background: #14e047;
-  border: none;
-  box-shadow: none;
+  box-shadow: 0 6px 12px rgba(20,224,71,0.35), 0 4px 10px rgba(6,24,40,0.18);
 }
 .dot.is-active{
-  width: 22px;
-  background: transparent;
+  width: 24px;
+  background: rgba(11,90,214,0.45);
   border: none;
-  box-shadow: none;
+  box-shadow: 0 6px 12px rgba(6,24,40,0.2);
 }
 .dot.is-active.is-stamped{
   background: #14e047;
@@ -2799,18 +2798,21 @@ html, body{
   padding: 10px 0 4px;
 }
 .dot{
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
-  background: rgba(51, 146, 255, 0.5);
+  background: rgba(11,90,214,0.35);
+  box-shadow: 0 4px 10px rgba(6,24,40,0.18);
   position: relative;
 }
 .dot.is-active{
-  width: 22px;
-  background: rgba(51, 146, 255, 0.5);
+  width: 24px;
+  background: rgba(11,90,214,0.45);
+  box-shadow: 0 6px 12px rgba(6,24,40,0.2);
 }
 .dot.is-stamped{
   background: #14e047;
+  box-shadow: 0 6px 12px rgba(20,224,71,0.35), 0 4px 10px rgba(6,24,40,0.18);
 }
 .dot.is-stamped.is-linked::after{
   content: "";
