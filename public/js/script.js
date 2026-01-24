@@ -857,6 +857,22 @@ function applyUid(uid) {
   }
 }
 
+function focusStampPageByUid(uid) {
+  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
+  const target = normalizeUid(uid);
+  const hitIndex = list.findIndex(s => normalizeUid(s.uid) === target);
+  if (hitIndex < 0) return false;
+  currentIndex = hitIndex;
+  setPage("stamp");
+  if (!$track) {
+    render();
+  } else {
+    updateSlidePosition(true);
+    syncChipsModalContent();
+  }
+  return true;
+}
+
 function isStampOwnedByUid(uid) {
   if (!uid) return false;
   const target = normalizeUid(uid);
@@ -978,7 +994,11 @@ async function applyToken(token) {
   const variant = owned ? "owned" : "new";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
-  applyUid(hit.uid);
+  if (owned) {
+    focusStampPageByUid(hit.uid);
+  } else {
+    applyUid(hit.uid);
+  }
   return true;
 }
 
