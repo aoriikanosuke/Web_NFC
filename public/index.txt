@@ -209,16 +209,6 @@
               </div>
             </div>
           </div>
-          <div id="rankingModal" class="ranking-modal" aria-hidden="true">
-            <div class="ranking-backdrop" data-close="1"></div>
-            <div class="ranking-panel glass" role="dialog" aria-modal="true" aria-label="ランキング">
-              <div class="ranking-head">
-                <div class="ranking-title">ランキング</div>
-                <button class="modal-close" type="button" data-close="1">?</button>
-              </div>
-              <div id="rankingList" class="ranking-list"></div>
-            </div>
-          </div>
 
           <!-- Subtle Golden Card tucked bottom-right of profile page -->
           <!-- <div class="golden-card glass" aria-hidden="true">
@@ -237,6 +227,18 @@
           </div> -->
         </section>
       </main>
+
+
+      <div id="rankingModal" class="ranking-modal" aria-hidden="true">
+        <div class="ranking-backdrop" data-close="1"></div>
+        <div class="ranking-panel glass" role="dialog" aria-modal="true" aria-label="?????">
+          <div class="ranking-head">
+            <div class="ranking-title">?????</div>
+            <button class="modal-close" type="button" data-close="1">?</button>
+          </div>
+          <div id="rankingList" class="ranking-list"></div>
+        </div>
+      </div>
 
       <!-- Stamp animation overlay -->
       <div id="stampAni" class="stamp-ani" aria-hidden="true">

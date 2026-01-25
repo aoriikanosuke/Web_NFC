@@ -394,25 +394,26 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div id="rankingModal" className="ranking-modal" aria-hidden="true">
-                  <div className="ranking-backdrop" data-close="1"></div>
-                  <div
-                    className="ranking-panel glass"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="ランキング"
-                  >
-                    <div className="ranking-head">
-                      <div className="ranking-title">ランキング</div>
-                      <button className="modal-close" type="button" data-close="1">
-                        ✕
-                      </button>
-                    </div>
-                    <div id="rankingList" className="ranking-list"></div>
-                  </div>
-                </div>
               </section>
             </main>
+
+            <div id="rankingModal" className="ranking-modal" aria-hidden="true">
+              <div className="ranking-backdrop" data-close="1"></div>
+              <div
+                className="ranking-panel glass"
+                role="dialog"
+                aria-modal="true"
+                aria-label="ランキング"
+              >
+                <div className="ranking-head">
+                  <div className="ranking-title">ランキング</div>
+                  <button className="modal-close" type="button" data-close="1">
+                    ×
+                  </button>
+                </div>
+                <div id="rankingList" className="ranking-list"></div>
+              </div>
+            </div>
 
             {/* Stamp animation overlay */}
             <div id="stampAni" className="stamp-ani" aria-hidden="true">

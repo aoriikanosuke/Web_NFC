@@ -1622,9 +1622,9 @@ input, textarea, [contenteditable="true"]{
 .modal.is-open{ display:flex; }
 .modal-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.35); }
 
-.ranking-modal{ position: fixed; inset:0; display:none; z-index:60; align-items:center; justify-content:center; }
+.ranking-modal{ position: fixed; inset:0; display:none; z-index: 20050; align-items:center; justify-content:center; }
 .ranking-modal.is-open{ display:flex; }
-.ranking-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.45); }
+.ranking-backdrop{ position:absolute; inset:0; background: rgba(0,0,0,.45); z-index: 20050; }
 .ranking-panel{
   position: relative;
   width: min(420px, calc(100% - 32px));
@@ -1633,6 +1633,7 @@ input, textarea, [contenteditable="true"]{
   max-height: min(520px, calc(100% - 120px));
   display:flex;
   flex-direction: column;
+  z-index: 20051;
 }
 .ranking-head{
   display:flex;
