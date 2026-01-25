@@ -745,22 +745,7 @@ input, textarea, [contenteditable="true"]{
   pointer-events: none;
 }
 #page-profile #logout-btn.profile-action-btn::after{
-  content: "";
-  position: absolute;
-  top: -120%;
-  left: -60%;
-  width: 40%;
-  height: 240%;
-  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85), rgba(255,255,255,0));
-  transform: rotate(25deg);
-  animation: logout-shine 2.6s linear infinite;
-  pointer-events: none;
-}
-@keyframes logout-shine{
-  0%{ transform: translateX(-160%) rotate(25deg); opacity: 0; }
-  20%{ opacity: .85; }
-  60%{ opacity: .45; }
-  100%{ transform: translateX(220%) rotate(25deg); opacity: 0; }
+  content: none;
 }
 #page-profile .profile-login-btn{
   align-self: center;
