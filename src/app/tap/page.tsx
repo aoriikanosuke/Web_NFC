@@ -32,10 +32,13 @@ function TapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("スタンプを確認しています...");
+  const [isLoading, setIsLoading] = useState(true);
+  const [noticeText, setNoticeText] = useState("スタンプ確認中");
 
   useEffect(() => {
     const token = searchParams.get("t");
     if (!token) {
+      setIsLoading(false);
       router.replace("/");
       return;
     }
@@ -44,13 +47,16 @@ function TapContent() {
     if (!userRaw) {
       localStorage.setItem(LS_PENDING_TOKEN, token);
       localStorage.setItem(LS_OPEN_AUTH, "1");
+      setNoticeText("ログイン確認中");
       setMessage("ログインが必要です。トップに戻ります...");
+      setIsLoading(false);
       router.replace("/");
       return;
     }
 
     const redeem = async () => {
       try {
+        setNoticeText("スタンプ取得中");
         const res = await fetch("/api/stamps/redeem", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -61,13 +67,16 @@ function TapContent() {
         if (res.status === 401) {
           localStorage.setItem(LS_PENDING_TOKEN, token);
           localStorage.setItem(LS_OPEN_AUTH, "1");
+          setNoticeText("ログイン確認中");
           setMessage("ログインが必要です。トップに戻ります...");
+          setIsLoading(false);
           router.replace("/");
           return;
         }
         if (!res.ok || !data.ok) {
           localStorage.setItem(LS_PENDING_TOKEN, token);
           setMessage("スタンプ取得に失敗しました。トップへ戻ります...");
+          setIsLoading(false);
           router.replace("/");
           return;
         }
@@ -85,10 +94,12 @@ function TapContent() {
         localStorage.removeItem(LS_PENDING_TOKEN);
         localStorage.removeItem(LS_PENDING_PROGRESS);
         setMessage("スタンプを獲得しました。トップへ戻ります...");
+        setIsLoading(false);
         router.replace("/");
       } catch (err) {
         localStorage.setItem(LS_PENDING_TOKEN, token);
         setMessage("通信に失敗しました。トップへ戻ります...");
+        setIsLoading(false);
         router.replace("/");
       }
     };
@@ -97,7 +108,22 @@ function TapContent() {
   }, [router, searchParams]);
 
   return (
-    <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
+    <main className="tap-page" style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
+      <div
+        className={`top-notice ${isLoading ? "is-show" : ""}`}
+        role="status"
+        aria-live="polite"
+        aria-hidden={isLoading ? "false" : "true"}
+      >
+        <div className="top-notice-pill glass">
+          <span className="top-notice-dots" aria-hidden="true">
+            <i></i>
+            <i></i>
+            <i></i>
+          </span>
+          <span className="top-notice-text">{noticeText}</span>
+        </div>
+      </div>
       <p>{message}</p>
     </main>
   );
