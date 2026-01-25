@@ -1790,11 +1790,18 @@ input, textarea, [contenteditable="true"]{
 .ranking-item.rank-3{
   background: linear-gradient(140deg, rgba(255,240,228,0.95), rgba(225,185,150,0.82));
 }
-.ranking-rank{ min-width: 3ch; }
-.ranking-name{ flex: 1; position: relative; }
+.ranking-rank{ min-width: 3ch; flex: 0 0 auto; }
+.ranking-name{ flex: 1 1 auto; min-width: 0; position: relative; }
 .ranking-name-text{
   position: relative;
-  display:inline-block;
+  display:block;
+  max-width: 100%;
+}
+.ranking-name-label{
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ranking-crown{
   position: absolute;
@@ -1820,6 +1827,7 @@ input, textarea, [contenteditable="true"]{
   align-items:center;
   justify-content:center;
   min-width: 140px;
+  flex: 0 0 auto;
 }
 .ranking-stamp{
   width: 18px;
@@ -1836,6 +1844,7 @@ input, textarea, [contenteditable="true"]{
   min-width: 5ch;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
 .complete-overlay{
   position: absolute;
