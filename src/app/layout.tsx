@@ -1,15 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "NFCスタンプラリー",
@@ -37,7 +26,7 @@ export default function RootLayout({
 
         {/* Google Font（index.html） */}
         <link
-          href="https://fonts.googleapis.com/css2?family=M+PLUS+1p:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap"
           rel="stylesheet"
         />
 
@@ -45,7 +34,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/css/stylesheet.css" />
       </head>
 
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>
