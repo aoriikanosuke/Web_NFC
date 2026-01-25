@@ -1670,15 +1670,17 @@ input, textarea, [contenteditable="true"]{
 }
 .ranking-rank{ min-width: 3ch; }
 .ranking-name{ flex: 1; position: relative; }
-.ranking-name-text{ display:inline-block; }
-.ranking-item.rank-1 .ranking-name{ padding-top: 16px; }
+.ranking-name-text{
+  position: relative;
+  display:inline-block;
+}
 .ranking-crown{
   position: absolute;
-  top: 0;
   left: 50%;
+  bottom: 100%;
   width: 34px;
   height: auto;
-  transform: translate(-50%, -60%);
+  transform: translate(-50%, 18%);
   pointer-events: none;
 }
 .ranking-item.rank-1 .ranking-rank,

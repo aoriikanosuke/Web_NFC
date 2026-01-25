@@ -365,8 +365,7 @@ async function openRankingModal() {
         <div class="ranking-item ${rankClass}">
           <div class="ranking-rank">#${rankIndex}</div>
           <div class="ranking-name">
-            ${crown}
-            <span class="ranking-name-text">${name}</span>
+            <span class="ranking-name-text">${crown}${name}</span>
           </div>
           <div class="ranking-stamps" aria-label="スタンプ所持数 ${stampCount}">
             ${icons}
