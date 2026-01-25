@@ -1840,7 +1840,9 @@ function showModalConfirm(title, body, okText, cancelText) {
     cancel.type = "button";
     cancel.className = "chips-btn glass";
     cancel.textContent = cancelText || "キャンセル";
-    if (okText === "リセットする" || okText?.includes("ログアウト")) ok.classList.add("modal-danger");
+    const isDanger = okText === "リセットする" || okText?.includes("ログアウト") || title?.includes("ログアウト");
+    if (isDanger) ok.classList.add("modal-danger");
+    if (isDanger) msg.classList.add("modal-danger-text");
     actions.append(ok, cancel);
     wrap.append(msg, actions);
     openModal({ title, bodyNode: wrap });
@@ -2983,7 +2985,7 @@ function updateProfileStampSummary() {
 }
 
 async function handleLogoutClick() {
-  const ok = await showModalConfirm("ログアウト", "ログアウトしますか？", "ログアウトする", "キャンセル");
+  const ok = await showModalConfirm("ログアウト", "本当にログアウトしますか？", "はい", "キャンセル");
   if (ok) logout();
 }
 

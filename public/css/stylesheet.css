@@ -2224,6 +2224,7 @@ body.force-unblur .bg-layer{
 .modal-backdrop{ z-index: 20000; }
 .modal-panel{ z-index: 20001; }
 .modal-text{ margin: 0; }
+.modal-danger-text{ color: #d32f2f; font-weight: 800; }
 .modal-actions{
   margin-top: 12px;
   display: flex;
@@ -3733,6 +3734,10 @@ html, body{
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.45));
   opacity: 0.95;
   transform: translateY(0);
+}
+
+.modal-actions .chips-btn.modal-danger{
+  color: #d32f2f;
 }
 
 /* Ensure pay layout header slide works on mobile and duplicated blocks */
