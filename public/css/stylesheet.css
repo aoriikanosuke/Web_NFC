@@ -733,7 +733,7 @@ input, textarea, [contenteditable="true"]{
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(255,100,100,1), rgba(230,50,50,0.95));
-  box-shadow: 0 12px 26px rgba(255,60,60,0.4), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -12px 22px rgba(120,0,0,0.32);
+  box-shadow: 0 12px 26px rgba(255, 95, 95, 0.792), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -12px 22px rgba(120,0,0,0.32);
 }
 #page-profile #logout-btn.profile-action-btn::before{
   content: "";
