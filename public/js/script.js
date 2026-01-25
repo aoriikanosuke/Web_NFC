@@ -905,6 +905,7 @@ function render() {
   updateOOP();
   syncChipsModalContent();
   updateCompleteOverlay();
+  updateProfileStampSummary();
 
   if (!swipeBound) {
     bindSwipeEvents();
@@ -2958,11 +2959,27 @@ function updateUIForLoggedInUser() {
   const a = document.getElementById('auth-trigger-btn');
   if (a) a.style.display = 'none';
   const ui = document.getElementById('user-info');
-  if (ui) ui.style.display = 'block';
+  if (ui) ui.style.display = 'flex';
   const du = document.getElementById('display-username');
   if (du) du.innerText = currentUser.username;
+  updateProfileStampSummary();
   closeSiteInfo();
   syncSiteInfoBlur();
+}
+
+function updateProfileStampSummary() {
+  const listEl = document.getElementById('profileStampList');
+  const countEl = document.getElementById('profileStampCount');
+  if (!listEl || !countEl) return;
+  const maxIcons = 6;
+  const stampCount = Array.isArray(stamps) ? stamps.filter(s => s.flag).length : 0;
+  const icons = Array.from({ length: maxIcons }).map((_, i) => {
+    const active = i < stampCount ? "is-active" : "";
+    return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
+  }).join("");
+  listEl.innerHTML = icons;
+  listEl.setAttribute("aria-label", `スタンプ所持数 ${stampCount}`);
+  countEl.textContent = String(stampCount);
 }
 
 function logout() {

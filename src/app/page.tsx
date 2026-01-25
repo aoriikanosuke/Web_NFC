@@ -312,36 +312,45 @@ export default function Page() {
 
               {/* Profile */}
               <section id="page-profile" className="page" aria-label="プロフィール">
-                <div className="page-center glass">
-                  <h2 className="page-title">プロフィール</h2>
+                <div className="profile-shell glass">
+                  <div id="user-info" className="profile-info" style={{ display: 'none' }}>
+                    <div className="profile-hero">
+                      <div className="profile-name">
+                        <span id="display-username"></span>
+                      </div>
+                      <div className="profile-stamps">
+                        <div className="profile-stamp-label">スタンプ数</div>
+                        <div id="profileStampList" className="ranking-stamps profile-stamp-list" aria-label="??????? 0"></div>
+                        <div className="profile-stamp-count">
+                          <span id="profileStampCount">0</span>
+                          <span className="profile-stamp-unit">/ 6</span>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div id="user-info" style={{ display: 'none' }}>
-                    <p>
-                      ようこそ、<span id="display-username"></span>さん
-                    </p>
-                    <div className="profile-actions">
-                      <button
-                        className="chips-btn glass danger"
-                        type="button"
-                        onClick={() => callGlobal('logout')}
-                      >
-                        ログアウト
+                    <div className="profile-actions-grid">
+                      <button id="tradeLogBtn" className="profile-action-btn profile-action-log glass" type="button">
+                        取引ログ
                       </button>
-                      <button id="rankingBtn" className="chips-btn glass" type="button">
+                      <button id="rankingBtn" className="profile-action-btn chips-btn" type="button">
                         ランキング
+                      </button>
+                      <button id="logout-btn" className="profile-action-btn chips-btn danger" type="button">
+                        ログアウト
                       </button>
                     </div>
                   </div>
 
                   <button
                     id="auth-trigger-btn"
-                    className="chips-btn glass"
+                    className="profile-login-btn chips-btn glass"
                     type="button"
                     onClick={() => callGlobal('openAuthModal')}
                   >
-                    ログイン/会員登録
+                    ????/??????
                   </button>
                 </div>
+
 
                 <div id="auth-modal" className="modal" aria-hidden="true">
                   <div className="modal-backdrop" onClick={() => callGlobal('closeAuthModal')}></div>
