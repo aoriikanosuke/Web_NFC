@@ -149,7 +149,6 @@ window.debugPointsOffset = 0;
 const LS_CONSUMED = 'nfc_consumed_points';
 const LS_GOLD_UNLOCK = 'nfc_golden_unlocked';
 const LS_GOLD_ACTIVE = 'nfc_golden_active';
-const LS_BONUS_CLAIMED = "nfc_bonus_claimed";
 let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
 let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
 let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
@@ -261,20 +260,19 @@ function closeRankingModal() {
   $rankingModal.classList.remove("is-open");
   $rankingModal.setAttribute("aria-hidden", "true");
 }
+
 /* ================== Completion bonus (DB-backed) ==================
    DB側の users.bonus_claimed を真実として扱う版
-   - localStorage の bonusClaimed は使わない
-   - /api/bonus で初回のみ +100 & bonus_claimed=true にする
+   - bonus周りで localStorage は一切使わない
+   - /api/bonus で初回のみ +100 & bonus_claimed=true
 =============================================================== */
 
 let bonusClaiming = false;
 
-/** 全スタンプ取得判定（既存のままでOK） */
 function allStampsCollected() {
   return Array.isArray(stamps) && stamps.length > 0 && stamps.every(s => s.flag);
 }
 
-/** DBから「ボーナス受け取り済み」とポイントを同期する（ログイン中のみ） */
 async function fetchBonusStatus() {
   if (!currentUser?.id) return { ok: false };
 
@@ -285,7 +283,6 @@ async function fetchBonusStatus() {
 
     if (!res.ok || !data.ok) return { ok: false, error: data.error };
 
-    // ✅ サーバの状態をローカルに同期
     currentUser.points = Number(data.points || 0);
     currentUser.bonus_claimed = !!data.bonusClaimed;
 
@@ -298,39 +295,58 @@ async function fetchBonusStatus() {
   }
 }
 
-/** 受け取り済み判定（DB同期後の currentUser を参照） */
 function isBonusClaimed() {
   return !!currentUser?.bonus_claimed;
 }
 
-/** コンプリートオーバーレイ表示（未ログイン・受け取り済みなら表示しない） */
 function showCompleteOverlay() {
   if (!$completeOverlay) return;
-
-  // ✅ ログアウト中は表示しない
-  if (!currentUser?.id) return;
-
-  // ✅ 既に受け取り済みなら表示しない
-  if (isBonusClaimed()) return;
+  if (!currentUser?.id) return; // ログアウト中は出さない
+  if (isBonusClaimed()) return; // 受け取り済みは出さない
 
   $completeOverlay.classList.add("is-open");
   $completeOverlay.setAttribute("aria-hidden", "false");
 }
 
-/** コンプリートボーナスを受け取る（DB側で初回のみ付与＆フラグON） */
+function hideCompleteOverlay() {
+  if (!$completeOverlay) return;
+  $completeOverlay.classList.remove("is-open");
+  $completeOverlay.setAttribute("aria-hidden", "true");
+}
+
+
+function updateCompleteOverlay() {
+  if (!$completeOverlay) return;
+
+  if (!allStampsCollected()) {
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
+    return;
+  }
+
+  if (!currentUser?.id) {
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
+    return;
+  }
+
+  if (isBonusClaimed()) {
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
+    return;
+  }
+
+  showCompleteOverlay();
+}
+
 async function claimCompletionBonus() {
   if (bonusClaiming) return;
 
-  // ✅ ログイン必須
   if (!currentUser?.id) {
     showModalMessage("ボーナス", "ログインが必要です。");
     try { openAuthModal(); } catch {}
     return;
   }
 
-  // ✅ そもそも受け取り済みなら何もしない（ローカルの状態）
   if (isBonusClaimed()) {
-    hideCompleteOverlay();
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
     return;
   }
 
@@ -343,29 +359,24 @@ async function claimCompletionBonus() {
     });
 
     const data = await res.json().catch(() => ({}));
-
     if (!res.ok || !data.ok) {
       showModalMessage("ボーナス", data.error || "ボーナス付与に失敗しました。");
       return;
     }
 
-    // ✅ サーバから返ってきた最新ポイントを採用
     currentUser.points = Number(data.points || 0);
-
-    // ✅ サーバ側で受け取り済みになっているのでローカルにも反映
-    // alreadyClaimed=true（すでに受け取り済み）でも bonus_claimed は true 扱いでOK
     currentUser.bonus_claimed = true;
 
     persistCurrentUser();
     updateOOP();
-
-    hideCompleteOverlay();
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
   } catch {
     showModalMessage("ボーナス", "通信に失敗しました。");
   } finally {
     bonusClaiming = false;
   }
 }
+
 
 
 // ================== Pay UI ==================
@@ -736,20 +747,21 @@ function isStampOwnedByUid(uid) {
 async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
-  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
-  const hit = list.find(s => s.token === t);
-  if (!hit) {
-    console.warn("NFC token not found:", t);
-    return false;
-  }
-  const owned = isStampOwnedByUid(hit.uid);
+
+  const result = await redeemToken(t, { deferApply: true });
+  if (!result || !result.ok) return false;
+
   try { showNfcRipple(); } catch {}
-  const variant = owned ? "owned" : "new";
+  const variant = result.alreadyOwned ? "owned" : "new";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
-  applyUid(hit.uid);
+
+  if (Array.isArray(result.stampProgress)) {
+    applyStampProgress(result.stampProgress);
+  }
   return true;
 }
+
 
 function isDuplicateBroadcast(from, token) {
   const key = `${from}|${token}`;
@@ -1952,7 +1964,6 @@ async function resetProgressAndGoStamp() {
   goldenActive = false;
   persistConsumed();
   persistGolden();
-  localStorage.removeItem(getBonusKey());
   hideCompleteOverlay();
 
   render();
@@ -2062,7 +2073,6 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   if(goldenActive) startGoldenSparks();
   updateOOP();
 
-  consumeTokenFromUrlAndPending();
   if (!currentUser?.id) {
     openSiteInfo({ locked: true, forced: true });
   } else if (!localStorage.getItem(LS_SITEINFO_SEEN)) {

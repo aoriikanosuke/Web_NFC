@@ -15,9 +15,9 @@ async function resetUserStamps(userId) {
       [userId]
     );
 
-    // points を 0 に戻す（DB表示用）
+    // points を 0 に戻す（DB表示用）& bonus_Claimed を false に戻す
     const upd = await client.query(
-      "UPDATE users SET points = 0 WHERE id = $1 RETURNING id, username, points",
+      "UPDATE users SET points = 0, bonus_claimed = false, bonus_claimed_at = NULL WHERE id = $1 RETURNING id, username, points, bonus_claimed, bonus_claimed_at",
       [userId]
     );
 
