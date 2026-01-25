@@ -1659,8 +1659,37 @@ input, textarea, [contenteditable="true"]{
   background: rgba(255,255,255,.8);
   font-weight: 800;
 }
+.ranking-item.rank-1{
+  background: linear-gradient(140deg, rgba(255,248,220,0.95), rgba(255,226,140,0.8));
+}
+.ranking-item.rank-2{
+  background: linear-gradient(140deg, rgba(245,248,252,0.98), rgba(210,220,232,0.8));
+}
+.ranking-item.rank-3{
+  background: linear-gradient(140deg, rgba(255,240,228,0.95), rgba(225,185,150,0.82));
+}
 .ranking-rank{ min-width: 3ch; }
-.ranking-name{ flex: 1; }
+.ranking-name{ flex: 1; position: relative; }
+.ranking-name-text{ display:inline-block; }
+.ranking-item.rank-1 .ranking-name{ padding-top: 16px; }
+.ranking-crown{
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 34px;
+  height: auto;
+  transform: translate(-50%, -60%);
+  pointer-events: none;
+}
+.ranking-item.rank-1 .ranking-rank,
+.ranking-item.rank-1 .ranking-name-text,
+.ranking-item.rank-1 .ranking-points{ color: #8a6a00; }
+.ranking-item.rank-2 .ranking-rank,
+.ranking-item.rank-2 .ranking-name-text,
+.ranking-item.rank-2 .ranking-points{ color: #5e6a77; }
+.ranking-item.rank-3 .ranking-rank,
+.ranking-item.rank-3 .ranking-name-text,
+.ranking-item.rank-3 .ranking-points{ color: #7a4c2a; }
 .ranking-stamps{
   display:flex;
   gap: 4px;

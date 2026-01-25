@@ -352,14 +352,22 @@ async function openRankingModal() {
       const points = Number(row.points || 0);
       const stampCount = Number(row.stamp_count || 0);
       const iconCount = Math.max(0, Math.min(6, stampCount));
+      const rankIndex = idx + 1;
+      const rankClass = rankIndex <= 3 ? `rank-${rankIndex}` : "";
+      const crown = rankIndex === 1
+        ? `<img class="ranking-crown" src="./images/OUKAN.png" alt="1位">`
+        : "";
       const icons = Array.from({ length: 6 }).map((_, i) => {
         const active = i < iconCount ? "is-active" : "";
         return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
       }).join("");
       return `
-        <div class="ranking-item">
-          <div class="ranking-rank">#${idx + 1}</div>
-          <div class="ranking-name">${name}</div>
+        <div class="ranking-item ${rankClass}">
+          <div class="ranking-rank">#${rankIndex}</div>
+          <div class="ranking-name">
+            ${crown}
+            <span class="ranking-name-text">${name}</span>
+          </div>
           <div class="ranking-stamps" aria-label="スタンプ所持数 ${stampCount}">
             ${icons}
           </div>
