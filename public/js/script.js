@@ -1840,7 +1840,7 @@ function showModalConfirm(title, body, okText, cancelText) {
     cancel.type = "button";
     cancel.className = "chips-btn glass";
     cancel.textContent = cancelText || "キャンセル";
-    if (okText === "リセットする") ok.classList.add("modal-danger");
+    if (okText === "リセットする" || okText?.includes("ログアウト")) ok.classList.add("modal-danger");
     actions.append(ok, cancel);
     wrap.append(msg, actions);
     openModal({ title, bodyNode: wrap });
@@ -2792,7 +2792,7 @@ const authToggleTextEl = document.getElementById('auth-toggle-text');
 if (authToggleTextEl) authToggleTextEl.addEventListener('click', toggleAuthMode);
 
 const logoutBtnEl = document.getElementById('logout-btn');
-if (logoutBtnEl) logoutBtnEl.addEventListener('click', logout);
+if (logoutBtnEl) logoutBtnEl.addEventListener('click', handleLogoutClick);
 
 // auth modal close/backdrop
 try {
@@ -2980,6 +2980,11 @@ function updateProfileStampSummary() {
   listEl.innerHTML = icons;
   listEl.setAttribute("aria-label", `スタンプ所持数 ${stampCount}`);
   countEl.textContent = String(stampCount);
+}
+
+async function handleLogoutClick() {
+  const ok = await showModalConfirm("ログアウト", "ログアウトしますか？", "ログアウトする", "キャンセル");
+  if (ok) logout();
 }
 
 function logout() {

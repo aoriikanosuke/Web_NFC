@@ -730,7 +730,37 @@ input, textarea, [contenteditable="true"]{
   box-shadow: 0 14px 30px rgba(255,195,70,0.45);
 }
 #page-profile #logout-btn.profile-action-btn{
-  box-shadow: 0 10px 24px rgba(255,77,77,0.35);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,100,100,1), rgba(230,50,50,0.95));
+  box-shadow: 0 12px 26px rgba(255,60,60,0.4), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -12px 22px rgba(120,0,0,0.32);
+}
+#page-profile #logout-btn.profile-action-btn::before{
+  content: "";
+  position: absolute;
+  inset: -70% -20% auto;
+  height: 150%;
+  background: radial-gradient(circle at 45% 35%, rgba(255,255,255,0.55), rgba(255,255,255,0.18) 45%, rgba(255,255,255,0) 70%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+#page-profile #logout-btn.profile-action-btn::after{
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: -60%;
+  width: 40%;
+  height: 240%;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85), rgba(255,255,255,0));
+  transform: rotate(25deg);
+  animation: logout-shine 2.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes logout-shine{
+  0%{ transform: translateX(-160%) rotate(25deg); opacity: 0; }
+  20%{ opacity: .85; }
+  60%{ opacity: .45; }
+  100%{ transform: translateX(220%) rotate(25deg); opacity: 0; }
 }
 #page-profile .profile-login-btn{
   align-self: center;
