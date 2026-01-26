@@ -39,6 +39,11 @@ export default function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState<UserRow["id"] | null>(null);
   const [chargeAmount, setChargeAmount] = useState("");
   const [chargeLoading, setChargeLoading] = useState(false);
+  const [resetQuery, setResetQuery] = useState("");
+  const [resetUsers, setResetUsers] = useState<UserRow[]>([]);
+  const [resetUsersLoading, setResetUsersLoading] = useState(false);
+  const [resetSelectedUserId, setResetSelectedUserId] = useState<UserRow["id"] | null>(null);
+  const [resettingUserId, setResettingUserId] = useState<UserRow["id"] | null>(null);
 
   const [resetConfirmChecked, setResetConfirmChecked] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
@@ -49,6 +54,10 @@ export default function AdminPage() {
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) || null,
     [users, selectedUserId]
+  );
+  const resetSelectedUser = useMemo(
+    () => resetUsers.find((user) => user.id === resetSelectedUserId) || null,
+    [resetUsers, resetSelectedUserId]
   );
 
   const pushToast = (type: Toast["type"], message: string) => {
@@ -142,6 +151,8 @@ export default function AdminPage() {
       setUsers([]);
       setSelectedUserId(null);
       setChargeAmount("");
+      setResetUsers([]);
+      setResetSelectedUserId(null);
     }
   };
 
@@ -219,6 +230,31 @@ export default function AdminPage() {
     }
   };
 
+  const handleSearchResetUsers = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!resetQuery.trim()) {
+      setResetUsers([]);
+      setResetSelectedUserId(null);
+      return;
+    }
+    setResetUsersLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users?q=${encodeURIComponent(resetQuery.trim())}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "ユーザー検索に失敗しました。");
+      }
+      setResetUsers(data?.users || []);
+      setResetSelectedUserId(null);
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "ユーザー検索に失敗しました。");
+    } finally {
+      setResetUsersLoading(false);
+    }
+  };
+
   const handleCharge = async () => {
     if (!selectedUserId) {
       pushToast("error", "ユーザーを選択してください。");
@@ -251,6 +287,40 @@ export default function AdminPage() {
       pushToast("error", error instanceof Error ? error.message : "チャージに失敗しました。");
     } finally {
       setChargeLoading(false);
+    }
+  };
+
+  const handleResetUser = async (userId: UserRow["id"]) => {
+    if (!window.confirm("このユーザーの進捗・ポイントをリセットします。よろしいですか？")) {
+      return;
+    }
+    setResettingUserId(userId);
+    try {
+      const res = await fetch("/api/admin/users/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "ユーザーリセットに失敗しました。");
+      }
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId ? { ...user, points: data?.points ?? 0 } : user
+        )
+      );
+      setResetUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId ? { ...user, points: data?.points ?? 0 } : user
+        )
+      );
+      pushToast("success", "ユーザーの進捗をリセットしました。");
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "ユーザーリセットに失敗しました。");
+    } finally {
+      setResettingUserId(null);
     }
   };
 
@@ -345,6 +415,7 @@ export default function AdminPage() {
             <aside className="admin-nav">
               <a href="#shops">店舗ポイント管理</a>
               <a href="#charge">現金チャージ</a>
+              <a href="#user-reset">進捗リセット</a>
               <a href="#reset">全データリセット</a>
             </aside>
             <main className="admin-main">
@@ -493,6 +564,86 @@ export default function AdminPage() {
                     disabled={chargeLoading || !selectedUserId}
                   >
                     {chargeLoading ? "チャージ中..." : "チャージ実行"}
+                  </button>
+                </div>
+              </section>
+
+              <section id="user-reset" className="panel">
+                <div className="panel-head">
+                  <div>
+                    <h2 className="panel-title">進捗リセット</h2>
+                    <p className="panel-note">ユーザーのスタンプ進捗とポイントを初期化します。</p>
+                  </div>
+                </div>
+                <form onSubmit={handleSearchResetUsers} className="form-row">
+                  <input
+                    type="text"
+                    value={resetQuery}
+                    onChange={(event) => setResetQuery(event.target.value)}
+                    placeholder="ユーザー名で検索"
+                  />
+                  <button type="submit" className="btn primary" disabled={resetUsersLoading}>
+                    {resetUsersLoading ? "検索中..." : "検索"}
+                  </button>
+                </form>
+                <div className="table-wrap">
+                  <table className="admin-table selectable">
+                    <thead>
+                      <tr>
+                        <th>ユーザー</th>
+                        <th>ポイント</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resetUsersLoading && (
+                        <tr>
+                          <td colSpan={2} className="empty">
+                            検索中...
+                          </td>
+                        </tr>
+                      )}
+                      {!resetUsersLoading && resetUsers.length === 0 && (
+                        <tr>
+                          <td colSpan={2} className="empty">
+                            検索結果がありません。
+                          </td>
+                        </tr>
+                      )}
+                      {!resetUsersLoading &&
+                        resetUsers.map((user) => {
+                          const selected = user.id === resetSelectedUserId;
+                          return (
+                            <tr
+                              key={String(user.id)}
+                              className={selected ? "selected" : ""}
+                              onClick={() => setResetSelectedUserId(user.id)}
+                            >
+                              <td>{displayUserName(user)}</td>
+                              <td>{user.points ?? 0}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="charge-box">
+                  <div className="charge-info">
+                    <span className="charge-label">選択ユーザー</span>
+                    <strong>{resetSelectedUser ? displayUserName(resetSelectedUser) : "未選択"}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => {
+                      if (resetSelectedUserId) {
+                        handleResetUser(resetSelectedUserId);
+                      } else {
+                        pushToast("error", "ユーザーを選択してください。");
+                      }
+                    }}
+                    disabled={resettingUserId !== null || !resetSelectedUserId}
+                  >
+                    {resettingUserId === resetSelectedUserId ? "実行中..." : "進捗をリセット"}
                   </button>
                 </div>
               </section>
@@ -735,10 +886,12 @@ export default function AdminPage() {
           border-radius: 16px;
           border: 1px solid rgba(11, 28, 42, 0.08);
           overflow: hidden;
+          overflow-x: auto;
         }
         .admin-table {
           width: 100%;
           border-collapse: collapse;
+          min-width: 520px;
         }
         .admin-table thead {
           background: rgba(11, 28, 42, 0.04);
@@ -833,6 +986,33 @@ export default function AdminPage() {
           .charge-box {
             grid-template-columns: 1fr;
             align-items: stretch;
+          }
+        }
+        @media (max-width: 720px) {
+          .admin-root {
+            padding: 24px 16px 64px;
+          }
+          .admin-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .panel-head {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .form-row {
+            grid-template-columns: 1fr;
+          }
+          .admin-table {
+            min-width: 560px;
+          }
+          .toast-stack {
+            right: 12px;
+            left: 12px;
+            bottom: 16px;
+          }
+          .toast {
+            width: 100%;
           }
         }
       `}</style>

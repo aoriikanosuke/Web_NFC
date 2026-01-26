@@ -43,7 +43,7 @@ export async function POST(request) {
       INSERT INTO point_logs (user_id, delta, balance_after, action, ref_type, ref_id, note)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       `,
-      [userId, amount, nextPoints, "admin_charge", "user", null, `現金チャージ:${userId}`]
+      [userId, amount, nextPoints, "admin_charge", "user", null, "現金チャージ"]
     );
     await client.query(
       `
