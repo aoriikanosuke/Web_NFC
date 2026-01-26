@@ -63,6 +63,7 @@ export async function POST(request) {
 
     return NextResponse.json({ ok: true, points: upd.rows[0]?.points ?? nextPoints });
   } catch (e) {
+    console.error("admin/charge error:", e);
     try {
       await client.query("ROLLBACK");
     } catch {}
