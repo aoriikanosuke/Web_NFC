@@ -15,6 +15,11 @@ async function resetUserStamps(userId) {
       [userId]
     );
 
+    const logDel = await client.query(
+      "DELETE FROM point_logs WHERE user_id = $1",
+      [userId]
+    );
+
     // points を 0 に戻す（DB表示用）& bonus_Claimed を false に戻す
     const upd = await client.query(
       "UPDATE users SET points = 0, bonus_claimed = false, bonus_claimed_at = NULL WHERE id = $1 RETURNING id, username, points, bonus_claimed, bonus_claimed_at",
@@ -25,6 +30,7 @@ async function resetUserStamps(userId) {
 
     return {
       deletedCount: del.rowCount || 0,
+      logDeletedCount: logDel.rowCount || 0,
       user: upd.rows[0] || { id: userId, points: 0 },
     };
   } catch (e) {

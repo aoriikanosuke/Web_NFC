@@ -97,6 +97,35 @@ export async function POST(request) {
       });
     }
 
+    await client.query(
+      `
+      INSERT INTO point_logs (user_id, delta, balance_after, action, ref_type, ref_id, note)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        userId,
+        BONUS_AMOUNT,
+        upd.rows[0]?.points ?? 0,
+        "bonus",
+        "bonus",
+        null,
+        "コンプリートボーナス",
+      ]
+    );
+    await client.query(
+      `
+      WITH ranked AS (
+        SELECT id,
+               ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC, id DESC) AS rn
+        FROM point_logs
+        WHERE user_id = $1
+      )
+      DELETE FROM point_logs
+      WHERE id IN (SELECT id FROM ranked WHERE rn > 20)
+      `,
+      [userId]
+    );
+
     await client.query("COMMIT");
     return NextResponse.json({
       ok: true,

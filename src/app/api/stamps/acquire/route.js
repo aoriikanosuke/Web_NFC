@@ -100,6 +100,34 @@ export async function POST(request) {
         [userId, Number(stamp.value) || 0]
       );
       points = upd.rows[0]?.points ?? 0;
+      await client.query(
+        `
+        INSERT INTO point_logs (user_id, delta, balance_after, action, ref_type, ref_id, note)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `,
+        [
+          userId,
+          Number(stamp.value) || 0,
+          points,
+          "stamp_acquire",
+          "stamp",
+          stamp.id,
+          stamp.name || "スタンプ取得",
+        ]
+      );
+      await client.query(
+        `
+        WITH ranked AS (
+          SELECT id,
+                 ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC, id DESC) AS rn
+          FROM point_logs
+          WHERE user_id = $1
+        )
+        DELETE FROM point_logs
+        WHERE id IN (SELECT id FROM ranked WHERE rn > 20)
+        `,
+        [userId]
+      );
     } else {
       const pointsRes = await client.query(
         `SELECT points FROM users WHERE id = $1`,

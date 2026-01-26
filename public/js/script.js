@@ -72,9 +72,13 @@ const $siteInfoFormError = document.getElementById("siteInfoFormError");
 const $siteUsageStartBtn = document.getElementById("siteUsageStartBtn");
 const $completeOverlay = document.getElementById("completeOverlay");
 const $completeBonusBtn = document.getElementById("completeBonusBtn");
+const $tradeLogBtn = document.getElementById("tradeLogBtn");
 const $rankingBtn = document.getElementById("rankingBtn");
 const $rankingModal = document.getElementById("rankingModal");
 const $rankingList = document.getElementById("rankingList");
+const $transactionModal = document.getElementById("transactionModal");
+const $transactionList = document.getElementById("transactionList");
+const $transactionState = document.getElementById("transactionState");
 const $topNotice = document.getElementById("topNotice");
 const $topNoticeText = document.getElementById("topNoticeText");
 let topNoticeCount = 0;
@@ -329,7 +333,14 @@ function setButtonLabel(button, text) {
 // ================== Ranking ==================
 async function openRankingModal() {
   if (!$rankingModal || !$rankingList) return;
-  $rankingList.innerHTML = "読み込み中...";
+  $rankingList.innerHTML = `
+    <div class="transaction-surface">
+      <div class="transaction-state">
+        <div class="transaction-spinner" aria-hidden="true"></div>
+        <div class="transaction-state-text">読み込み中...</div>
+      </div>
+    </div>
+  `;
   $rankingModal.classList.add("is-open");
   $rankingModal.setAttribute("aria-hidden", "false");
 
@@ -338,12 +349,24 @@ async function openRankingModal() {
     const res = await fetch("/api/ranking");
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      $rankingList.textContent = data?.error || "ランキング取得に失敗しました。";
+      $rankingList.innerHTML = `
+        <div class="transaction-surface">
+          <div class="transaction-state">
+            <div class="transaction-state-text">${data?.error || "ランキング取得に失敗しました。"}</div>
+          </div>
+        </div>
+      `;
       return;
     }
     const list = Array.isArray(data?.ranking) ? data.ranking : [];
     if (list.length === 0) {
-      $rankingList.textContent = "ランキングデータがありません。";
+      $rankingList.innerHTML = `
+        <div class="transaction-surface">
+          <div class="transaction-state">
+            <div class="transaction-state-text">ランキングデータがありません。</div>
+          </div>
+        </div>
+      `;
       return;
     }
     $rankingList.innerHTML = list.map((row, idx) => {
@@ -374,7 +397,13 @@ async function openRankingModal() {
       `;
     }).join("");
   } catch {
-    $rankingList.textContent = "ランキング取得に失敗しました。";
+    $rankingList.innerHTML = `
+      <div class="transaction-surface">
+        <div class="transaction-state">
+          <div class="transaction-state-text">ランキング取得に失敗しました。</div>
+        </div>
+      </div>
+    `;
   } finally {
     hideTopNotice();
   }
@@ -384,6 +413,136 @@ function closeRankingModal() {
   if (!$rankingModal) return;
   $rankingModal.classList.remove("is-open");
   $rankingModal.setAttribute("aria-hidden", "true");
+}
+
+// ================== Transaction logs ==================
+let transactionLogs = [];
+let transactionLoaded = false;
+let transactionLoading = false;
+
+function setTransactionModalOpen(isOpen) {
+  if (!$transactionModal) return;
+  $transactionModal.classList.toggle("is-open", !!isOpen);
+  $transactionModal.setAttribute("aria-hidden", isOpen ? "false" : "true");
+  document.body.classList.toggle("is-transaction-open", !!isOpen);
+}
+
+function formatTransactionTitle(log) {
+  const note = String(log?.note || "").trim();
+  if (log?.action === "payment") {
+    return note ? `支払い（${note}）` : "支払い";
+  }
+  if (log?.action === "stamp_acquire") {
+    return note ? `スタンプ取得（${note}）` : "スタンプ取得";
+  }
+  return note || log?.action || "取引";
+}
+
+function formatTransactionTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const text = date.toLocaleString("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return text.replace(",", "");
+}
+
+function renderTransactionState(type, message) {
+  if (!$transactionState) return;
+  $transactionState.style.display = "flex";
+  if (type === "loading") {
+    $transactionState.innerHTML = `
+      <div class="transaction-spinner" aria-hidden="true"></div>
+      <div class="transaction-state-text">読み込み中...</div>
+    `;
+    return;
+  }
+  if (type === "error") {
+    $transactionState.innerHTML = `
+      <div class="transaction-state-text">${message || "読み込みに失敗しました。"}</div>
+      <button id="transactionRetryBtn" class="chips-btn glass" type="button">再試行</button>
+    `;
+    const retryBtn = document.getElementById("transactionRetryBtn");
+    if (retryBtn) retryBtn.addEventListener("click", () => fetchTransactionLogs(true), { once: true });
+    return;
+  }
+  if (type === "empty") {
+    $transactionState.innerHTML = `
+      <div class="transaction-state-text">取引履歴はまだありません。</div>
+    `;
+    return;
+  }
+  $transactionState.innerHTML = "";
+  $transactionState.style.display = "none";
+}
+
+function renderTransactionList(logs) {
+  if (!$transactionList) return;
+  if (!Array.isArray(logs) || logs.length === 0) {
+    $transactionList.innerHTML = "";
+    renderTransactionState("empty");
+    return;
+  }
+  renderTransactionState("none");
+  $transactionList.innerHTML = logs.map((log) => {
+    const delta = Number(log?.delta || 0);
+    const isPositive = delta >= 0;
+    const sign = isPositive ? "+" : "-";
+    const arrow = isPositive ? "↑" : "↓";
+    const deltaText = `${sign}${Math.abs(delta)}P`;
+    const deltaClass = isPositive ? "is-positive" : "is-negative";
+    const title = formatTransactionTitle(log);
+    const time = formatTransactionTime(log?.created_at);
+    return `
+      <div class="transaction-row">
+        <div class="transaction-title">${title}</div>
+        <div class="transaction-meta">
+          <div class="transaction-delta ${deltaClass}">${deltaText} <span class="transaction-arrow">${arrow}</span></div>
+          <div class="transaction-time">${time}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function fetchTransactionLogs(force) {
+  if (!currentUser?.id || transactionLoading) return;
+  if (transactionLoaded && !force) return;
+  transactionLoading = true;
+  renderTransactionState("loading");
+  if ($transactionList) $transactionList.innerHTML = "";
+  try {
+    const res = await fetch(`/api/point-logs?userId=${encodeURIComponent(currentUser.id)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      renderTransactionState("error", data?.error || "読み込みに失敗しました。");
+      return;
+    }
+    transactionLogs = Array.isArray(data.logs) ? data.logs : [];
+    transactionLoaded = true;
+    renderTransactionList(transactionLogs);
+  } catch {
+    renderTransactionState("error", "読み込みに失敗しました。");
+  } finally {
+    transactionLoading = false;
+  }
+}
+
+function openTransactionModal() {
+  if (!currentUser?.id) {
+    showModalMessage("取引ログ", "ログインすると取引ログが表示されます。");
+    return;
+  }
+  setTransactionModalOpen(true);
+  fetchTransactionLogs(true);
+}
+
+function closeTransactionModal() {
+  setTransactionModalOpen(false);
 }
 
 /* ================== Completion bonus (DB-backed) ==================
@@ -2665,6 +2824,10 @@ async function resetProgressAndGoStamp() {
         currentUser.points = Number(data?.user?.points ?? 0);
         localStorage.setItem("user", JSON.stringify(currentUser));
       }
+      transactionLoaded = false;
+      transactionLogs = [];
+      if ($transactionList) $transactionList.innerHTML = "";
+      if ($transactionState) $transactionState.innerHTML = "";
     } finally {
       hideTopNotice();
     }
@@ -2740,13 +2903,21 @@ $siteInfoPassword?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") handleSiteInfoAuth();
 });
 $completeBonusBtn?.addEventListener("click", claimCompletionBonus);
+$tradeLogBtn?.addEventListener("click", openTransactionModal);
 $rankingBtn?.addEventListener("click", openRankingModal);
 $rankingModal?.addEventListener("click", (e) => {
   const t = e.target;
   if (t && t.dataset && t.dataset.close) closeRankingModal();
 });
+$transactionModal?.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t && t.dataset && t.dataset.close) closeTransactionModal();
+});
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeRankingModal();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeTransactionModal();
 });
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !siteInfoLocked) closeSiteInfo();
@@ -2977,6 +3148,10 @@ async function handleAuth() {
       currentUser = user;
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem(LS_SITEINFO_SEEN, "1");
+      transactionLoaded = false;
+      transactionLogs = [];
+      if ($transactionList) $transactionList.innerHTML = "";
+      if ($transactionState) $transactionState.innerHTML = "";
 
       updateUIForLoggedInUser();
       closeAuthModal();

@@ -330,7 +330,7 @@ export default function Page() {
 
                     <div className="profile-actions-grid">
                       <button id="tradeLogBtn" className="profile-action-btn profile-action-log glass" type="button">
-                        取引ログ
+                        取引履歴
                       </button>
                       <button id="rankingBtn" className="profile-action-btn chips-btn" type="button">
                         ランキング
@@ -421,6 +421,29 @@ export default function Page() {
                   </button>
                 </div>
                 <div id="rankingList" className="ranking-list"></div>
+              </div>
+            </div>
+
+            <div id="transactionModal" className="transaction-modal" aria-hidden="true">
+              <div className="transaction-backdrop" data-close="1"></div>
+              <div
+                className="transaction-panel glass"
+                role="dialog"
+                aria-modal="true"
+                aria-label="取引ログ"
+              >
+                <div className="transaction-head">
+                  <div className="transaction-title">取引履歴</div>
+                  <button className="modal-close" type="button" data-close="1">
+                    ✕
+                  </button>
+                </div>
+                <div className="transaction-body">
+                  <div className="transaction-surface">
+                    <div id="transactionState" className="transaction-state"></div>
+                    <div id="transactionList" className="transaction-list"></div>
+                  </div>
+                </div>
               </div>
             </div>
 

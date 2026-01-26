@@ -32,7 +32,7 @@ export async function POST(request) {
     }
 
     const shopRes = await client.query(
-      "SELECT points FROM shop WHERE id = $1 FOR UPDATE",
+      "SELECT points, name FROM shop WHERE id = $1 FOR UPDATE",
       [shopId]
     );
     if (shopRes.rowCount === 0) {
@@ -60,6 +60,28 @@ export async function POST(request) {
     const shopUpd = await client.query(
       "UPDATE shop SET points = $2 WHERE id = $1 RETURNING points",
       [shopId, nextShopPoints]
+    );
+    const balanceAfter = userUpd.rows[0]?.points ?? nextUserPoints;
+    const shopName = shopRes.rows[0]?.name || "支払い";
+    await client.query(
+      `
+      INSERT INTO point_logs (user_id, delta, balance_after, action, ref_type, ref_id, note)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [userId, -amount, balanceAfter, "payment", "shop", shopId, shopName]
+    );
+    await client.query(
+      `
+      WITH ranked AS (
+        SELECT id,
+               ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC, id DESC) AS rn
+        FROM point_logs
+        WHERE user_id = $1
+      )
+      DELETE FROM point_logs
+      WHERE id IN (SELECT id FROM ranked WHERE rn > 20)
+      `,
+      [userId]
     );
 
     await client.query("COMMIT");
