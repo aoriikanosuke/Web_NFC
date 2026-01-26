@@ -1954,11 +1954,11 @@ body.is-transaction-open{
 .transaction-arrow{ font-size: 12px; }
 
 @media (max-width: 640px){
-  .transaction-modal{ align-items:flex-end; }
+  .transaction-modal{ align-items:center; }
   .transaction-panel{
-    width: 100%;
-    max-height: 78vh;
-    border-radius: 26px 26px 0 0;
+    width: min(520px, calc(100% - 28px));
+    max-height: min(76vh, 640px);
+    border-radius: 24px;
   }
 }
 .complete-overlay{
