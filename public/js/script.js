@@ -52,6 +52,7 @@ const $indicator = document.getElementById("indicator");
 const $chipsBtn = document.getElementById("chipsBtn");
 const $oopInfo = document.getElementById("oopInfo");
 let oopAnimating = false;
+let oopNeedsSync = false;
 
 const $modal = document.getElementById("modal");
 const $modalTitle = document.getElementById("modalTitle");
@@ -283,7 +284,10 @@ function getDisplayedTotal() {
 }
 
 function updateOOP() {
-  if (oopAnimating) return;
+  if (oopAnimating) {
+    oopNeedsSync = true;
+    return;
+  }
   setOOPValue(getDisplayedTotal());
   updatePayAvailable();
 }
@@ -1027,6 +1031,7 @@ function spawnPointsFloat(amount) {
 function animateOOPIncrease(from, to, delta) {
   if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return;
   oopAnimating = true;
+  oopNeedsSync = false;
   setOOPValue(from);
   spawnPointsFloat(delta);
 
@@ -1047,7 +1052,12 @@ function animateOOPIncrease(from, to, delta) {
 
   setTimeout(() => {
     oopAnimating = false;
-    setOOPValue(to);
+    if (oopNeedsSync) {
+      oopNeedsSync = false;
+      updateOOP();
+    } else {
+      setOOPValue(to);
+    }
     if ($oopInfo) $oopInfo.classList.remove("oop-counting");
   }, duration + 60);
 }
@@ -1152,7 +1162,7 @@ function applyUid(uid) {
     return;
   }
   if (!hit.flag) {
-    const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+    const prevTotal = getDisplayedTotal();
     hit.flag = true;
     if (currentUser) {
       // まず見た目を即反映（楽観加算）
@@ -1165,7 +1175,7 @@ function applyUid(uid) {
     saveStamps();
 
     render();
-    const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+    const nextTotal = getDisplayedTotal();
     animateOOPIncrease(prevTotal, nextTotal, Number(hit.points) || 0);
     vibrate(50);
     // DBへ確定（成功したらDBのpointsで上書きしてズレを0に）
@@ -1470,7 +1480,7 @@ async function consumeTokenFromUrlAndPending() {
 
 function applyStampProgress(progress) {
   if (!Array.isArray(progress)) return;
-  const prevTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  const prevTotal = getDisplayedTotal();
   const prevFlags = new Set(stamps.filter(s => s.flag).map(s => s.id));
   const nextFlags = new Set(progress);
   let firstNewIndex = -1;
@@ -1489,7 +1499,7 @@ function applyStampProgress(progress) {
   saveStamps();
   render();
 
-  const nextTotal = calcPoints() - (consumedPoints || 0) + (window.debugPointsOffset || 0);
+  const nextTotal = getDisplayedTotal();
   if (nextTotal > prevTotal) {
     animateOOPIncrease(prevTotal, nextTotal, nextTotal - prevTotal);
   }
