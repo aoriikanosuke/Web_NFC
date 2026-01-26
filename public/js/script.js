@@ -212,7 +212,6 @@ window.debugPointsOffset = 0;
 const LS_CONSUMED = 'nfc_consumed_points';
 const LS_GOLD_UNLOCK = 'nfc_golden_unlocked';
 const LS_GOLD_ACTIVE = 'nfc_golden_active';
-const LS_BONUS_CLAIMED = "nfc_bonus_claimed";
 let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
 let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
 let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
@@ -386,27 +385,50 @@ function closeRankingModal() {
   $rankingModal.classList.remove("is-open");
   $rankingModal.setAttribute("aria-hidden", "true");
 }
-// ================== Completion bonus ==================
+
+/* ================== Completion bonus (DB-backed) ==================
+   DB側の users.bonus_claimed を真実として扱う版
+   - bonus周りで localStorage は一切使わない
+   - /api/bonus で初回のみ +100 & bonus_claimed=true
+=============================================================== */
+
 let bonusClaiming = false;
-
-function getBonusKey() {
-  return `${LS_BONUS_CLAIMED}_${currentUser?.id || "guest"}`;
-}
-
-function isBonusClaimed() {
-  return localStorage.getItem(getBonusKey()) === "1";
-}
-
-function setBonusClaimed() {
-  localStorage.setItem(getBonusKey(), "1");
-}
 
 function allStampsCollected() {
   return Array.isArray(stamps) && stamps.length > 0 && stamps.every(s => s.flag);
 }
 
+async function fetchBonusStatus() {
+  if (!currentUser?.id) return { ok: false };
+
+  try {
+    const url = `/api/bonus?userId=${encodeURIComponent(currentUser.id)}`;
+    const res = await fetch(url, { method: "GET" });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) return { ok: false, error: data.error };
+
+    currentUser.points = Number(data.points || 0);
+    currentUser.bonus_claimed = !!data.bonusClaimed;
+
+    persistCurrentUser();
+    updateOOP();
+
+    return { ok: true, bonusClaimed: !!data.bonusClaimed, points: currentUser.points };
+  } catch {
+    return { ok: false, error: "通信に失敗しました。" };
+  }
+}
+
+function isBonusClaimed() {
+  return !!currentUser?.bonus_claimed;
+}
+
 function showCompleteOverlay() {
   if (!$completeOverlay) return;
+  if (!currentUser?.id) return; // ログアウト中は出さない
+  if (isBonusClaimed()) return; // 受け取り済みは出さない
+
   $completeOverlay.classList.add("is-open");
   $completeOverlay.setAttribute("aria-hidden", "false");
 }
@@ -417,30 +439,42 @@ function hideCompleteOverlay() {
   $completeOverlay.setAttribute("aria-hidden", "true");
 }
 
+
 function updateCompleteOverlay() {
-  // ✅ ログアウト中はボーナスの表示をしない
-  if (!currentUser?.id) {
-    hideCompleteOverlay();
-    return;
-  }
+  if (!$completeOverlay) return;
+
   if (!allStampsCollected()) {
-    hideCompleteOverlay();
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
     return;
   }
+
+  if (!currentUser?.id) {
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
+    return;
+  }
+
   if (isBonusClaimed()) {
-    hideCompleteOverlay();
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
     return;
   }
+
   showCompleteOverlay();
 }
 
 async function claimCompletionBonus() {
   if (bonusClaiming) return;
+
   if (!currentUser?.id) {
     showModalMessage("ボーナス", "ログインが必要です。");
     try { openAuthModal(); } catch {}
     return;
   }
+
+  if (isBonusClaimed()) {
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
+    return;
+  }
+
   bonusClaiming = true;
   showTopNotice("ボーナス付与中");
   try {
@@ -449,16 +483,19 @@ async function claimCompletionBonus() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: currentUser.id }),
     });
+
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       showModalMessage("ボーナス", data.error || "ボーナス付与に失敗しました。");
       return;
     }
+
     currentUser.points = Number(data.points || 0);
+    currentUser.bonus_claimed = true;
+
     persistCurrentUser();
     updateOOP();
-    setBonusClaimed();
-    hideCompleteOverlay();
+    if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
   } catch {
     showModalMessage("ボーナス", "通信に失敗しました。");
   } finally {
@@ -466,6 +503,8 @@ async function claimCompletionBonus() {
     hideTopNotice();
   }
 }
+
+
 
 // ================== Pay UI ==================
 const MAX_PAY_AMOUNT = 999999;
@@ -1119,25 +1158,21 @@ async function handleTokenInput(token) {
 async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
-  if (!ensureLoggedInForToken(t)) return false;
-  const list = Array.isArray(stamps) ? stamps : DEFAULT_STAMPS;
-  const hit = list.find(s => s.token === t);
-  if (!hit) {
-    console.warn("NFC token not found:", t);
-    return false;
-  }
-  const owned = isStampOwnedByUid(hit.uid);
+
+  const result = await redeemToken(t, { deferApply: true });
+  if (!result || !result.ok) return false;
+
   try { showNfcRipple(); } catch {}
-  const variant = owned ? "owned" : "new";
+  const variant = result.alreadyOwned ? "owned" : "new";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
-  if (owned) {
-    focusStampPageByUid(hit.uid);
-  } else {
-    applyUid(hit.uid);
+
+  if (Array.isArray(result.stampProgress)) {
+    applyStampProgress(result.stampProgress);
   }
   return true;
 }
+
 
 function isDuplicateBroadcast(from, token) {
   const key = `${from}|${token}`;
@@ -2645,7 +2680,6 @@ async function resetProgressAndGoStamp() {
   goldenActive = false;
   persistConsumed();
   persistGolden();
-  localStorage.removeItem(getBonusKey());
   hideCompleteOverlay();
 
   render();
@@ -2762,13 +2796,17 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   if(goldenActive) startGoldenSparks();
   updateOOP();
 
-  consumeTokenFromUrlAndPending();
   if (!currentUser?.id) {
     openSiteInfo({ locked: true, forced: true });
   } else if (!localStorage.getItem(LS_SITEINFO_SEEN)) {
     openSiteInfo({ locked: false, forced: false });
   }
 
+  (async () => {
+   if (currentUser?.id) {
+    await fetchBonusStatus();
+   }
+ })();
 
 })();
 
