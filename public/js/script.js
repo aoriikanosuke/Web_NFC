@@ -221,6 +221,22 @@ function resolveStampImage(stamp) {
   return String(src);
 }
 
+function getLocalStampProgressSet() {
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    const list = Array.isArray(parsed?.stamp_progress) ? parsed.stamp_progress : [];
+    return new Set(list.map((id) => String(id)));
+  } catch {
+    return new Set();
+  }
+}
+
+function getStampKey(id) {
+  return String(id);
+}
+
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
   if (!raw) return structuredClone(DEFAULT_STAMPS);
@@ -1459,10 +1475,13 @@ async function handleTokenInput(token) {
   }
 
   // それでも見つからない場合は、まずスタンプとしてredeemを試す
+  const preProgress = getLocalStampProgressSet();
   const redeemAttempt = await redeemToken(t, { deferApply: true, suppressErrorModal: true });
   if (redeemAttempt?.ok) {
     try { showNfcRipple(); } catch {}
-    const variant = redeemAttempt.alreadyOwned ? "owned" : "new";
+    const postProgress = Array.isArray(redeemAttempt.stampProgress) ? redeemAttempt.stampProgress : [];
+    const hasNewStamp = postProgress.some((id) => !preProgress.has(getStampKey(id)));
+    const variant = hasNewStamp ? "new" : "owned";
     try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
     await waitAfterStampAni(variant);
 
@@ -1494,14 +1513,19 @@ async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
 
+  const preProgress = getLocalStampProgressSet();
   const stampBefore = findStampByToken(t);
-  const wasOwnedLocal = !!stampBefore?.flag;
+  const stampIdKey = stampBefore ? getStampKey(stampBefore.id) : "";
 
   const result = await redeemToken(t, { deferApply: true });
   if (!result || !result.ok) return false;
 
   try { showNfcRipple(); } catch {}
-  const variant = (result.alreadyOwned || wasOwnedLocal) ? "owned" : "new";
+  const postProgress = Array.isArray(result.stampProgress) ? result.stampProgress : [];
+  const hasNewStamp =
+    (stampIdKey && postProgress.some((id) => getStampKey(id) === stampIdKey && !preProgress.has(stampIdKey))) ||
+    postProgress.some((id) => !preProgress.has(getStampKey(id)));
+  const variant = hasNewStamp ? "new" : "owned";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
 
