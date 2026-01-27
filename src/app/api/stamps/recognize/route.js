@@ -10,6 +10,10 @@ let stampsColumnsCache = null;
 let stampsColumnsCacheAt = 0;
 let userStampsColumnsCache = null;
 let userStampsColumnsCacheAt = 0;
+let usersColumnsCache = null;
+let usersColumnsCacheAt = 0;
+let pointLogsColumnsCache = null;
+let pointLogsColumnsCacheAt = 0;
 const COLUMNS_CACHE_MS = 60 * 1000;
 
 async function getTableColumns(client, tableName) {
@@ -23,6 +27,16 @@ async function getTableColumns(client, tableName) {
     now - userStampsColumnsCacheAt < COLUMNS_CACHE_MS
   ) {
     return userStampsColumnsCache;
+  }
+  if (tableName === "users" && usersColumnsCache && now - usersColumnsCacheAt < COLUMNS_CACHE_MS) {
+    return usersColumnsCache;
+  }
+  if (
+    tableName === "point_logs" &&
+    pointLogsColumnsCache &&
+    now - pointLogsColumnsCacheAt < COLUMNS_CACHE_MS
+  ) {
+    return pointLogsColumnsCache;
   }
 
   const res = await client.query(
@@ -41,6 +55,12 @@ async function getTableColumns(client, tableName) {
   } else if (tableName === "user_stamps") {
     userStampsColumnsCache = cols;
     userStampsColumnsCacheAt = now;
+  } else if (tableName === "users") {
+    usersColumnsCache = cols;
+    usersColumnsCacheAt = now;
+  } else if (tableName === "point_logs") {
+    pointLogsColumnsCache = cols;
+    pointLogsColumnsCacheAt = now;
   }
 
   return cols;
@@ -56,19 +76,26 @@ function normalizeUid(value) {
   return String(value || "").replace(/[^0-9a-f]/gi, "").toUpperCase();
 }
 
-function buildStampLookupQuery(columns, source) {
+function getStampValueColumn(columns) {
+  if (columns.has("value")) return "value";
+  if (columns.has("points")) return "points";
+  return null;
+}
+
+function buildStampLookupQuery(columns, source, valueColumn) {
   const sortExpr = columns.has("sort_order") ? "COALESCE(sort_order, id)" : "id";
   const imageExpr = columns.has("image_url")
     ? "image_url"
     : columns.has("image")
       ? "image"
       : "NULL::text";
+  const valueExpr = valueColumn || "NULL::int";
   const activeWhere = columns.has("is_active") ? "AND is_active = true" : "";
 
   if (source === "nfc") {
     return {
       sql: `
-        SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order
+        SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order, ${valueExpr} AS value
         FROM stamps
         WHERE uid IS NOT NULL
           AND (
@@ -85,7 +112,7 @@ function buildStampLookupQuery(columns, source) {
   if (source === "token") {
     return {
       sql: `
-        SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order
+        SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order, ${valueExpr} AS value
         FROM stamps
         WHERE token IS NOT NULL
           AND token = $1
@@ -98,7 +125,7 @@ function buildStampLookupQuery(columns, source) {
 
   return {
     sql: `
-      SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order
+      SELECT id, name, ${imageExpr} AS image_url, ${sortExpr} AS sort_order, ${valueExpr} AS value
       FROM stamps
       WHERE id = $1
         ${activeWhere}
@@ -141,10 +168,26 @@ export async function POST(request) {
   try {
     const stampsColumns = await getTableColumns(client, "stamps");
     const userStampsColumns = await getTableColumns(client, "user_stamps");
+    const usersColumns = await getTableColumns(client, "users");
+    const pointLogsColumns = await getTableColumns(client, "point_logs");
     const hasSourceColumn = userStampsColumns.has("source");
+    const stampValueColumn = getStampValueColumn(stampsColumns);
+
+    if (!stampValueColumn) {
+      return NextResponse.json(
+        { ok: false, error: "stamps.value (or stamps.points) column is required." },
+        { status: 500 }
+      );
+    }
+    if (!usersColumns.has("points")) {
+      return NextResponse.json(
+        { ok: false, error: "users.points column is required." },
+        { status: 500 }
+      );
+    }
 
     const normalizedUid = normalizeUid(uidRaw);
-    const lookup = buildStampLookupQuery(stampsColumns, source);
+    const lookup = buildStampLookupQuery(stampsColumns, source, stampValueColumn);
 
     let lookupParam = null;
     if (source === "nfc") {
@@ -158,12 +201,40 @@ export async function POST(request) {
 
     await client.query("BEGIN");
 
+    const userRes = await client.query(
+      `SELECT points FROM users WHERE id = $1 FOR UPDATE`,
+      [userId]
+    );
+    if (userRes.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ ok: false, error: "User not found." }, { status: 404 });
+    }
+    const pointsBefore = Number(userRes.rows[0]?.points || 0);
+    let pointsAfter = pointsBefore;
+    let delta = 0;
+
     const stampRes = await client.query(lookup.sql, lookup.mapParams(lookupParam));
     const stamp = stampRes.rows[0];
 
     if (!stamp) {
       await client.query("ROLLBACK");
       return NextResponse.json({ ok: false, error: "Stamp not found." }, { status: 404 });
+    }
+
+    if (stamp.value == null) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { ok: false, error: "stamps.value must be NOT NULL." },
+        { status: 500 }
+      );
+    }
+    const stampValue = Number(stamp.value);
+    if (!Number.isFinite(stampValue) || !Number.isInteger(stampValue)) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { ok: false, error: "stamps.value must be an integer." },
+        { status: 500 }
+      );
     }
 
     const insertSql = hasSourceColumn
@@ -214,6 +285,99 @@ export async function POST(request) {
     const acquired = inserted;
 
     if (inserted) {
+      delta = stampValue;
+
+      const updRes = await client.query(
+        `
+        UPDATE users
+        SET points = COALESCE(points, 0) + $2
+        WHERE id = $1
+        RETURNING points
+        `,
+        [userId, delta]
+      );
+      pointsAfter = Number(updRes.rows[0]?.points ?? pointsBefore + delta);
+
+      if (pointLogsColumns.size > 0) {
+        if (!pointLogsColumns.has("delta")) {
+          await client.query("ROLLBACK");
+          return NextResponse.json(
+            { ok: false, error: "point_logs.delta column is required." },
+            { status: 500 }
+          );
+        }
+
+        const fields = ["user_id", "delta"];
+        const values = [userId, delta];
+
+        const balanceColumn = pointLogsColumns.has("balance_after")
+          ? "balance_after"
+          : pointLogsColumns.has("balance")
+            ? "balance"
+            : null;
+        if (balanceColumn) {
+          fields.push(balanceColumn);
+          values.push(pointsAfter);
+        }
+
+        const actionColumn = pointLogsColumns.has("action")
+          ? "action"
+          : pointLogsColumns.has("kind")
+            ? "kind"
+            : null;
+        if (actionColumn) {
+          fields.push(actionColumn);
+          values.push("STAMP_ACQUIRED");
+        }
+
+        if (pointLogsColumns.has("stamp_id")) {
+          fields.push("stamp_id");
+          values.push(stamp.id);
+        } else {
+          if (pointLogsColumns.has("ref_type")) {
+            fields.push("ref_type");
+            values.push("stamp");
+          }
+          if (pointLogsColumns.has("ref_id")) {
+            fields.push("ref_id");
+            values.push(stamp.id);
+          }
+        }
+
+        if (pointLogsColumns.has("source")) {
+          fields.push("source");
+          values.push(source);
+        }
+
+        if (pointLogsColumns.has("note")) {
+          fields.push("note");
+          values.push(stamp.name || "stamp acquired");
+        }
+
+        const placeholders = fields.map((_, i) => `$${i + 1}`).join(", ");
+        const pointLogSql = `
+          INSERT INTO point_logs (${fields.join(", ")})
+          VALUES (${placeholders})
+        `;
+        await client.query(pointLogSql, values);
+
+        await client.query(
+          `
+          WITH ranked AS (
+            SELECT id,
+                   ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC, id DESC) AS rn
+            FROM point_logs
+            WHERE user_id = $1
+          )
+          DELETE FROM point_logs
+          WHERE id IN (SELECT id FROM ranked WHERE rn > 20)
+          `,
+          [userId]
+        );
+      } else {
+        console.warn("point_logs table not found; skipping point log insert.");
+      }
+
       await client.query(
         `
         INSERT INTO stamp_events (user_id, stamp_id, type, source)
@@ -227,14 +391,17 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
+      acquired,
       stamp: {
         id: stamp.id,
         name: stamp.name,
         image_url: stamp.image_url || "/images/default.png",
+        value: stampValue,
         sort_order: Number(stamp.sort_order) || 0,
       },
-      acquired,
       recentDuplicate,
+      points: pointsAfter,
+      delta,
     });
   } catch (error) {
     try {

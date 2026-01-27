@@ -1664,6 +1664,12 @@ async function handleStampRecognized(payload) {
       setStampOwned(stamp.id, { justStamped: true });
       saveStampsCache();
       render();
+      if (currentUser && data?.points != null) {
+        currentUser.points = Number(data.points || 0);
+        persistCurrentUser();
+        updateOOP();
+        updateProfileStampSummary();
+      }
       vibrate(50);
     } else {
       setStampOwned(stamp.id, { justStamped: false });
@@ -1678,7 +1684,14 @@ async function handleStampRecognized(payload) {
     void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
     rememberStampRecognition(recognitionKey, stamp.id);
 
-    return { ok: true, kind: "stamp", acquired: !!data.acquired, stamp };
+    return {
+      ok: true,
+      kind: "stamp",
+      acquired: !!data.acquired,
+      stamp,
+      points: data?.points != null ? Number(data.points || 0) : undefined,
+      delta: data?.delta != null ? Number(data.delta || 0) : undefined,
+    };
   } catch (error) {
     console.error("handleStampRecognized error:", error);
     showModalMessage("NFC", "スタンプ判定に失敗しました。");
