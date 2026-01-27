@@ -4,7 +4,7 @@ import { Pool } from "pg";
 export const runtime = "nodejs";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const RECENT_ACQUIRE_WINDOW_MS = 20_000;
+const RECENT_DUPLICATE_IGNORE_WINDOW_MS = 2_500;
 
 let stampsColumnsCache = null;
 let stampsColumnsCacheAt = 0;
@@ -184,7 +184,7 @@ export async function POST(request) {
     const insertRes = await client.query(insertSql, insertParams);
     const inserted = insertRes.rowCount === 1;
 
-    let acquiredRecently = false;
+    let recentDuplicate = false;
     if (!inserted) {
       try {
         const recentRes = await client.query(
@@ -203,15 +203,15 @@ export async function POST(request) {
           ? new Date(recentRes.rows[0].created_at).getTime()
           : 0;
         const age = Date.now() - recentAt;
-        if (Number.isFinite(age) && age >= 0 && age <= RECENT_ACQUIRE_WINDOW_MS) {
-          acquiredRecently = true;
+        if (Number.isFinite(age) && age >= 0 && age <= RECENT_DUPLICATE_IGNORE_WINDOW_MS) {
+          recentDuplicate = true;
         }
       } catch (recentError) {
         console.error("recent stamp_events check error:", recentError);
       }
     }
 
-    const acquired = inserted || acquiredRecently;
+    const acquired = inserted;
 
     if (inserted) {
       await client.query(
@@ -234,6 +234,7 @@ export async function POST(request) {
         sort_order: Number(stamp.sort_order) || 0,
       },
       acquired,
+      recentDuplicate,
     });
   } catch (error) {
     try {

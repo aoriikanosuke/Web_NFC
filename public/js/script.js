@@ -13,7 +13,7 @@ const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
 const LS_PENDING_BROADCAST_ACK = "pending_nfc_broadcast_ack";
 const LS_TAB_ID = "nfc_tab_id";
 const LS_LAST_STAMP_RECOGNITION = "last_stamp_recognition_v1";
-const RECENT_RECOGNITION_WINDOW_MS = 12_000;
+const RECENT_RECOGNITION_WINDOW_MS = 1_500;
 
 let stamps = loadStampsCache();
 let stampsLoaded = false;
@@ -1629,6 +1629,7 @@ async function handleStampRecognized(payload) {
     }
 
     const stamp = data.stamp;
+    const recentDuplicate = data?.recentDuplicate === true;
     upsertStampFromRecognize(stamp);
     saveStampsCache();
 
@@ -1639,6 +1640,18 @@ async function handleStampRecognized(payload) {
     }
 
     await nextFrame();
+
+    if (recentDuplicate) {
+      setStampOwned(stamp.id, { justStamped: false });
+      saveStampsCache();
+      render();
+
+      updateUserStampProgress(getStampedIdsFromFlags());
+      void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
+      rememberStampRecognition(recognitionKey, stamp.id);
+
+      return { ok: true, kind: "stamp", acquired: false, recentDuplicate: true, stamp };
+    }
 
     if (data.acquired) {
       setStampPending(stamp.id);
