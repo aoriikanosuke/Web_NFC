@@ -221,7 +221,13 @@ let consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
 let goldenUnlocked = localStorage.getItem(LS_GOLD_UNLOCK) === '1';
 let goldenActive = localStorage.getItem(LS_GOLD_ACTIVE) === '1';
 
-let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+let currentUser = null;
+try {
+  currentUser = JSON.parse(localStorage.getItem("user") || "null") || null;
+} catch {
+  currentUser = null;
+  localStorage.removeItem("user");
+}
 
 function persistCurrentUser() {
   localStorage.setItem("user", JSON.stringify(currentUser));
@@ -589,6 +595,10 @@ async function fetchBonusStatus() {
     const res = await fetch(url, { method: "GET" });
     const data = await res.json().catch(() => ({}));
 
+    if (res.status === 404) {
+      handleMissingAccount();
+      return { ok: false, missing: true };
+    }
     if (!res.ok || !data.ok) return { ok: false, error: data.error };
 
     currentUser.points = Number(data.points || 0);
