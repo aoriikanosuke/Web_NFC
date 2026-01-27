@@ -1093,7 +1093,7 @@ async function handlePayCommit() {
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id, shopId: selectedShop.id, amount: payAmount }),
+      body: JSON.stringify({ userId: userIdNum, shopId: selectedShop.id, amount: payAmount }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -1419,6 +1419,13 @@ async function handleStampRecognized(payload) {
     return { ok: false, needsAuth: true };
   }
 
+  const userIdNum = Number(currentUser?.id);
+  if (!Number.isFinite(userIdNum) || userIdNum <= 0) {
+    showModalMessage("NFC", "ログインしてください");
+    try { openAuthModal(); } catch {}
+    return { ok: false, needsAuth: true };
+  }
+
   isProcessingStamp = true;
   setScanStatus("スタンプ判定中...");
   try {
@@ -1431,7 +1438,7 @@ async function handleStampRecognized(payload) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: currentUser.id,
+        userId: userIdNum,
         source,
         uid,
         token,
@@ -3418,6 +3425,8 @@ function logout() {
   localStorage.removeItem('user');
   location.reload(); // 状態リセットのためリロード
 }
+
+
 
 
 
