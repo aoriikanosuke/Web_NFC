@@ -1,0 +1,23 @@
+-- Ensure shop table has the required columns and constraints for admin creation.
+CREATE TABLE IF NOT EXISTS shop (
+  id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  name TEXT NOT NULL,
+  uid TEXT UNIQUE,
+  token TEXT UNIQUE,
+  points INTEGER NOT NULL DEFAULT 0,
+  location TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS uid TEXT;
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS token TEXT;
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS points INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- Normalize existing NULL points.
+UPDATE shop SET points = 0 WHERE points IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS shop_uid_unique ON shop (uid);
+CREATE UNIQUE INDEX IF NOT EXISTS shop_token_unique ON shop (token);
+
