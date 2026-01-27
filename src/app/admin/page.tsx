@@ -59,6 +59,10 @@ export default function AdminPage() {
     () => resetUsers.find((user) => user.id === resetSelectedUserId) || null,
     [resetUsers, resetSelectedUserId]
   );
+  const isResettingSelectedUser =
+    resetSelectedUserId !== null &&
+    resettingUserId !== null &&
+    String(resettingUserId) === String(resetSelectedUserId);
 
   const pushToast = (type: Toast["type"], message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -641,9 +645,9 @@ export default function AdminPage() {
                         pushToast("error", "繝ｦ繝ｼ繧ｶ繝ｼ繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・);
                       }
                     }}
-                    disabled={resettingUserId !== null || !resetSelectedUserId}
+                    disabled={resettingUserId !== null || resetSelectedUserId === null}
                   >
-                    {resettingUserId !== null && resettingUserId === resetSelectedUserId ? "螳溯｡御ｸｭ..." : "騾ｲ謐励ｒ繝ｪ繧ｻ繝・ヨ"}
+                    {isResettingSelectedUser ? "螳溯｡御ｸｭ..." : "騾ｲ謐励ｒ繝ｪ繧ｻ繝・ヨ"}
                   </button>
                 </div>
               </section>
@@ -654,6 +658,7 @@ export default function AdminPage() {
                     <h2 className="panel-title">蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ</h2>
                     <p className="panel-note">
                       繧ｹ繧ｿ繝ｳ繝鈴ｲ謐励・繝昴う繝ｳ繝医・繝ｭ繧ｰ繧偵☆縺ｹ縺ｦ蛻晄悄蛹悶＠縺ｾ縺吶ょ叙繧頑ｶ医＠荳榊庄縺ｧ縺吶・
+                      アカウントもすべて削除されます。
                       繧｢繧ｫ繧ｦ繝ｳ繝医も蜈ｨ繝ｦ繝ｼ繧ｶ繝ｼ繧呈忽縺ｫ縺ｪ縺ｾ縺励※蜈ｨ蜉帙＆繧後∪縺吶・
                     </p>
                   </div>
