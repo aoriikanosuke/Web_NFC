@@ -246,7 +246,13 @@ function getLocalStampProgressSet() {
     if (!raw) return fromFlags;
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed?.stamp_progress) ? parsed.stamp_progress : [];
-    list.forEach((id) => fromFlags.add(String(id)));
+    const listSet = new Set(list.map((id) => String(id)));
+    const stampsCount = Array.isArray(stamps) ? stamps.length : 0;
+    // stamp_progress が壊れて全件所持扱いになるケースを避ける
+    if (stampsCount > 0 && listSet.size > stampsCount) {
+      return fromFlags;
+    }
+    listSet.forEach((id) => fromFlags.add(id));
     return fromFlags;
   } catch {
     return new Set(getStampedIdsFromFlags().map((id) => String(id)));
@@ -344,8 +350,9 @@ function ensureLoggedInForToken(token) {
   return false;
 }
 
-async function syncFromDB() {
+async function syncFromDB(options) {
   if (!currentUser?.id) return;
+  const applyFlags = options?.applyFlags !== false;
   showTopNotice("同期中");
   try {
     const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
@@ -378,13 +385,14 @@ async function syncFromDB() {
         const uidUpper = uid.toUpperCase();
         const prev = prevByUid.get(uidUpper);
         const points = resolveStampPoints(row);
+        const flag = applyFlags ? uidSet.has(uidUpper) : !!prev?.flag;
 
         return {
           ...prev,
           ...row,
           uid,
           points,
-          flag: uidSet.has(uidUpper),
+          flag,
           image_url: row?.image_url ?? prev?.image_url ?? "",
           image: row?.image ?? prev?.image ?? "",
           location: row?.location ?? prev?.location ?? "",
@@ -393,9 +401,11 @@ async function syncFromDB() {
     } else {
       // 既存のローカル定義を使い、flagだけ同期
       stamps = loadStamps();
-      stamps.forEach((s) => {
-        s.flag = uidSet.has(String(s.uid).toUpperCase());
-      });
+      if (applyFlags) {
+        stamps.forEach((s) => {
+          s.flag = uidSet.has(String(s.uid).toUpperCase());
+        });
+      }
     }
 
     const totalCountFromApi = Number(data?.totalStamps);
@@ -406,7 +416,9 @@ async function syncFromDB() {
     }
 
     // user.stamp_progress も flags に合わせて正に揃える
-    updateUserStampProgress(getStampedIdsFromFlags());
+    if (applyFlags) {
+      updateUserStampProgress(getStampedIdsFromFlags());
+    }
 
     saveStamps();
     render();
@@ -1498,13 +1510,7 @@ async function handleTokenInput(token) {
   }
 
   // それでも見つからない場合は、まずスタンプとしてredeemを試す
-  let preProgress = getLocalStampProgressSet();
-  if (currentUser?.id) {
-    try {
-      await syncFromDB();
-      preProgress = getLocalStampProgressSet();
-    } catch {}
-  }
+  const preProgress = getLocalStampProgressSet();
   const redeemAttempt = await redeemToken(t, { deferApply: true, suppressErrorModal: true });
   if (redeemAttempt?.ok) {
     try { showNfcRipple(); } catch {}
@@ -1515,7 +1521,7 @@ async function handleTokenInput(token) {
     await waitAfterStampAni(variant);
 
     if (currentUser?.id) {
-      try { await syncFromDB(); } catch {}
+      try { await syncFromDB({ applyFlags: false }); } catch {}
     }
     if (Array.isArray(redeemAttempt.stampProgress)) {
       applyStampProgress(redeemAttempt.stampProgress);
@@ -1542,9 +1548,6 @@ async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
 
-  if (currentUser?.id) {
-    try { await syncFromDB(); } catch {}
-  }
   const preProgress = getLocalStampProgressSet();
   const stampBefore = findStampByToken(t);
   const stampIdKey = stampBefore ? getStampKey(stampBefore.id) : "";
@@ -1561,9 +1564,9 @@ async function applyToken(token) {
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
 
-  // 新規スタンプを含む最新一覧を先に取り込む（これがないと表示が遅延する）
+  // 新規スタンプを含む最新一覧を取り込むが、flagはまだ上書きしない
   if (currentUser?.id) {
-    try { await syncFromDB(); } catch {}
+    try { await syncFromDB({ applyFlags: false }); } catch {}
   }
 
   if (Array.isArray(result.stampProgress)) {
