@@ -13,7 +13,9 @@ const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
 const LS_PENDING_BROADCAST_ACK = "pending_nfc_broadcast_ack";
 const LS_TAB_ID = "nfc_tab_id";
 const LS_LAST_STAMP_RECOGNITION = "last_stamp_recognition_v1";
+const LS_LAST_TOKEN_HANDLED = "last_token_handled_v1";
 const RECENT_RECOGNITION_WINDOW_MS = 1_500;
+const RELOAD_TOKEN_SUPPRESS_MS = 10 * 60 * 1000;
 
 let stamps = loadStampsCache();
 let stampsLoaded = false;
@@ -337,6 +339,52 @@ function loadLastStampRecognition() {
   }
 }
 
+function getNavigationType() {
+  try {
+    const navEntry = performance.getEntriesByType?.("navigation")?.[0];
+    if (navEntry?.type) return String(navEntry.type);
+    // legacy fallback
+    if (performance?.navigation?.type === 1) return "reload";
+  } catch {}
+  return "navigate";
+}
+
+function loadLastTokenHandled() {
+  try {
+    const raw = localStorage.getItem(LS_LAST_TOKEN_HANDLED);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const token = String(parsed.token || "").trim();
+    const at = Number(parsed.at || 0);
+    if (!token || !Number.isFinite(at) || at <= 0) return null;
+    return { token, at };
+  } catch {
+    return null;
+  }
+}
+
+function rememberTokenHandled(token) {
+  const t = String(token || "").trim();
+  if (!t) return;
+  try {
+    localStorage.setItem(
+      LS_LAST_TOKEN_HANDLED,
+      JSON.stringify({ token: t, at: Date.now() })
+    );
+  } catch {}
+}
+
+function shouldSuppressTokenOnReload(token) {
+  const t = String(token || "").trim();
+  if (!t) return false;
+  if (getNavigationType() !== "reload") return false;
+  const last = loadLastTokenHandled();
+  if (!last || last.token !== t) return false;
+  const age = Date.now() - Number(last.at || 0);
+  return Number.isFinite(age) && age >= 0 && age <= RELOAD_TOKEN_SUPPRESS_MS;
+}
+
 function clearLastStampRecognition() {
   lastStampRecognition = null;
   try {
@@ -538,6 +586,7 @@ function handleMissingAccount() {
   localStorage.removeItem(LS_OPEN_AUTH);
   localStorage.removeItem(LS_STAMPS_CACHE);
   localStorage.removeItem(LS_LAST_STAMP_RECOGNITION);
+  localStorage.removeItem(LS_LAST_TOKEN_HANDLED);
   stamps = [];
   stampsLoaded = false;
   lastStampRecognition = null;
@@ -1714,6 +1763,9 @@ async function handleStampRecognized(payload) {
     updateUserStampProgress(getStampedIdsFromFlags());
     void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
     rememberStampRecognition(recognitionKey, stamp.id);
+    if (source === "token" && token) {
+      rememberTokenHandled(token);
+    }
 
     return {
       ok: true,
@@ -1922,6 +1974,11 @@ async function consumeTokenFromUrlAndPending() {
         : `${cleaned.pathname}${cleaned.hash || ""}`;
       try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
     } catch {}
+    if (shouldSuppressTokenOnReload(t)) {
+      localStorage.removeItem(LS_PENDING_TOKEN);
+      void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
+      return;
+    }
     const transferred = await broadcastTokenToOtherTabs(t);
     // 以前は他タブが受け取ったらローカル処理をスキップしていたが、
     // それだとアニメーションや即時反映が起きないので常に自タブでも処理する。
@@ -1935,6 +1992,11 @@ async function consumeTokenFromUrlAndPending() {
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
   if (pending && pending !== processedToken) {
+    if (shouldSuppressTokenOnReload(pending)) {
+      localStorage.removeItem(LS_PENDING_TOKEN);
+      void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
+      return;
+    }
     const result = await handleTokenInput(pending);
     if (result.kind === "stamp" && result.ok) localStorage.removeItem(LS_PENDING_TOKEN);
   }
