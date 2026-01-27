@@ -4,6 +4,7 @@ import { Pool } from "pg";
 export const runtime = "nodejs";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const RECENT_ACQUIRE_WINDOW_MS = 20_000;
 
 let stampsColumnsCache = null;
 let stampsColumnsCacheAt = 0;
@@ -181,9 +182,38 @@ export async function POST(request) {
 
     const insertParams = hasSourceColumn ? [userId, stamp.id, source] : [userId, stamp.id];
     const insertRes = await client.query(insertSql, insertParams);
-    const acquired = insertRes.rowCount === 1;
+    const inserted = insertRes.rowCount === 1;
 
-    if (acquired) {
+    let acquiredRecently = false;
+    if (!inserted) {
+      try {
+        const recentRes = await client.query(
+          `
+          SELECT created_at
+          FROM stamp_events
+          WHERE user_id = $1
+            AND stamp_id = $2
+            AND type = $3
+          ORDER BY created_at DESC
+          LIMIT 1
+          `,
+          [userId, stamp.id, "STAMP_ACQUIRED"]
+        );
+        const recentAt = recentRes.rows[0]?.created_at
+          ? new Date(recentRes.rows[0].created_at).getTime()
+          : 0;
+        const age = Date.now() - recentAt;
+        if (Number.isFinite(age) && age >= 0 && age <= RECENT_ACQUIRE_WINDOW_MS) {
+          acquiredRecently = true;
+        }
+      } catch (recentError) {
+        console.error("recent stamp_events check error:", recentError);
+      }
+    }
+
+    const acquired = inserted || acquiredRecently;
+
+    if (inserted) {
       await client.query(
         `
         INSERT INTO stamp_events (user_id, stamp_id, type, source)

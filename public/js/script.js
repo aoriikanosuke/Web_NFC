@@ -268,13 +268,54 @@ function sortStamps(list) {
   });
 }
 
+function getUserIdFromLocalStorageRaw() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("user") || "null");
+    const rawId = stored?.id ?? stored?.user_id ?? stored?.userId;
+    if (rawId == null) return null;
+    const str = String(rawId).trim();
+    if (!str) return null;
+    const num = Number(str);
+    if (Number.isFinite(num) && num > 0) {
+      return String(Math.trunc(num));
+    }
+    return str;
+  } catch {
+    return null;
+  }
+}
+
 function loadStampsCache() {
   const raw = localStorage.getItem(LS_STAMPS_CACHE);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return sortStamps(parsed.map((row) => normalizeStampRow(row)));
+    const storedUserId = getUserIdFromLocalStorageRaw();
+
+    // 旧フォーマット（配列のみ）はユーザー紐づけが無いので、ログイン済みなら破棄する
+    if (Array.isArray(parsed)) {
+      if (storedUserId) {
+        try { localStorage.removeItem(LS_STAMPS_CACHE); } catch {}
+        return [];
+      }
+      return sortStamps(parsed.map((row) => normalizeStampRow(row)));
+    }
+
+    const cacheUserId = parsed?.userId != null ? String(parsed.userId).trim() : "";
+    const list = Array.isArray(parsed?.stamps) ? parsed.stamps : [];
+
+    if (storedUserId) {
+      if (!cacheUserId || cacheUserId !== storedUserId) {
+        try { localStorage.removeItem(LS_STAMPS_CACHE); } catch {}
+        return [];
+      }
+    }
+
+    const listForDisplay = storedUserId
+      ? list.map((row) => ({ ...row, acquired: false, acquired_at: null }))
+      : list;
+
+    return sortStamps(listForDisplay.map((row) => normalizeStampRow(row)));
   } catch {
     return [];
   }
@@ -306,10 +347,11 @@ function clearLastStampRecognition() {
 function buildRecognitionKey(payload) {
   const source = String(payload?.source || "").trim();
   if (!source) return "";
+  const userId = payload?.userId != null ? String(payload.userId).trim() : "";
   const uid = payload?.uid ? normalizeUid(payload.uid) : "";
   const token = payload?.token ? String(payload.token).trim() : "";
   const debugId = payload?.debugStampId != null ? String(payload.debugStampId).trim() : "";
-  return `${source}|${uid}|${token}|${debugId}`;
+  return `${userId}|${source}|${uid}|${token}|${debugId}`;
 }
 
 function getRecentStampRecognition(key) {
@@ -343,6 +385,7 @@ function rememberStampRecognition(key, stampId) {
 
 function saveStampsCache() {
   try {
+    const userId = getCurrentUserId();
     const minimal = stamps.map((s) => ({
       id: s.id,
       name: s.name,
@@ -353,7 +396,11 @@ function saveStampsCache() {
       acquired: !!s.flag,
       acquired_at: s.acquired_at || null,
     }));
-    localStorage.setItem(LS_STAMPS_CACHE, JSON.stringify(minimal));
+    const payload = {
+      userId: userId ? String(userId) : "",
+      stamps: minimal,
+    };
+    localStorage.setItem(LS_STAMPS_CACHE, JSON.stringify(payload));
   } catch {}
 }
 
@@ -459,10 +506,14 @@ function ensureLoggedInForToken(token) {
   }
   try {
     const stored = JSON.parse(localStorage.getItem("user") || "null");
-    const storedId = Number(stored?.id ?? stored?.user_id ?? stored?.userId);
-    if (Number.isFinite(storedId) && storedId > 0) {
+    const rawId = stored?.id ?? stored?.user_id ?? stored?.userId;
+    const strId = rawId == null ? "" : String(rawId).trim();
+    if (strId) {
+      const numId = Number(strId);
+      const normalizedId =
+        Number.isFinite(numId) && numId > 0 ? Math.trunc(numId) : strId;
       currentUser = stored;
-      currentUser.id = Math.trunc(storedId);
+      currentUser.id = normalizedId;
       persistCurrentUser();
       return true;
     }
@@ -1507,7 +1558,6 @@ async function handleStampRecognized(payload) {
   const uid = payload?.uid ? String(payload.uid) : null;
   const token = payload?.token ? String(payload.token) : null;
   const debugStampId = payload?.debugStampId != null ? Number(payload.debugStampId) : null;
-  const recognitionKey = buildRecognitionKey({ source, uid, token, debugStampId });
 
   if (!source) return { ok: false, error: true };
   if (!ensureLoggedInForToken(token || "")) {
@@ -1520,6 +1570,14 @@ async function handleStampRecognized(payload) {
     try { openAuthModal(); } catch {}
     return { ok: false, needsAuth: true };
   }
+
+  const recognitionKey = buildRecognitionKey({
+    userId: userIdNum,
+    source,
+    uid,
+    token,
+    debugStampId,
+  });
 
   const recentRecognition = getRecentStampRecognition(recognitionKey);
   if (recentRecognition?.stampId) {
