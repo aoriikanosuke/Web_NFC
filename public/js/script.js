@@ -250,9 +250,9 @@ async function syncFromDB() {
     const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
     if (res.status === 404) {
       handleMissingAccount();
-      return { missing: true };
+      return;
     }
-    if (!res.ok) return { error: true };
+    if (!res.ok) return;
 
     const data = await res.json();
 
@@ -271,7 +271,6 @@ async function syncFromDB() {
 
     saveStamps();
     render();
-    return { ok: true };
   } finally {
     hideTopNotice();
   }
@@ -3094,12 +3093,11 @@ function initAuthEnterShortcuts() {
 }
 
 // 初期化：ログイン状態ならUIを更新
-async function initAfterDomReady(){
-  if (currentUser) {
-    // 必要に応じてDBから最新状態を取得し同期
-    const syncResult = await syncFromDB();
-    if (syncResult?.missing) return;
+function initAfterDomReady(){
+if (currentUser) {
     updateUIForLoggedInUser();
+    // 必要に応じてDBから最新状態を取得し同期
+    syncFromDB();
     // stamps = currentUser.stamp_progress;
     // points = currentUser.points;
     // renderStamps(); // 既存の描画関数
