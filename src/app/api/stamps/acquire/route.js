@@ -46,6 +46,8 @@ export async function GET(request) {
     const columns = await getStampsColumns(client);
     const imageUrlSelect = optionalColumnSelect(columns, "image_url", "text");
     const imageSelect = optionalColumnSelect(columns, "image", "text");
+    const locationSelect = optionalColumnSelect(columns, "location", "text");
+    const createdAtSelect = optionalColumnSelect(columns, "created_at", "timestamptz");
 
     const stampsRes = await client.query(
       `
@@ -72,7 +74,9 @@ export async function GET(request) {
     const allStampsRes = await client.query(
       `
       SELECT
-        id, uid, name, token, value, location, created_at,
+        id, uid, name, token, value,
+        ${locationSelect},
+        ${createdAtSelect},
         ${imageUrlSelect},
         ${imageSelect}
       FROM stamps
