@@ -14,10 +14,19 @@ export async function GET(request) {
 
   const client = await pool.connect();
   try {
-    const res = await client.query("SELECT id, name, points FROM shop ORDER BY id ASC");
+    const res = await client.query(
+      `
+      SELECT id, name, uid, token, points, location, created_at
+      FROM shop
+      ORDER BY id ASC
+      `
+    );
     return NextResponse.json({ ok: true, shops: res.rows });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: "店舗一覧の取得に失敗しました。" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Failed to load shops." },
+      { status: 500 }
+    );
   } finally {
     client.release();
   }

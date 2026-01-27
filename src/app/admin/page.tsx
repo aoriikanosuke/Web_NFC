@@ -1,13 +1,17 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AuthStatus = "checking" | "guest" | "authed";
 
 type Shop = {
   id: number | string;
   name: string;
+  uid?: string | null;
+  token?: string | null;
   points: number;
+  location?: string | null;
+  created_at?: string | null;
 };
 
 type UserRow = {
@@ -32,6 +36,14 @@ export default function AdminPage() {
   const [shopsLoading, setShopsLoading] = useState(false);
   const [resettingShopId, setResettingShopId] = useState<Shop["id"] | null>(null);
   const [resettingAllShops, setResettingAllShops] = useState(false);
+  const [showShopCreate, setShowShopCreate] = useState(false);
+  const [shopCreateName, setShopCreateName] = useState("");
+  const [shopCreateUid, setShopCreateUid] = useState("");
+  const [shopCreateToken, setShopCreateToken] = useState("");
+  const [shopCreateLocation, setShopCreateLocation] = useState("");
+  const [shopCreateLoading, setShopCreateLoading] = useState(false);
+  const [createdShopUrl, setCreatedShopUrl] = useState("");
+  const [createdShopToken, setCreatedShopToken] = useState("");
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -68,6 +80,20 @@ export default function AdminPage() {
     }, 3600);
   };
 
+  const generateTokenClient = useCallback(() => {
+    if (typeof window === "undefined" || !window.crypto?.getRandomValues) {
+      return "";
+    }
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    let binary = "";
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    const base64 = window.btoa(binary);
+    return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  }, []);
+
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -92,6 +118,16 @@ export default function AdminPage() {
       body.style.overflow = prevBodyOverflow;
     };
   }, []);
+
+  useEffect(() => {
+    if (!showShopCreate || shopCreateToken) {
+      return;
+    }
+    const nextToken = generateTokenClient();
+    if (nextToken) {
+      setShopCreateToken(nextToken);
+    }
+  }, [showShopCreate, shopCreateToken, generateTokenClient]);
 
   const loadShops = async () => {
     setShopsLoading(true);
@@ -202,6 +238,86 @@ export default function AdminPage() {
       pushToast("error", error instanceof Error ? error.message : "全店舗リセットに失敗しました。");
     } finally {
       setResettingAllShops(false);
+    }
+  };
+
+  const handleToggleShopCreate = () => {
+    setShowShopCreate((prev) => !prev);
+  };
+
+  const handleGenerateShopToken = () => {
+    const nextToken = generateTokenClient();
+    if (!nextToken) {
+      pushToast("error", "トークンの自動生成に失敗しました。");
+      return;
+    }
+    setShopCreateToken(nextToken);
+    pushToast("info", "トークンを再生成しました。");
+  };
+
+  const handleCreateShop = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const name = shopCreateName.trim();
+    const uid = shopCreateUid.trim();
+    const token = shopCreateToken.trim();
+    const location = shopCreateLocation.trim();
+
+    if (!name || !uid) {
+      pushToast("error", "店舗名とUIDは必須です。");
+      return;
+    }
+    if (shopCreateToken && !token) {
+      pushToast("error", "トークンを空文字にはできません。");
+      return;
+    }
+
+    setShopCreateLoading(true);
+    try {
+      const res = await fetch("/api/admin/shops/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name,
+          uid,
+          token: token || undefined,
+          location: location || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "店舗の登録に失敗しました。");
+      }
+
+      setCreatedShopUrl(String(data.url || ""));
+      setCreatedShopToken(String(data?.shop?.token || token));
+      pushToast("success", "店舗を登録しました。");
+
+      setShopCreateName("");
+      setShopCreateUid("");
+      setShopCreateLocation("");
+      const nextToken = generateTokenClient();
+      setShopCreateToken(nextToken || "");
+
+      await loadShops();
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "店舗の登録に失敗しました。");
+    } finally {
+      setShopCreateLoading(false);
+    }
+  };
+
+  const handleCopyShopUrl = async () => {
+    if (!createdShopUrl) {
+      pushToast("error", "コピーするURLがありません。");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(createdShopUrl);
+      pushToast("success", "URLをコピーしました。");
+    } catch {
+      pushToast("error", "クリップボードへのコピーに失敗しました。");
     }
   };
 
@@ -414,6 +530,7 @@ export default function AdminPage() {
           <div className="admin-grid">
             <aside className="admin-nav">
               <a href="#shops">店舗ポイント管理</a>
+              <a href="#shop-create">店舗 新規登録</a>
               <a href="#charge">現金チャージ</a>
               <a href="#user-reset">進捗リセット</a>
               <a href="#reset">全データリセット</a>
@@ -425,21 +542,112 @@ export default function AdminPage() {
                     <h2 className="panel-title">店舗ポイント管理</h2>
                     <p className="panel-note">店舗ごとのポイント残高を確認・リセットできます。</p>
                   </div>
-                  <button
-                    type="button"
-                    className="btn warning"
-                    onClick={handleResetAllShops}
-                    disabled={resettingAllShops}
-                  >
-                    {resettingAllShops ? "リセット中..." : "全店舗リセット"}
-                  </button>
+                  <div className="panel-actions">
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={handleToggleShopCreate}
+                    >
+                      {showShopCreate ? "登録フォームを閉じる" : "店舗 新規登録"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn warning"
+                      onClick={handleResetAllShops}
+                      disabled={resettingAllShops}
+                    >
+                      {resettingAllShops ? "リセット中..." : "全店舗リセット"}
+                    </button>
+                  </div>
                 </div>
+                <div id="shop-create" className="shop-create-anchor" />
+                {showShopCreate && (
+                  <div className="shop-create-box">
+                    <div className="shop-create-head">
+                      <div>
+                        <h3 className="panel-title">店舗 新規登録</h3>
+                        <p className="panel-note">
+                          店舗名とNFCタグのUIDを登録し、iPhone向けトークンURLを発行します。
+                        </p>
+                      </div>
+                    </div>
+                    <form onSubmit={handleCreateShop} className="shop-create-form">
+                      <label className="field">
+                        <span>店舗名（必須）</span>
+                        <input
+                          type="text"
+                          value={shopCreateName}
+                          onChange={(event) => setShopCreateName(event.target.value)}
+                          placeholder="例: カフェA"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>NFCタグUID（必須）</span>
+                        <input
+                          type="text"
+                          value={shopCreateUid}
+                          onChange={(event) => setShopCreateUid(event.target.value)}
+                          placeholder="例: 04:18:B8:AA:96:20:90"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>トークン（自動生成・編集可）</span>
+                        <div className="token-row">
+                          <input
+                            type="text"
+                            value={shopCreateToken}
+                            onChange={(event) => setShopCreateToken(event.target.value)}
+                            placeholder="未入力ならサーバで自動生成"
+                          />
+                          <button
+                            type="button"
+                            className="btn ghost small"
+                            onClick={handleGenerateShopToken}
+                          >
+                            再生成
+                          </button>
+                        </div>
+                      </label>
+                      <label className="field">
+                        <span>場所メモ（任意）</span>
+                        <input
+                          type="text"
+                          value={shopCreateLocation}
+                          onChange={(event) => setShopCreateLocation(event.target.value)}
+                          placeholder="例: 入口付近"
+                        />
+                      </label>
+                      <div className="shop-create-actions">
+                        <button type="submit" className="btn primary" disabled={shopCreateLoading}>
+                          {shopCreateLoading ? "登録中..." : "登録してURLを発行"}
+                        </button>
+                      </div>
+                    </form>
+                    {createdShopUrl && (
+                      <div className="shop-create-result">
+                        <p className="result-title">このURLをNFCタグに書き込んでください</p>
+                        <div className="result-url-row">
+                          <code className="result-url">{createdShopUrl}</code>
+                          <button type="button" className="btn ghost small" onClick={handleCopyShopUrl}>
+                            コピー
+                          </button>
+                        </div>
+                        {createdShopToken && (
+                          <p className="result-note">token: {createdShopToken}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="table-wrap">
                   <table className="admin-table">
                     <thead>
                       <tr>
                         <th>ID</th>
                         <th>店舗名</th>
+                        <th>UID</th>
                         <th>ポイント</th>
                         <th>操作</th>
                       </tr>
@@ -447,14 +655,14 @@ export default function AdminPage() {
                     <tbody>
                       {shopsLoading && (
                         <tr>
-                          <td colSpan={4} className="empty">
+                          <td colSpan={5} className="empty">
                             読み込み中...
                           </td>
                         </tr>
                       )}
                       {!shopsLoading && shops.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="empty">
+                          <td colSpan={5} className="empty">
                             店舗データがありません。
                           </td>
                         </tr>
@@ -464,6 +672,7 @@ export default function AdminPage() {
                         <tr key={String(shop.id)}>
                             <td data-label="ID">{shop.id}</td>
                             <td data-label="店舗名">{shop.name}</td>
+                            <td data-label="UID">{shop.uid || "-"}</td>
                             <td data-label="ポイント">{shop.points ?? 0}</td>
                             <td data-label="操作">
                               <button
@@ -796,6 +1005,11 @@ export default function AdminPage() {
           align-items: flex-start;
           gap: 16px;
         }
+        .panel-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
         .panel-title {
           margin: 0 0 6px;
           font-size: 20px;
@@ -822,6 +1036,73 @@ export default function AdminPage() {
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 12px;
+        }
+        .shop-create-anchor {
+          height: 1px;
+        }
+        .shop-create-box {
+          border: 1px solid rgba(43, 108, 176, 0.18);
+          border-radius: 16px;
+          padding: 16px;
+          background: rgba(235, 245, 255, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .shop-create-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .shop-create-form {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 12px;
+        }
+        .shop-create-actions {
+          grid-column: 1 / -1;
+          display: flex;
+          justify-content: flex-start;
+        }
+        .token-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          align-items: center;
+        }
+        .shop-create-result {
+          border-radius: 14px;
+          padding: 12px;
+          background: rgba(11, 28, 42, 0.06);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .result-title {
+          margin: 0;
+          font-weight: 800;
+          font-size: 14px;
+        }
+        .result-url-row {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .result-url {
+          display: block;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: #0b1c2a;
+          color: #fff;
+          font-weight: 700;
+          word-break: break-all;
+        }
+        .result-note {
+          margin: 0;
+          font-size: 12px;
+          color: rgba(11, 28, 42, 0.7);
         }
         .field {
           display: flex;
@@ -891,7 +1172,7 @@ export default function AdminPage() {
         .admin-table {
           width: 100%;
           border-collapse: collapse;
-          min-width: 520px;
+          min-width: 640px;
         }
         .admin-table thead {
           background: rgba(11, 28, 42, 0.04);
@@ -1010,6 +1291,12 @@ export default function AdminPage() {
           .panel-head {
             flex-direction: column;
             align-items: flex-start;
+          }
+          .panel-actions {
+            width: 100%;
+          }
+          .panel-actions .btn {
+            width: 100%;
           }
           .panel {
             padding: 16px;
