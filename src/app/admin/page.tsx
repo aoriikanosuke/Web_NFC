@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 type AuthStatus = "checking" | "guest" | "authed";
 
@@ -17,14 +17,27 @@ type Shop = {
 type Stamp = {
   id: number | string;
   name: string;
-  uid: string;
-  token: string;
+  uid?: string | null;
+  token?: string | null;
   value?: number | string | null;
   points?: number | string | null;
   location?: string | null;
   image_url?: string | null;
   image?: string | null;
+  sort_order?: number | string | null;
+  is_active?: boolean | null;
   created_at?: string | null;
+};
+
+type StampEdit = {
+  name: string;
+  uid: string;
+  token: string;
+  points: string;
+  location: string;
+  image_url: string;
+  sort_order: string;
+  is_active: boolean;
 };
 
 type UserRow = {
@@ -73,6 +86,9 @@ export default function AdminPage() {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [stampsLoading, setStampsLoading] = useState(false);
   const [deletingStampId, setDeletingStampId] = useState<Stamp["id"] | null>(null);
+  const [editingStampId, setEditingStampId] = useState<Stamp["id"] | null>(null);
+  const [updatingStampId, setUpdatingStampId] = useState<Stamp["id"] | null>(null);
+  const [stampEdits, setStampEdits] = useState<Record<string, StampEdit>>({});
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -580,6 +596,119 @@ export default function AdminPage() {
   const getStampImage = (stamp: Stamp) => {
     const src = stamp?.image_url || stamp?.image || "/images/default.png";
     return String(src);
+  };
+
+  const stampKey = (stampId: Stamp["id"]) => String(stampId);
+
+  const buildInitialStampEdit = (stamp: Stamp): StampEdit => ({
+    name: String(stamp?.name || ""),
+    uid: String(stamp?.uid || ""),
+    token: String(stamp?.token || ""),
+    points: String(getStampPoints(stamp)),
+    location: String(stamp?.location || ""),
+    image_url: getStampImage(stamp),
+    sort_order:
+      stamp?.sort_order === null || stamp?.sort_order === undefined ? "" : String(stamp.sort_order),
+    is_active: stamp?.is_active ?? true,
+  });
+
+  const startEditStamp = (stamp: Stamp) => {
+    const key = stampKey(stamp.id);
+    setStampEdits((prev) => ({
+      ...prev,
+      [key]: buildInitialStampEdit(stamp),
+    }));
+    setEditingStampId(stamp.id);
+  };
+
+  const updateStampEditField = (
+    stamp: Stamp,
+    field: keyof StampEdit,
+    value: StampEdit[keyof StampEdit]
+  ) => {
+    const key = stampKey(stamp.id);
+    setStampEdits((prev) => {
+      const current = prev[key] || buildInitialStampEdit(stamp);
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const cancelEditStamp = () => {
+    setEditingStampId(null);
+  };
+
+  const handleUpdateStamp = async (stamp: Stamp) => {
+    const key = stampKey(stamp.id);
+    const edit = stampEdits[key] || buildInitialStampEdit(stamp);
+
+    const name = edit.name.trim();
+    const uid = edit.uid.trim();
+    const token = edit.token.trim();
+    const imageUrl = edit.image_url.trim();
+    const location = edit.location.trim();
+
+    if (!name || !uid) {
+      pushToast("error", "名前とUIDは必須です。");
+      return;
+    }
+
+    if (!imageUrl) {
+      pushToast("error", "画像URLは必須です。");
+      return;
+    }
+
+    const pointsNum = Number(edit.points);
+    if (!Number.isFinite(pointsNum) || !Number.isInteger(pointsNum) || pointsNum < 0) {
+      pushToast("error", "付与ポイントは0以上の整数で入力してください。");
+      return;
+    }
+
+    let sortOrderValue: number | null = null;
+    if (edit.sort_order.trim()) {
+      const parsed = Number(edit.sort_order);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+        pushToast("error", "表示順は整数で入力してください。");
+        return;
+      }
+      sortOrderValue = parsed;
+    }
+
+    setUpdatingStampId(stamp.id);
+    try {
+      const res = await fetch("/api/admin/stamps/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          stampId: stamp.id,
+          name,
+          uid,
+          token: token || null,
+          value: pointsNum,
+          location: location || null,
+          image_url: imageUrl,
+          sort_order: sortOrderValue,
+          is_active: Boolean(edit.is_active),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "スタンプの更新に失敗しました。");
+      }
+      await loadStamps();
+      pushToast("success", "スタンプを更新しました。");
+      setEditingStampId(null);
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "スタンプの更新に失敗しました。");
+    } finally {
+      setUpdatingStampId(null);
+    }
   };
 
   const handleDeleteStamp = async (stamp: Stamp) => {
@@ -1262,34 +1391,181 @@ export default function AdminPage() {
                           const points = getStampPoints(stamp);
                           const imageSrc = getStampImage(stamp);
                           const isDeleting = deletingStampId === stamp.id;
+                          const isEditing = editingStampId === stamp.id;
+                          const isUpdating = updatingStampId === stamp.id;
+                          const editKey = stampKey(stamp.id);
+                          const edit = stampEdits[editKey] || buildInitialStampEdit(stamp);
 
                           return (
-                            <tr key={`stamp-${String(stamp.id)}`}>
-                              <td data-label="画像">
-                                <img className="stamp-table-image" src={imageSrc} alt={stamp.name} />
-                              </td>
-                              <td data-label="ID">{stamp.id}</td>
-                              <td data-label="名前">{stamp.name}</td>
-                              <td data-label="UID" className="mono-cell">
-                                {stamp.uid}
-                              </td>
-                              <td data-label="Token" className="mono-cell">
-                                {stamp.token}
-                              </td>
-                              <td data-label="付与P">{points}</td>
-                              <td data-label="場所">{stamp.location || "-"}</td>
-                              <td data-label="作成日">{createdAt}</td>
-                              <td data-label="操作">
-                                <button
-                                  type="button"
-                                  className="btn danger small"
-                                  onClick={() => handleDeleteStamp(stamp)}
-                                  disabled={isDeleting}
-                                >
-                                  {isDeleting ? "削除中..." : "削除"}
-                                </button>
-                              </td>
-                            </tr>
+                            <Fragment key={`stamp-frag-${String(stamp.id)}`}>
+                              <tr key={`stamp-${String(stamp.id)}`}>
+                                <td data-label="画像">
+                                  <img className="stamp-table-image" src={imageSrc} alt={stamp.name} />
+                                </td>
+                                <td data-label="ID">{stamp.id}</td>
+                                <td data-label="名前">{stamp.name}</td>
+                                <td data-label="UID" className="mono-cell">
+                                  {stamp.uid || "-"}
+                                </td>
+                                <td data-label="Token" className="mono-cell">
+                                  {stamp.token || "-"}
+                                </td>
+                                <td data-label="付与P">{points}</td>
+                                <td data-label="場所">{stamp.location || "-"}</td>
+                                <td data-label="作成日">{createdAt}</td>
+                                <td data-label="操作">
+                                  <div className="table-actions">
+                                    <button
+                                      type="button"
+                                      className="btn ghost small"
+                                      onClick={() => startEditStamp(stamp)}
+                                      disabled={isDeleting || isUpdating}
+                                    >
+                                      {isEditing ? "編集中" : "編集"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn danger small"
+                                      onClick={() => handleDeleteStamp(stamp)}
+                                      disabled={isDeleting || isUpdating}
+                                    >
+                                      {isDeleting ? "削除中..." : "削除"}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {isEditing && (
+                                <tr key={`stamp-edit-${String(stamp.id)}`} className="stamp-edit-row">
+                                  <td colSpan={9}>
+                                    <div className="stamp-edit-grid">
+                                      <label className="field">
+                                        <span>名前（必須）</span>
+                                        <input
+                                          type="text"
+                                          value={edit.name}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "name", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          required
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>UID（必須）</span>
+                                        <input
+                                          type="text"
+                                          value={edit.uid}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "uid", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          required
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>Token</span>
+                                        <input
+                                          type="text"
+                                          value={edit.token}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "token", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>付与ポイント（必須）</span>
+                                        <input
+                                          type="number"
+                                          inputMode="numeric"
+                                          min={0}
+                                          step={1}
+                                          value={edit.points}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "points", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          required
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>場所メモ</span>
+                                        <input
+                                          type="text"
+                                          value={edit.location}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "location", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          placeholder="未設定なら空欄"
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>画像URL（必須）</span>
+                                        <input
+                                          type="url"
+                                          value={edit.image_url}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "image_url", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          required
+                                        />
+                                      </label>
+                                      <label className="field">
+                                        <span>表示順（任意）</span>
+                                        <input
+                                          type="number"
+                                          inputMode="numeric"
+                                          step={1}
+                                          value={edit.sort_order}
+                                          onChange={(event) =>
+                                            updateStampEditField(stamp, "sort_order", event.target.value)
+                                          }
+                                          disabled={isUpdating}
+                                          placeholder="未設定なら空欄"
+                                        />
+                                      </label>
+                                      <div className="field checkbox-field">
+                                        <span>有効/無効</span>
+                                        <div className="checkbox-row">
+                                          <input
+                                            id={`stamp-active-${String(stamp.id)}`}
+                                            type="checkbox"
+                                            checked={Boolean(edit.is_active)}
+                                            onChange={(event) =>
+                                              updateStampEditField(stamp, "is_active", event.target.checked)
+                                            }
+                                            disabled={isUpdating}
+                                          />
+                                          <label htmlFor={`stamp-active-${String(stamp.id)}`}>
+                                            有効にする
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="stamp-edit-actions">
+                                      <button
+                                        type="button"
+                                        className="btn primary small"
+                                        onClick={() => handleUpdateStamp(stamp)}
+                                        disabled={isUpdating}
+                                      >
+                                        {isUpdating ? "保存中..." : "保存"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn ghost small"
+                                        onClick={cancelEditStamp}
+                                        disabled={isUpdating}
+                                      >
+                                        キャンセル
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
                           );
                         })}
                     </tbody>
@@ -1875,6 +2151,31 @@ export default function AdminPage() {
         .admin-table-stamps th,
         .admin-table-stamps td {
           vertical-align: middle;
+        }
+        .table-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .stamp-edit-row td {
+          background: rgba(43, 108, 176, 0.08);
+        }
+        .stamp-edit-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 10px;
+        }
+        .stamp-edit-actions {
+          margin-top: 8px;
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+        }
+        .checkbox-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 6px;
         }
         .stamp-table-image {
           width: 56px;

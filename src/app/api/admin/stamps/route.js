@@ -46,6 +46,8 @@ export async function GET(request) {
     const imageUrlSelect = optionalColumnSelect(columns, "image_url", "text");
     const imageSelect = optionalColumnSelect(columns, "image", "text");
     const locationSelect = optionalColumnSelect(columns, "location", "text");
+    const sortOrderSelect = optionalColumnSelect(columns, "sort_order", "int");
+    const isActiveSelect = optionalColumnSelect(columns, "is_active", "bool");
     const createdAtSelect = optionalColumnSelect(columns, "created_at", "timestamptz");
 
     const res = await client.query(
@@ -60,6 +62,8 @@ export async function GET(request) {
         ${locationSelect},
         ${imageUrlSelect},
         ${imageSelect},
+        ${sortOrderSelect},
+        ${isActiveSelect},
         ${createdAtSelect}
       FROM stamps
       ORDER BY id ASC
