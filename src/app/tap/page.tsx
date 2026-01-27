@@ -1,142 +1,46 @@
 ﻿"use client";
 
-import { useEffect, useState, Suspense } from "react"; // Suspense を追加
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const LS_PENDING_TOKEN = "pending_nfc_token";
-const LS_OPEN_AUTH = "open_auth_modal";
-const LS_USER = "user";
-const LS_STAMPS = "nfc_stamps_v2_images";
-const LS_PENDING_PROGRESS = "pending_stamp_progress";
 
-// 既存の updateLocalStamps 関数はそのまま ...
-function updateLocalStamps(progress: number[]) {
-  if (!Array.isArray(progress)) return;
-  const raw = localStorage.getItem(LS_STAMPS);
-  if (!raw) {
-    localStorage.setItem(LS_PENDING_PROGRESS, JSON.stringify(progress));
-    return;
-  }
-  try {
-    const list = JSON.parse(raw);
-    const set = new Set(progress);
-    const next = list.map((s: { id: number }) => ({ ...s, flag: set.has(s.id) }));
-    localStorage.setItem(LS_STAMPS, JSON.stringify(next));
-  } catch {
-    localStorage.setItem(LS_PENDING_PROGRESS, JSON.stringify(progress));
-  }
-}
-
-// 1. ロジックを別のコンポーネントに切り出す
 function TapContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState("スタンプを確認しています...");
-  const [isLoading, setIsLoading] = useState(true);
-  const [noticeText, setNoticeText] = useState("スタンプ確認中");
+  const [message, setMessage] = useState("トークンを確認しています...");
 
   useEffect(() => {
     const token = searchParams.get("t");
     if (!token) {
-      setIsLoading(false);
       router.replace("/");
       return;
     }
 
-    const userRaw = localStorage.getItem(LS_USER);
-    if (!userRaw) {
+    try {
       localStorage.setItem(LS_PENDING_TOKEN, token);
-      localStorage.setItem(LS_OPEN_AUTH, "1");
-      setNoticeText("ログイン確認中");
-      setMessage("ログインが必要です。トップに戻ります...");
-      setIsLoading(false);
-      router.replace("/");
-      return;
-    }
+    } catch {}
 
-    const redeem = async () => {
-      try {
-        setNoticeText("スタンプ取得中");
-        const res = await fetch("/api/stamps/redeem", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ token }),
-        });
-        const data = await res.json();
-        if (res.status === 401) {
-          localStorage.setItem(LS_PENDING_TOKEN, token);
-          localStorage.setItem(LS_OPEN_AUTH, "1");
-          setNoticeText("ログイン確認中");
-          setMessage("ログインが必要です。トップに戻ります...");
-          setIsLoading(false);
-          router.replace("/");
-          return;
-        }
-        if (!res.ok || !data.ok) {
-          localStorage.setItem(LS_PENDING_TOKEN, token);
-          setMessage("スタンプ取得に失敗しました。トップへ戻ります...");
-          setIsLoading(false);
-          router.replace("/");
-          return;
-        }
-
-        try {
-          const current = JSON.parse(userRaw);
-          current.points = data.points ?? current.points;
-          current.stamp_progress = data.stamp_progress ?? current.stamp_progress;
-          localStorage.setItem(LS_USER, JSON.stringify(current));
-        } catch {}
-
-        if (Array.isArray(data.stamp_progress)) {
-          updateLocalStamps(data.stamp_progress);
-        }
-        localStorage.removeItem(LS_PENDING_TOKEN);
-        localStorage.removeItem(LS_PENDING_PROGRESS);
-        setMessage("スタンプを獲得しました。トップへ戻ります...");
-        setIsLoading(false);
-        router.replace("/");
-      } catch (err) {
-        localStorage.setItem(LS_PENDING_TOKEN, token);
-        setMessage("通信に失敗しました。トップへ戻ります...");
-        setIsLoading(false);
-        router.replace("/");
-      }
-    };
-
-    redeem();
+    setMessage("トップページへ移動します...");
+    router.replace(`/?t=${encodeURIComponent(token)}`);
   }, [router, searchParams]);
 
   return (
-    <main className="tap-page" style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
-      <div
-        className={`top-notice ${isLoading ? "is-show" : ""}`}
-        role="status"
-        aria-live="polite"
-        aria-hidden={isLoading ? "false" : "true"}
-      >
-        <div className="top-notice-pill glass">
-          <span className="top-notice-dots" aria-hidden="true">
-            <i></i>
-            <i></i>
-            <i></i>
-          </span>
-          <span className="top-notice-text">{noticeText}</span>
-        </div>
-      </div>
+    <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
       <p>{message}</p>
     </main>
   );
 }
 
-// 2. ページコンポーネントで Suspense を使ってラップする
 export default function TapPage() {
   return (
-    <Suspense fallback={
-      <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
-        <p>読み込み中...</p>
-      </main>
-    }>
+    <Suspense
+      fallback={
+        <main style={{ display: "grid", placeItems: "center", minHeight: "100vh" }}>
+          <p>読み込み中...</p>
+        </main>
+      }
+    >
       <TapContent />
     </Suspense>
   );
