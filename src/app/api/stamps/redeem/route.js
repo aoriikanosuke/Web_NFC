@@ -30,6 +30,18 @@ export async function POST(request) {
 
     await client.query('BEGIN');
 
+    // 押印前に所持していたかを明示的に判定（クライアントのアニメ判定を安定化）
+    const beforeRes = await client.query(
+      `
+      SELECT 1
+      FROM user_stamps
+      WHERE user_id = $1 AND stamp_id = $2
+      LIMIT 1
+      `,
+      [userId, stamp.id]
+    );
+    const existedBefore = beforeRes.rowCount > 0;
+
     const insertResult = await client.query(
       `INSERT INTO user_stamps (user_id, stamp_id)
        VALUES ($1, $2)
@@ -38,7 +50,8 @@ export async function POST(request) {
       [userId, stamp.id]
     );
 
-    const alreadyOwned = insertResult.rowCount === 0;
+    const alreadyOwned = existedBefore || insertResult.rowCount === 0;
+    const newlyAcquired = !alreadyOwned;
     if (!alreadyOwned) {
       const upd = await client.query(
         'UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2 RETURNING points',
@@ -85,6 +98,8 @@ export async function POST(request) {
     return NextResponse.json({
       ok: true,
       alreadyOwned,
+      newlyAcquired,
+      stamp_id: stamp.id,
       points: pointsResult.rows[0]?.points ?? 0,
       stamp_progress: stampsResult.rows.map((row) => row.stamp_id),
     });

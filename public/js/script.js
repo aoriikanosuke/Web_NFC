@@ -1483,30 +1483,23 @@ async function handleTokenInput(token) {
   const t = String(token || "").trim();
   if (!t) return { ok: false };
 
-  const stampHit = findStampByToken(t);
+  let stampHit = findStampByToken(t);
+
+  // ローカル定義にない新規スタンプの可能性があるため、先にDB同期して再判定
+  if (!stampHit && currentUser?.id) {
+    try {
+      await syncFromDB();
+      stampHit = findStampByToken(t);
+    } catch {}
+  }
+
   if (stampHit) {
     if (isPaySelectingShop()) {
       showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
       return { ok: false, blocked: true, kind: "stamp" };
     }
-    const applied = await applyToken(t);
+    const applied = await applyToken(t, { preferredStampId: stampHit.id });
     return { ok: applied, kind: "stamp" };
-  }
-
-  // ローカル定義にない新規スタンプの可能性があるため、先にDB同期して再判定
-  if (currentUser?.id) {
-    try {
-      await syncFromDB();
-      const stampAfterSync = findStampByToken(t);
-      if (stampAfterSync) {
-        if (isPaySelectingShop()) {
-          showModalMessage("決済", "これはスタンプ用NFCです。決済店舗をタッチしてください。");
-          return { ok: false, blocked: true, kind: "stamp" };
-        }
-        const applied = await applyToken(t);
-        return { ok: applied, kind: "stamp" };
-      }
-    } catch {}
   }
 
   // それでも見つからない場合は、まずスタンプとしてredeemを試す
@@ -1515,16 +1508,15 @@ async function handleTokenInput(token) {
   if (redeemAttempt?.ok) {
     try { showNfcRipple(); } catch {}
     const postProgress = Array.isArray(redeemAttempt.stampProgress) ? redeemAttempt.stampProgress : [];
-    const hasNewStamp = postProgress.some((id) => !preProgress.has(getStampKey(id)));
+    const hasNewStamp = typeof redeemAttempt.newlyAcquired === "boolean"
+      ? redeemAttempt.newlyAcquired
+      : postProgress.some((id) => !preProgress.has(getStampKey(id)));
     const variant = hasNewStamp ? "new" : "owned";
     try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
     await waitAfterStampAni(variant);
 
-    if (currentUser?.id) {
-      try { await syncFromDB({ applyFlags: false }); } catch {}
-    }
     if (Array.isArray(redeemAttempt.stampProgress)) {
-      applyStampProgress(redeemAttempt.stampProgress);
+      applyStampProgress(redeemAttempt.stampProgress, { preferredStampId: redeemAttempt.stampId || null });
     }
     return { ok: true, kind: "stamp" };
   }
@@ -1544,33 +1536,37 @@ async function handleTokenInput(token) {
 // 1) https://web-nfc-brown.vercel.app/?t=F0RndRHI5PwsexmVVmRF-caM を開く
 // 2) URLから t が消えることを確認（再読み込みで二重取得しない）
 // 3) 不正な token は console に warning を出し、pending に保存
-async function applyToken(token) {
+async function applyToken(token, options) {
   const t = String(token || "").trim();
   if (!t) return false;
 
   const preProgress = getLocalStampProgressSet();
-  const stampBefore = findStampByToken(t);
-  const stampIdKey = stampBefore ? getStampKey(stampBefore.id) : "";
+  const preferredStampId = options?.preferredStampId != null ? options.preferredStampId : null;
+  const stampBefore = preferredStampId != null
+    ? (Array.isArray(stamps) ? stamps.find((s) => String(s?.id) === String(preferredStampId)) : null)
+    : findStampByToken(t);
+  const stampIdKey = stampBefore
+    ? getStampKey(stampBefore.id)
+    : (preferredStampId != null ? getStampKey(preferredStampId) : "");
 
   const result = await redeemToken(t, { deferApply: true });
   if (!result || !result.ok) return false;
 
   try { showNfcRipple(); } catch {}
   const postProgress = Array.isArray(result.stampProgress) ? result.stampProgress : [];
-  const hasNewStamp =
-    (stampIdKey && postProgress.some((id) => getStampKey(id) === stampIdKey && !preProgress.has(stampIdKey))) ||
-    postProgress.some((id) => !preProgress.has(getStampKey(id)));
+  const hasNewStamp = typeof result.newlyAcquired === "boolean"
+    ? result.newlyAcquired
+    : (
+      (stampIdKey && postProgress.some((id) => getStampKey(id) === stampIdKey && !preProgress.has(stampIdKey))) ||
+      postProgress.some((id) => !preProgress.has(getStampKey(id)))
+    );
   const variant = hasNewStamp ? "new" : "owned";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
 
-  // 新規スタンプを含む最新一覧を取り込むが、flagはまだ上書きしない
-  if (currentUser?.id) {
-    try { await syncFromDB({ applyFlags: false }); } catch {}
-  }
-
   if (Array.isArray(result.stampProgress)) {
-    applyStampProgress(result.stampProgress);
+    const preferredIdForFocus = stampIdKey || result.stampId || null;
+    applyStampProgress(result.stampProgress, { preferredStampId: preferredIdForFocus });
   }
   return true;
 }
@@ -1713,22 +1709,36 @@ async function consumeTokenFromUrlAndPending() {
   }
 }
 
-function applyStampProgress(progress) {
+function applyStampProgress(progress, options) {
   if (!Array.isArray(progress)) return;
   const prevTotal = getDisplayedTotal();
   const prevFlags = new Set(stamps.filter(s => s.flag).map(s => s.id));
   const nextFlags = new Set(progress);
   let firstNewIndex = -1;
+  const preferredStampId = options?.preferredStampId != null ? String(options.preferredStampId) : "";
   const baseList = Array.isArray(stamps) && stamps.length > 0 ? stamps : DEFAULT_STAMPS;
 
   stamps = baseList.map((def, idx) => {
     const was = prevFlags.has(def.id);
     const now = nextFlags.has(def.id);
-    if (now && !was && firstNewIndex === -1) firstNewIndex = idx;
+    if (now && !was) {
+      const isPreferred = preferredStampId && String(def.id) === preferredStampId;
+      if (isPreferred) {
+        firstNewIndex = idx;
+      } else if (firstNewIndex === -1) {
+        firstNewIndex = idx;
+      }
+    }
     return { ...def, flag: now, justStamped: now && !was };
   });
 
-  if (firstNewIndex >= 0) {
+  const preferredIndex = preferredStampId
+    ? baseList.findIndex((s) => String(s?.id) === preferredStampId)
+    : -1;
+  if (preferredIndex >= 0) {
+    currentIndex = preferredIndex;
+    setPage("stamp");
+  } else if (firstNewIndex >= 0) {
     currentIndex = firstNewIndex;
     setPage("stamp");
   }
@@ -1792,7 +1802,19 @@ async function redeemToken(token, options) {
     }
     localStorage.removeItem(LS_PENDING_TOKEN);
     localStorage.removeItem(LS_PENDING_PROGRESS);
-    return { ok: true, alreadyOwned: !!data.alreadyOwned, stampProgress, points: data.points };
+    const stampId = data?.stamp_id ?? null;
+    const newlyAcquired =
+      typeof data?.newlyAcquired === "boolean"
+        ? data.newlyAcquired
+        : !data?.alreadyOwned;
+    return {
+      ok: true,
+      alreadyOwned: !!data.alreadyOwned,
+      newlyAcquired,
+      stampId,
+      stampProgress,
+      points: data.points,
+    };
   } catch (err) {
     console.error(err);
     if (!suppressErrorModal) {
