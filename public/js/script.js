@@ -188,16 +188,53 @@ function normalizeUid(value) {
 
 
 // ================== 永続化（維持） ==================
+function resolveStampPoints(stamp) {
+  const raw = stamp?.points ?? stamp?.value ?? 0;
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function resolveStampImage(stamp) {
+  const src = stamp?.image_url || stamp?.image || "/images/default.png";
+  return String(src);
+}
+
 function loadStamps() {
   const raw = localStorage.getItem(LS_KEY);
   if (!raw) return structuredClone(DEFAULT_STAMPS);
   try {
     const saved = JSON.parse(raw);
-    const byUid = new Map(saved.map(s => [s.uid, s]));
-    return DEFAULT_STAMPS.map(def => {
-      const hit = byUid.get(def.uid);
-      return hit ? { ...def, flag: !!hit.flag, name: hit.name ?? def.name } : { ...def };
+    if (!Array.isArray(saved) || saved.length === 0) {
+      return structuredClone(DEFAULT_STAMPS);
+    }
+
+    const savedByUid = new Map(saved.filter((s) => s?.uid).map((s) => [s.uid, s]));
+    const defaultByUid = new Map(DEFAULT_STAMPS.map((s) => [s.uid, s]));
+
+    const mergedDefaults = DEFAULT_STAMPS.map((def) => {
+      const hit = savedByUid.get(def.uid);
+      if (!hit) {
+        return { ...def };
+      }
+      const hasPoints = hit?.points != null || hit?.value != null;
+      const points = hasPoints ? resolveStampPoints(hit) : resolveStampPoints(def);
+      return {
+        ...def,
+        ...hit,
+        flag: !!hit.flag,
+        points,
+      };
     });
+
+    const extras = saved
+      .filter((s) => s?.uid && !defaultByUid.has(s.uid))
+      .map((s) => ({
+        ...s,
+        flag: !!s.flag,
+        points: resolveStampPoints(s),
+      }));
+
+    return [...mergedDefaults, ...extras];
   } catch {
     return structuredClone(DEFAULT_STAMPS);
   }
@@ -208,7 +245,7 @@ function saveStamps() {
 
 // ================== UI helpers ==================
 function calcPoints() {
-  return stamps.reduce((sum, s) => sum + (s.flag ? (Number(s.points) || 0) : 0), 0);
+  return stamps.reduce((sum, s) => sum + (s.flag ? resolveStampPoints(s) : 0), 0);
 }
 // デバッグ用オフセットを含めて表示
 window.debugPointsOffset = 0;
@@ -267,13 +304,41 @@ async function syncFromDB() {
     persistCurrentUser();
 
     // 取得済みUIDでスタンプflagを同期（DBを正にする）
-    const uidSet = new Set((data.acquiredUids || []).map(u => String(u).toUpperCase()));
+    const uidSet = new Set((data.acquiredUids || []).map((u) => String(u).toUpperCase()));
+    const allStamps = Array.isArray(data.allStamps) ? data.allStamps : [];
 
-    // 画像など既存状態を維持しつつ、flagだけ同期したいなら loadStamps() ベースが安全
-    stamps = loadStamps();
-    stamps.forEach(s => {
-      s.flag = uidSet.has(String(s.uid).toUpperCase());
-    });
+    if (allStamps.length > 0) {
+      const prevList = loadStamps();
+      const prevByUid = new Map(
+        prevList
+          .filter((s) => s?.uid)
+          .map((s) => [String(s.uid).toUpperCase(), s])
+      );
+
+      stamps = allStamps.map((row) => {
+        const uid = String(row?.uid || "");
+        const uidUpper = uid.toUpperCase();
+        const prev = prevByUid.get(uidUpper);
+        const points = resolveStampPoints(row);
+
+        return {
+          ...prev,
+          ...row,
+          uid,
+          points,
+          flag: uidSet.has(uidUpper),
+          image_url: row?.image_url ?? prev?.image_url ?? "",
+          image: row?.image ?? prev?.image ?? "",
+          location: row?.location ?? prev?.location ?? "",
+        };
+      });
+    } else {
+      // 既存のローカル定義を使い、flagだけ同期
+      stamps = loadStamps();
+      stamps.forEach((s) => {
+        s.flag = uidSet.has(String(s.uid).toUpperCase());
+      });
+    }
 
     saveStamps();
     render();
@@ -1094,8 +1159,9 @@ function animateOOPIncrease(from, to, delta) {
 
 function stampPageHTML(s) {
   const imgClass = s.justStamped ? "stamp-img stamp-pop" : "stamp-img";
+  const src = resolveStampImage(s);
   const inner = s.flag
-    ? `<img class="${imgClass}" src="${s.image}" alt="${s.name}">`
+    ? `<img class="${imgClass}" src="${src}" alt="${s.name}">`
     : `<div class="stamp-empty">STAMP</div>`;
   return `
     <div class="stamp-page">
@@ -1162,7 +1228,8 @@ function render() {
 }
 
 function preloadStampImages() {
-  const urls = Array.from(new Set(DEFAULT_STAMPS.map(s => s.image).filter(Boolean)));
+  const baseList = Array.isArray(stamps) && stamps.length > 0 ? stamps : DEFAULT_STAMPS;
+  const urls = Array.from(new Set(baseList.map((s) => resolveStampImage(s)).filter(Boolean)));
   urls.forEach((src) => {
     const img = new Image();
     img.decoding = "async";
@@ -1514,8 +1581,9 @@ function applyStampProgress(progress) {
   const prevFlags = new Set(stamps.filter(s => s.flag).map(s => s.id));
   const nextFlags = new Set(progress);
   let firstNewIndex = -1;
+  const baseList = Array.isArray(stamps) && stamps.length > 0 ? stamps : DEFAULT_STAMPS;
 
-  stamps = DEFAULT_STAMPS.map((def, idx) => {
+  stamps = baseList.map((def, idx) => {
     const was = prevFlags.has(def.id);
     const now = nextFlags.has(def.id);
     if (now && !was && firstNewIndex === -1) firstNewIndex = idx;

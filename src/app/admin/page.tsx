@@ -14,6 +14,19 @@ type Shop = {
   created_at?: string | null;
 };
 
+type Stamp = {
+  id: number | string;
+  name: string;
+  uid: string;
+  token: string;
+  value?: number | string | null;
+  points?: number | string | null;
+  location?: string | null;
+  image_url?: string | null;
+  image?: string | null;
+  created_at?: string | null;
+};
+
 type UserRow = {
   id: number | string;
   username?: string;
@@ -44,6 +57,19 @@ export default function AdminPage() {
   const [createdShopUrl, setCreatedShopUrl] = useState("");
   const [createdShopToken, setCreatedShopToken] = useState("");
   const [deletingShopId, setDeletingShopId] = useState<Shop["id"] | null>(null);
+
+  const [stampCreateName, setStampCreateName] = useState("");
+  const [stampCreateUid, setStampCreateUid] = useState("");
+  const [stampCreateToken, setStampCreateToken] = useState("");
+  const [stampCreatePoints, setStampCreatePoints] = useState("");
+  const [stampCreateLocation, setStampCreateLocation] = useState("");
+  const [stampImageFile, setStampImageFile] = useState<File | null>(null);
+  const [stampImageUrl, setStampImageUrl] = useState("");
+  const [stampImageUploading, setStampImageUploading] = useState(false);
+  const [stampCreateLoading, setStampCreateLoading] = useState(false);
+  const [createdStamp, setCreatedStamp] = useState<Stamp | null>(null);
+  const [createdStampUrl, setCreatedStampUrl] = useState("");
+  const [stampFileInputKey, setStampFileInputKey] = useState(0);
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -120,14 +146,22 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (authStatus !== "authed" || shopCreateToken) {
+    if (authStatus !== "authed") {
       return;
     }
-    const nextToken = generateTokenClient();
-    if (nextToken) {
-      setShopCreateToken(nextToken);
+    if (!shopCreateToken) {
+      const nextShopToken = generateTokenClient();
+      if (nextShopToken) {
+        setShopCreateToken(nextShopToken);
+      }
     }
-  }, [authStatus, shopCreateToken, generateTokenClient]);
+    if (!stampCreateToken) {
+      const nextStampToken = generateTokenClient();
+      if (nextStampToken) {
+        setStampCreateToken(nextStampToken);
+      }
+    }
+  }, [authStatus, shopCreateToken, stampCreateToken, generateTokenClient]);
 
   const loadShops = async () => {
     setShopsLoading(true);
@@ -189,6 +223,16 @@ export default function AdminPage() {
       setChargeAmount("");
       setResetUsers([]);
       setResetSelectedUserId(null);
+      setStampCreateName("");
+      setStampCreateUid("");
+      setStampCreateToken("");
+      setStampCreatePoints("");
+      setStampCreateLocation("");
+      setStampImageFile(null);
+      setStampImageUrl("");
+      setCreatedStamp(null);
+      setCreatedStampUrl("");
+      setStampFileInputKey((prev) => prev + 1);
     }
   };
 
@@ -340,6 +384,161 @@ export default function AdminPage() {
     try {
       await navigator.clipboard.writeText(createdShopUrl);
       pushToast("success", "URLをコピーしました。");
+    } catch {
+      pushToast("error", "クリップボードへのコピーに失敗しました。");
+    }
+  };
+
+  const handleGenerateStampToken = () => {
+    const nextToken = generateTokenClient();
+    if (!nextToken) {
+      pushToast("error", "トークンの自動生成に失敗しました。");
+      return;
+    }
+    setStampCreateToken(nextToken);
+    pushToast("info", "スタンプ用トークンを再生成しました。");
+  };
+
+  const handleStampImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setStampImageFile(null);
+      setStampImageUrl("");
+      return;
+    }
+
+    const maxBytes = 2 * 1024 * 1024;
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (file.size > maxBytes) {
+      pushToast("error", "画像サイズは2MB以下にしてください。");
+      setStampImageFile(null);
+      setStampImageUrl("");
+      setStampFileInputKey((prev) => prev + 1);
+      return;
+    }
+    if (!allowedTypes.includes(file.type)) {
+      pushToast("error", "png / jpg / jpeg / webp のみアップロードできます。");
+      setStampImageFile(null);
+      setStampImageUrl("");
+      setStampFileInputKey((prev) => prev + 1);
+      return;
+    }
+
+    setStampImageFile(file);
+    setStampImageUrl("");
+    pushToast("info", "画像を選択しました。「画像をアップロード」を押してください。");
+  };
+
+  const handleUploadStampImage = async () => {
+    if (!stampImageFile) {
+      pushToast("error", "先に画像ファイルを選択してください。");
+      return;
+    }
+    setStampImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", stampImageFile);
+      if (stampCreateName.trim()) {
+        formData.append("name", stampCreateName.trim());
+      }
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "画像アップロードに失敗しました。");
+      }
+      setStampImageUrl(String(data.url || ""));
+      pushToast("success", "画像をアップロードしました。");
+    } catch (error) {
+      pushToast(
+        "error",
+        error instanceof Error ? error.message : "画像アップロードに失敗しました。"
+      );
+    } finally {
+      setStampImageUploading(false);
+    }
+  };
+
+  const handleCreateStamp = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const name = stampCreateName.trim();
+    const uid = stampCreateUid.trim();
+    const token = stampCreateToken.trim();
+    const location = stampCreateLocation.trim();
+    const pointsNum = Number(stampCreatePoints);
+
+    if (!name || !uid) {
+      pushToast("error", "スタンプ名とUIDは必須です。");
+      return;
+    }
+    if (!Number.isInteger(pointsNum) || pointsNum < 0) {
+      pushToast("error", "付与ポイントは0以上の整数で入力してください。");
+      return;
+    }
+    if (stampCreateToken && !token) {
+      pushToast("error", "トークンを空文字にはできません。");
+      return;
+    }
+    if (!stampImageUrl) {
+      pushToast("error", "先に画像をアップロードしてください。");
+      return;
+    }
+
+    setStampCreateLoading(true);
+    try {
+      const res = await fetch("/api/admin/stamps/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name,
+          uid,
+          token: token || undefined,
+          value: pointsNum,
+          location: location || undefined,
+          image_url: stampImageUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "スタンプの登録に失敗しました。");
+      }
+
+      const stamp = data?.stamp || null;
+      setCreatedStamp(stamp);
+      setCreatedStampUrl(String(data.url || ""));
+      pushToast("success", "スタンプを登録しました。");
+
+      setStampCreateName("");
+      setStampCreateUid("");
+      setStampCreatePoints("");
+      setStampCreateLocation("");
+      setStampImageFile(null);
+      setStampImageUrl("");
+      setStampFileInputKey((prev) => prev + 1);
+
+      const nextToken = generateTokenClient();
+      setStampCreateToken(nextToken || "");
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "スタンプの登録に失敗しました。");
+    } finally {
+      setStampCreateLoading(false);
+    }
+  };
+
+  const handleCopyStampUrl = async () => {
+    if (!createdStampUrl) {
+      pushToast("error", "コピーするURLがありません。");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(createdStampUrl);
+      pushToast("success", "スタンプURLをコピーしました。");
     } catch {
       pushToast("error", "クリップボードへのコピーに失敗しました。");
     }
@@ -555,6 +754,7 @@ export default function AdminPage() {
             <aside className="admin-nav">
               <a href="#shops">店舗ポイント管理</a>
               <a href="#shop-manage">店舗 追加・削除</a>
+              <a href="#stamps">スタンプ 新規登録</a>
               <a href="#charge">現金チャージ</a>
               <a href="#user-reset">進捗リセット</a>
               <a href="#reset">全データリセット</a>
@@ -756,6 +956,185 @@ export default function AdminPage() {
                           ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              </section>
+
+              <section id="stamps" className="panel">
+                <div className="panel-head">
+                  <div>
+                    <h2 className="panel-title">スタンプ 新規登録</h2>
+                    <p className="panel-note">
+                      画像をBlobにアップロードし、URLをDBに保存します。発行URLをNFCタグに書き込んでください。
+                    </p>
+                  </div>
+                </div>
+                <div className="stamp-manage-grid">
+                  <div className="stamp-create-box">
+                    <div className="shop-create-head">
+                      <div>
+                        <h3 className="panel-title">スタンプ登録フォーム</h3>
+                        <p className="panel-note">
+                          画像アップロード完了後に「登録してURLを発行」を押してください。
+                        </p>
+                      </div>
+                    </div>
+                    <form onSubmit={handleCreateStamp} className="stamp-create-form">
+                      <label className="field">
+                        <span>スタンプ名（必須）</span>
+                        <input
+                          type="text"
+                          value={stampCreateName}
+                          onChange={(event) => setStampCreateName(event.target.value)}
+                          placeholder="例: 図書館"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>NFCタグUID（必須）</span>
+                        <input
+                          type="text"
+                          value={stampCreateUid}
+                          onChange={(event) => setStampCreateUid(event.target.value)}
+                          placeholder="例: 04:18:BC:AA:96:20:90"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>トークン（自動生成・編集可）</span>
+                        <div className="token-row">
+                          <input
+                            type="text"
+                            value={stampCreateToken}
+                            onChange={(event) => setStampCreateToken(event.target.value)}
+                            placeholder="未入力ならサーバで自動生成"
+                          />
+                          <button
+                            type="button"
+                            className="btn ghost small"
+                            onClick={handleGenerateStampToken}
+                          >
+                            再生成
+                          </button>
+                        </div>
+                      </label>
+                      <label className="field">
+                        <span>付与ポイント（必須）</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          step={1}
+                          value={stampCreatePoints}
+                          onChange={(event) => setStampCreatePoints(event.target.value)}
+                          placeholder="例: 20"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>場所メモ（任意）</span>
+                        <input
+                          type="text"
+                          value={stampCreateLocation}
+                          onChange={(event) => setStampCreateLocation(event.target.value)}
+                          placeholder="例: 受付横"
+                        />
+                      </label>
+                      <div className="stamp-upload-box">
+                        <label className="field">
+                          <span>画像ファイル（必須 / 2MBまで）</span>
+                          <input
+                            key={stampFileInputKey}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={handleStampImageChange}
+                            required={!stampImageUrl}
+                          />
+                        </label>
+                        <div className="stamp-upload-row">
+                          <button
+                            type="button"
+                            className="btn ghost small"
+                            onClick={handleUploadStampImage}
+                            disabled={stampImageUploading || !stampImageFile}
+                          >
+                            {stampImageUploading ? "アップロード中..." : "画像をアップロード"}
+                          </button>
+                          {stampImageFile && (
+                            <span className="stamp-upload-note">
+                              選択中: {stampImageFile.name}
+                            </span>
+                          )}
+                        </div>
+                        {stampImageUrl && (
+                          <div className="stamp-upload-result">
+                            <p className="result-title">アップロード済みURL</p>
+                            <code className="stamp-upload-url">{stampImageUrl}</code>
+                          </div>
+                        )}
+                      </div>
+                      <div className="shop-create-actions">
+                        <button
+                          type="submit"
+                          className="btn primary"
+                          disabled={stampCreateLoading || stampImageUploading || !stampImageUrl}
+                        >
+                          {stampCreateLoading ? "登録中..." : "登録してURLを発行"}
+                        </button>
+                      </div>
+                    </form>
+
+                    {createdStampUrl && (
+                      <div className="shop-create-result">
+                        <p className="result-title">このURLをNFCタグに書き込んでください</p>
+                        <div className="result-url-row">
+                          <code className="result-url">{createdStampUrl}</code>
+                          <button type="button" className="btn ghost small" onClick={handleCopyStampUrl}>
+                            コピー
+                          </button>
+                        </div>
+                        {createdStamp?.token && (
+                          <p className="result-note">token: {createdStamp.token}</p>
+                        )}
+                        {createdStamp?.image_url && (
+                          <div className="stamp-preview-card">
+                            <p className="result-note">画像プレビュー（Blob URL）</p>
+                            <img
+                              className="stamp-preview-image"
+                              src={createdStamp.image_url}
+                              alt={createdStamp?.name || "stamp preview"}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="stamp-help-box">
+                    <h3 className="panel-title">画像アップロードの注意</h3>
+                    <ul className="panel-list">
+                      <li>対応形式: png / jpg / jpeg / webp</li>
+                      <li>最大サイズ: 2MB</li>
+                      <li>必ず「画像をアップロード」を押してから登録してください。</li>
+                    </ul>
+                    <div className="stamp-preview-card">
+                      <p className="result-note">現在のプレビュー</p>
+                      {stampImageUrl ? (
+                        <img
+                          className="stamp-preview-image"
+                          src={stampImageUrl}
+                          alt="uploaded stamp preview"
+                        />
+                      ) : createdStamp?.image_url ? (
+                        <img
+                          className="stamp-preview-image"
+                          src={createdStamp.image_url}
+                          alt={createdStamp?.name || "stamp preview"}
+                        />
+                      ) : (
+                        <p className="panel-note">画像をアップロードするとここに表示されます。</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1112,11 +1491,26 @@ export default function AdminPage() {
           gap: 16px;
           align-items: start;
         }
+        .stamp-manage-grid {
+          display: grid;
+          grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 1fr);
+          gap: 16px;
+          align-items: start;
+        }
         .shop-create-box {
           border: 1px solid rgba(43, 108, 176, 0.18);
           border-radius: 16px;
           padding: 16px;
           background: rgba(235, 245, 255, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .stamp-create-box {
+          border: 1px solid rgba(72, 187, 120, 0.22);
+          border-radius: 16px;
+          padding: 16px;
+          background: rgba(236, 252, 244, 0.8);
           display: flex;
           flex-direction: column;
           gap: 12px;
@@ -1128,6 +1522,11 @@ export default function AdminPage() {
           gap: 12px;
         }
         .shop-create-form {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 12px;
+        }
+        .stamp-create-form {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 12px;
@@ -1150,6 +1549,66 @@ export default function AdminPage() {
           display: flex;
           flex-direction: column;
           gap: 8px;
+        }
+        .stamp-upload-box {
+          grid-column: 1 / -1;
+          border: 1px dashed rgba(11, 28, 42, 0.15);
+          border-radius: 14px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.65);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .stamp-upload-row {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .stamp-upload-note {
+          font-size: 12px;
+          color: rgba(11, 28, 42, 0.7);
+          font-weight: 700;
+        }
+        .stamp-upload-result {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .stamp-upload-url {
+          display: block;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: rgba(11, 28, 42, 0.85);
+          color: #fff;
+          font-weight: 700;
+          word-break: break-all;
+        }
+        .stamp-help-box {
+          border: 1px solid rgba(11, 28, 42, 0.08);
+          border-radius: 16px;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .stamp-preview-card {
+          border-radius: 14px;
+          padding: 12px;
+          background: rgba(11, 28, 42, 0.06);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .stamp-preview-image {
+          width: 100%;
+          max-width: 320px;
+          border-radius: 14px;
+          border: 1px solid rgba(11, 28, 42, 0.12);
+          box-shadow: 0 12px 26px rgba(11, 28, 42, 0.18);
+          object-fit: cover;
         }
         .result-title {
           margin: 0;
@@ -1337,6 +1796,9 @@ export default function AdminPage() {
             flex-wrap: wrap;
           }
           .shop-manage-grid {
+            grid-template-columns: 1fr;
+          }
+          .stamp-manage-grid {
             grid-template-columns: 1fr;
           }
           .charge-box {
