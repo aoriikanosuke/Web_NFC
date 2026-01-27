@@ -221,15 +221,35 @@ function resolveStampImage(stamp) {
   return String(src);
 }
 
-function getLocalStampProgressSet() {
+function getStampedIdsFromFlags() {
+  if (!Array.isArray(stamps)) return [];
+  return stamps.filter((s) => !!s?.flag).map((s) => s.id);
+}
+
+function updateUserStampProgress(progress) {
+  if (!Array.isArray(progress)) return;
   try {
     const raw = localStorage.getItem("user");
-    if (!raw) return new Set();
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    const next = Array.from(new Set(progress.map((id) => String(id))));
+    parsed.stamp_progress = next;
+    localStorage.setItem("user", JSON.stringify(parsed));
+    currentUser = parsed;
+  } catch {}
+}
+
+function getLocalStampProgressSet() {
+  try {
+    const fromFlags = new Set(getStampedIdsFromFlags().map((id) => String(id)));
+    const raw = localStorage.getItem("user");
+    if (!raw) return fromFlags;
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed?.stamp_progress) ? parsed.stamp_progress : [];
-    return new Set(list.map((id) => String(id)));
+    list.forEach((id) => fromFlags.add(String(id)));
+    return fromFlags;
   } catch {
-    return new Set();
+    return new Set(getStampedIdsFromFlags().map((id) => String(id)));
   }
 }
 
@@ -384,6 +404,9 @@ async function syncFromDB() {
     } else {
       setTotalStampsCount(Array.isArray(stamps) ? stamps.length : DEFAULT_STAMPS.length);
     }
+
+    // user.stamp_progress も flags に合わせて正に揃える
+    updateUserStampProgress(getStampedIdsFromFlags());
 
     saveStamps();
     render();
@@ -1475,7 +1498,13 @@ async function handleTokenInput(token) {
   }
 
   // それでも見つからない場合は、まずスタンプとしてredeemを試す
-  const preProgress = getLocalStampProgressSet();
+  let preProgress = getLocalStampProgressSet();
+  if (currentUser?.id) {
+    try {
+      await syncFromDB();
+      preProgress = getLocalStampProgressSet();
+    } catch {}
+  }
   const redeemAttempt = await redeemToken(t, { deferApply: true, suppressErrorModal: true });
   if (redeemAttempt?.ok) {
     try { showNfcRipple(); } catch {}
@@ -1513,6 +1542,9 @@ async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
 
+  if (currentUser?.id) {
+    try { await syncFromDB(); } catch {}
+  }
   const preProgress = getLocalStampProgressSet();
   const stampBefore = findStampByToken(t);
   const stampIdKey = stampBefore ? getStampKey(stampBefore.id) : "";
@@ -1697,6 +1729,7 @@ function applyStampProgress(progress) {
     currentIndex = firstNewIndex;
     setPage("stamp");
   }
+  updateUserStampProgress(progress);
   saveStamps();
   render();
 
