@@ -2977,8 +2977,45 @@ window.addEventListener("resize", () => {
 });
 
 
+const PROFILE_TAP_THRESHOLD = 10;
+const PROFILE_TAP_WINDOW_MS = 6000;
+let profileTapCount = 0;
+let profileTapTimer = 0;
+
+function resetProfileTapCounter() {
+  profileTapCount = 0;
+  if (profileTapTimer) {
+    clearTimeout(profileTapTimer);
+    profileTapTimer = 0;
+  }
+}
+
+function handleProfileTapEasterEgg() {
+  profileTapCount += 1;
+  if (profileTapTimer) clearTimeout(profileTapTimer);
+  profileTapTimer = setTimeout(resetProfileTapCounter, PROFILE_TAP_WINDOW_MS);
+
+  if (profileTapCount >= PROFILE_TAP_THRESHOLD) {
+    resetProfileTapCounter();
+    location.assign("/admin");
+    return true;
+  }
+  return false;
+}
+
 document.querySelectorAll(".nav-btn").forEach(btn => {
-  btn.addEventListener("click", () => setPage(btn.dataset.target));
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.target;
+    if (!target) return;
+
+    if (target === "profile") {
+      handleProfileTapEasterEgg();
+    } else {
+      resetProfileTapCounter();
+    }
+
+    setPage(target);
+  });
 });
 
 // Golden buttons hookup
