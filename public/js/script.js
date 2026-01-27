@@ -1442,7 +1442,6 @@ async function handleTokenInput(token) {
     return { ok: applied, kind: "stamp" };
   }
 
-<<<<<<< HEAD
   // ローカル定義にない新規スタンプの可能性があるため、先にDB同期して再判定
   if (currentUser?.id) {
     try {
@@ -1460,9 +1459,6 @@ async function handleTokenInput(token) {
   }
 
   // それでも見つからない場合は、まずスタンプとしてredeemを試す
-=======
-  // ローカル定義にないスタンプでも、まずredeemを試す（DBを正にする）
->>>>>>> 668878b42a9160cb8b52cd8b51c1364e29acaf84
   const redeemAttempt = await redeemToken(t, { deferApply: true, suppressErrorModal: true });
   if (redeemAttempt?.ok) {
     try { showNfcRipple(); } catch {}
@@ -1470,25 +1466,16 @@ async function handleTokenInput(token) {
     try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
     await waitAfterStampAni(variant);
 
-<<<<<<< HEAD
     if (currentUser?.id) {
       try { await syncFromDB(); } catch {}
     }
-=======
-    // 最新のスタンプ一覧（image_url含む）を取り込み直してから進捗を反映する
-    await syncFromDB();
->>>>>>> 668878b42a9160cb8b52cd8b51c1364e29acaf84
     if (Array.isArray(redeemAttempt.stampProgress)) {
       applyStampProgress(redeemAttempt.stampProgress);
     }
     return { ok: true, kind: "stamp" };
   }
 
-<<<<<<< HEAD
   // 404（invalid token）のときだけ決済店舗のtokenとして扱う
-=======
-  // 404（invalid token）だけはスタンプではなく決済店舗として扱う
->>>>>>> 668878b42a9160cb8b52cd8b51c1364e29acaf84
   if (redeemAttempt && redeemAttempt.status && redeemAttempt.status !== 404) {
     showModalMessage("NFC", redeemAttempt.error || "スタンプ取得に失敗しました。");
     return { ok: false, kind: "stamp" };
@@ -1637,13 +1624,9 @@ async function consumeTokenFromUrlAndPending() {
   if (t) {
     processedToken = t;
     const transferred = await broadcastTokenToOtherTabs(t);
-    if (transferred) {
-      url.searchParams.delete("t");
-    const next = url.searchParams.toString();
-    const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
-    try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
-    return;
-  }
+    // 以前は他タブが受け取ったらローカル処理をスキップしていたが、
+    // それだとアニメーションや即時反映が起きないので常に自タブでも処理する。
+    void transferred;
     const result = await handleTokenInput(t);
     if (result.kind === "stamp") {
       if (result.ok) localStorage.removeItem(LS_PENDING_TOKEN);
