@@ -36,6 +36,7 @@ function optionalColumnSelect(columns, name, type = "text") {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
+  const debug = searchParams.get("debug") === "1";
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
   }
@@ -88,6 +89,14 @@ export async function GET(request) {
       totalStamps: allStampsRes.rows.length,
     });
   } catch (e) {
+    console.error("stamps/acquire GET error:", e);
+    const detail = String(e?.message || e || "unknown error");
+    if (debug || process.env.NODE_ENV !== "production") {
+      return NextResponse.json(
+        { error: "サーバーエラーが発生しました。", detail },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ error: "サーバーエラーが発生しました。" }, { status: 500 });
   } finally {
     client.release();
