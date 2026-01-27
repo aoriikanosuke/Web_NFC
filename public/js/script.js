@@ -12,6 +12,8 @@ const LS_OPEN_AUTH = "open_auth_modal";
 const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
 const LS_PENDING_BROADCAST_ACK = "pending_nfc_broadcast_ack";
 const LS_TAB_ID = "nfc_tab_id";
+const LS_LAST_STAMP_RECOGNITION = "last_stamp_recognition_v1";
+const RECENT_RECOGNITION_WINDOW_MS = 12_000;
 
 let stamps = loadStampsCache();
 let stampsLoaded = false;
@@ -25,6 +27,7 @@ let isFlipping = false;
 let flipTimer = 0;
 let totalStampsCount = Array.isArray(stamps) ? stamps.length : 0;
 let isProcessingStamp = false;
+let lastStampRecognition = loadLastStampRecognition();
 const TAB_ID = (() => {
   const existing = sessionStorage.getItem(LS_TAB_ID);
   if (existing) return existing;
@@ -277,6 +280,67 @@ function loadStampsCache() {
   }
 }
 
+function loadLastStampRecognition() {
+  try {
+    const raw = localStorage.getItem(LS_LAST_STAMP_RECOGNITION);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const key = String(parsed.key || "");
+    const stampId = parsed.stampId != null ? String(parsed.stampId) : "";
+    const at = Number(parsed.at || 0);
+    if (!key || !stampId || !Number.isFinite(at) || at <= 0) return null;
+    return { key, stampId, at };
+  } catch {
+    return null;
+  }
+}
+
+function clearLastStampRecognition() {
+  lastStampRecognition = null;
+  try {
+    localStorage.removeItem(LS_LAST_STAMP_RECOGNITION);
+  } catch {}
+}
+
+function buildRecognitionKey(payload) {
+  const source = String(payload?.source || "").trim();
+  if (!source) return "";
+  const uid = payload?.uid ? normalizeUid(payload.uid) : "";
+  const token = payload?.token ? String(payload.token).trim() : "";
+  const debugId = payload?.debugStampId != null ? String(payload.debugStampId).trim() : "";
+  return `${source}|${uid}|${token}|${debugId}`;
+}
+
+function getRecentStampRecognition(key) {
+  if (!key) return null;
+  if (!lastStampRecognition) {
+    lastStampRecognition = loadLastStampRecognition();
+  }
+  if (!lastStampRecognition) return null;
+  if (lastStampRecognition.key !== key) return null;
+
+  const age = Date.now() - Number(lastStampRecognition.at || 0);
+  if (!Number.isFinite(age) || age < 0 || age > RECENT_RECOGNITION_WINDOW_MS) {
+    clearLastStampRecognition();
+    return null;
+  }
+  return lastStampRecognition;
+}
+
+function rememberStampRecognition(key, stampId) {
+  if (!key || stampId == null || stampId === "") return;
+  const next = {
+    key,
+    stampId: String(stampId),
+    at: Date.now(),
+  };
+  lastStampRecognition = next;
+  try {
+    localStorage.setItem(LS_LAST_STAMP_RECOGNITION, JSON.stringify(next));
+  } catch {}
+}
+
 function saveStampsCache() {
   try {
     const minimal = stamps.map((s) => ({
@@ -422,8 +486,10 @@ function handleMissingAccount() {
   localStorage.removeItem(LS_PENDING_TOKEN);
   localStorage.removeItem(LS_OPEN_AUTH);
   localStorage.removeItem(LS_STAMPS_CACHE);
+  localStorage.removeItem(LS_LAST_STAMP_RECOGNITION);
   stamps = [];
   stampsLoaded = false;
+  lastStampRecognition = null;
   setTotalStampsCount(0);
   consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
   updateOOP();
@@ -1441,6 +1507,7 @@ async function handleStampRecognized(payload) {
   const uid = payload?.uid ? String(payload.uid) : null;
   const token = payload?.token ? String(payload.token) : null;
   const debugStampId = payload?.debugStampId != null ? Number(payload.debugStampId) : null;
+  const recognitionKey = buildRecognitionKey({ source, uid, token, debugStampId });
 
   if (!source) return { ok: false, error: true };
   if (!ensureLoggedInForToken(token || "")) {
@@ -1452,6 +1519,19 @@ async function handleStampRecognized(payload) {
     showModalMessage("NFC", "ログインしてください");
     try { openAuthModal(); } catch {}
     return { ok: false, needsAuth: true };
+  }
+
+  const recentRecognition = getRecentStampRecognition(recognitionKey);
+  if (recentRecognition?.stampId) {
+    setPage("stamp");
+    if (!$track) render();
+    await ensureStampsLoaded();
+    const recentIndex = focusStampPageById(recentRecognition.stampId);
+    if (recentIndex >= 0) {
+      render();
+    }
+    void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
+    return { ok: false, ignored: true, recent: true, stampId: recentRecognition.stampId };
   }
 
   isProcessingStamp = true;
@@ -1525,6 +1605,7 @@ async function handleStampRecognized(payload) {
 
     updateUserStampProgress(getStampedIdsFromFlags());
     void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
+    rememberStampRecognition(recognitionKey, stamp.id);
 
     return { ok: true, kind: "stamp", acquired: !!data.acquired, stamp };
   } catch (error) {
