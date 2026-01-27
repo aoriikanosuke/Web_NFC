@@ -1412,6 +1412,28 @@ async function handleTokenInput(token) {
     return { ok: applied, kind: "stamp" };
   }
 
+  // ローカル定義にないスタンプでも、まずredeemを試す（DBを正にする）
+  const redeemAttempt = await redeemToken(t, { deferApply: true, suppressErrorModal: true });
+  if (redeemAttempt?.ok) {
+    try { showNfcRipple(); } catch {}
+    const variant = redeemAttempt.alreadyOwned ? "owned" : "new";
+    try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
+    await waitAfterStampAni(variant);
+
+    // 最新のスタンプ一覧（image_url含む）を取り込み直してから進捗を反映する
+    await syncFromDB();
+    if (Array.isArray(redeemAttempt.stampProgress)) {
+      applyStampProgress(redeemAttempt.stampProgress);
+    }
+    return { ok: true, kind: "stamp" };
+  }
+
+  // 404（invalid token）だけはスタンプではなく決済店舗として扱う
+  if (redeemAttempt && redeemAttempt.status && redeemAttempt.status !== 404) {
+    showModalMessage("NFC", redeemAttempt.error || "スタンプ取得に失敗しました。");
+    return { ok: false, kind: "stamp" };
+  }
+
   const shopResult = await handlePayTokenSelection(t);
   return { ok: shopResult.ok, kind: "shop", shop: shopResult.shop };
 }
@@ -1611,6 +1633,7 @@ function applyStampProgress(progress) {
 async function redeemToken(token, options) {
   if (!token) return { ok: false };
   const deferApply = !!(options && options.deferApply);
+  const suppressErrorModal = !!(options && options.suppressErrorModal);
   const userRaw = localStorage.getItem("user");
   if (!userRaw) {
     ensureLoggedInForToken(token);
@@ -1631,8 +1654,11 @@ async function redeemToken(token, options) {
       return { ok: false, needsAuth: true };
     }
     if (!res.ok || !data.ok) {
-      showModalMessage("NFC", data.error || "スタンプ取得に失敗しました。");
-      return { ok: false };
+      const errorMessage = data?.error || "スタンプ取得に失敗しました。";
+      if (!suppressErrorModal) {
+        showModalMessage("NFC", errorMessage);
+      }
+      return { ok: false, status: res.status, error: errorMessage };
     }
 
     try {
@@ -1652,8 +1678,10 @@ async function redeemToken(token, options) {
     return { ok: true, alreadyOwned: !!data.alreadyOwned, stampProgress, points: data.points };
   } catch (err) {
     console.error(err);
-    showModalMessage("NFC", "スタンプ取得に失敗しました。");
-    return { ok: false };
+    if (!suppressErrorModal) {
+      showModalMessage("NFC", "スタンプ取得に失敗しました。");
+    }
+    return { ok: false, error: "スタンプ取得に失敗しました。" };
   } finally {
     hideTopNotice();
   }
