@@ -6,17 +6,49 @@ export const runtime = "nodejs"; // pgを使うのでnode固定
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+let stampsColumnsCache = null;
+let stampsColumnsCacheAt = 0;
+const STAMPS_COLUMNS_CACHE_MS = 60 * 1000;
+
+async function getStampsColumns(client) {
+  const now = Date.now();
+  if (stampsColumnsCache && now - stampsColumnsCacheAt < STAMPS_COLUMNS_CACHE_MS) {
+    return stampsColumnsCache;
+  }
+  const res = await client.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'stamps'
+    `
+  );
+  const cols = new Set(res.rows.map((row) => String(row.column_name)));
+  stampsColumnsCache = cols;
+  stampsColumnsCacheAt = now;
+  return cols;
+}
+
+function optionalColumnSelect(columns, name, type = "text") {
+  return columns.has(name) ? name : `NULL::${type} AS ${name}`;
+}
 
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
+  const debug = searchParams.get("debug") === "1";
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
   }
 
   const client = await pool.connect();
   try {
+    const columns = await getStampsColumns(client);
+    const imageUrlSelect = optionalColumnSelect(columns, "image_url", "text");
+    const imageSelect = optionalColumnSelect(columns, "image", "text");
+    const locationSelect = optionalColumnSelect(columns, "location", "text");
+    const createdAtSelect = optionalColumnSelect(columns, "created_at", "timestamptz");
+
     const stampsRes = await client.query(
       `
       SELECT
@@ -39,13 +71,36 @@ export async function GET(request) {
     }
     const points = pointsRes.rows[0]?.points ?? 0;
 
+    const allStampsRes = await client.query(
+      `
+      SELECT
+        id, uid, name, token, value,
+        ${locationSelect},
+        ${createdAtSelect},
+        ${imageUrlSelect},
+        ${imageSelect}
+      FROM stamps
+      ORDER BY id ASC
+      `
+    );
+
     return NextResponse.json({
       userId,
       points,
       stamps: stampsRes.rows,
       acquiredUids: stampsRes.rows.map((r) => r.uid),
+      allStamps: allStampsRes.rows,
+      totalStamps: allStampsRes.rows.length,
     });
   } catch (e) {
+    console.error("stamps/acquire GET error:", e);
+    const detail = String(e?.message || e || "unknown error");
+    if (debug || process.env.NODE_ENV !== "production") {
+      return NextResponse.json(
+        { error: "サーバーエラーが発生しました。", detail },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ error: "サーバーエラーが発生しました。" }, { status: 500 });
   } finally {
     client.release();
