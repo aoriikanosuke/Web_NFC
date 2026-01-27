@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Pool } from "pg";
+import { del } from "@vercel/blob";
 import { getAdminSessionFromRequest } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
@@ -47,6 +48,15 @@ function parseOptionalPoints(body) {
   return { ok: true, has: true, value: num };
 }
 
+function isVercelBlobUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.hostname.includes("blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request) {
   const session = getAdminSessionFromRequest(request);
   if (!session.ok) {
@@ -85,6 +95,10 @@ export async function POST(request) {
     const canSetLocation = columns.has("location");
     const canSetSortOrder = columns.has("sort_order");
     const canSetIsActive = columns.has("is_active");
+
+    let previousImageUrl = null;
+    let nextImageUrl = null;
+    let shouldDeletePreviousImage = false;
 
     const setClauses = [];
     const values = [];
@@ -143,6 +157,15 @@ export async function POST(request) {
           { status: 500 }
         );
       }
+      const prevRes = await client.query(
+        `SELECT ${imageColumn} FROM stamps WHERE id = $1 FOR UPDATE`,
+        [stampId]
+      );
+      if (prevRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ ok: false, error: "Stamp not found." }, { status: 404 });
+      }
+      previousImageUrl = prevRes.rows[0]?.[imageColumn] || null;
       const imageUrl = String(body.image_url || "").trim();
       if (!imageUrl) {
         await client.query("ROLLBACK");
@@ -151,7 +174,9 @@ export async function POST(request) {
           { status: 400 }
         );
       }
-      addSet(imageColumn, imageUrl);
+      nextImageUrl = imageUrl;
+      shouldDeletePreviousImage = Boolean(previousImageUrl && previousImageUrl !== nextImageUrl);
+      addSet(imageColumn, nextImageUrl);
     }
 
     if (canSetLocation && body?.location !== undefined) {
@@ -235,6 +260,20 @@ export async function POST(request) {
     }
 
     await client.query("COMMIT");
+
+    if (shouldDeletePreviousImage && isVercelBlobUrl(previousImageUrl)) {
+      const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+      if (!blobToken) {
+        console.warn("BLOB_READ_WRITE_TOKEN is missing; old stamp image was not deleted.");
+      } else {
+        try {
+          await del(previousImageUrl, { token: blobToken });
+        } catch (blobError) {
+          console.error("Failed to delete previous stamp image:", blobError);
+        }
+      }
+    }
+
     return NextResponse.json({ ok: true, stamp: res.rows[0] });
   } catch (error) {
     try {
@@ -268,4 +307,3 @@ export async function POST(request) {
     client.release();
   }
 }
-

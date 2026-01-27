@@ -89,6 +89,9 @@ export default function AdminPage() {
   const [editingStampId, setEditingStampId] = useState<Stamp["id"] | null>(null);
   const [updatingStampId, setUpdatingStampId] = useState<Stamp["id"] | null>(null);
   const [stampEdits, setStampEdits] = useState<Record<string, StampEdit>>({});
+  const [stampEditFiles, setStampEditFiles] = useState<Record<string, File | null>>({});
+  const [stampEditUploadingId, setStampEditUploadingId] = useState<Stamp["id"] | null>(null);
+  const [stampEditInputKeys, setStampEditInputKeys] = useState<Record<string, number>>({});
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -501,6 +504,87 @@ export default function AdminPage() {
       );
     } finally {
       setStampImageUploading(false);
+    }
+  };
+
+  const resetStampEditInputKey = (stampId: Stamp["id"]) => {
+    const key = stampKey(stampId);
+    setStampEditInputKeys((prev) => ({
+      ...prev,
+      [key]: (prev[key] || 0) + 1,
+    }));
+  };
+
+  const handleEditStampFileChange = (stamp: Stamp, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    const key = stampKey(stamp.id);
+    if (!file) {
+      setStampEditFiles((prev) => ({ ...prev, [key]: null }));
+      return;
+    }
+
+    const maxBytes = 2 * 1024 * 1024;
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (file.size > maxBytes) {
+      pushToast("error", "画像サイズは2MB以下にしてください。");
+      setStampEditFiles((prev) => ({ ...prev, [key]: null }));
+      resetStampEditInputKey(stamp.id);
+      return;
+    }
+    if (!allowedTypes.includes(file.type)) {
+      pushToast("error", "png / jpg / jpeg / webp のみアップロードできます。");
+      setStampEditFiles((prev) => ({ ...prev, [key]: null }));
+      resetStampEditInputKey(stamp.id);
+      return;
+    }
+
+    setStampEditFiles((prev) => ({ ...prev, [key]: file }));
+    pushToast("info", "画像を選択しました。「アップロード」を押してください。");
+  };
+
+  const handleUploadEditStampImage = async (stamp: Stamp) => {
+    const key = stampKey(stamp.id);
+    const file = stampEditFiles[key];
+    if (!file) {
+      pushToast("error", "先に画像ファイルを選択してください。");
+      return;
+    }
+
+    setStampEditUploadingId(stamp.id);
+    try {
+      const edit = stampEdits[key] || buildInitialStampEdit(stamp);
+      const formData = new FormData();
+      formData.append("image", file);
+      const uploadName = (edit.name || stamp.name || "").trim();
+      if (uploadName) {
+        formData.append("name", uploadName);
+      }
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "画像アップロードに失敗しました。");
+      }
+
+      const url = String(data.url || "");
+      updateStampEditField(stamp, "image_url", url);
+      setStampEditFiles((prev) => ({ ...prev, [key]: null }));
+      resetStampEditInputKey(stamp.id);
+      pushToast(
+        "success",
+        "画像をアップロードしました。保存すると旧画像は削除されます。"
+      );
+    } catch (error) {
+      pushToast(
+        "error",
+        error instanceof Error ? error.message : "画像アップロードに失敗しました。"
+      );
+    } finally {
+      setStampEditUploadingId(null);
     }
   };
 
@@ -1395,6 +1479,9 @@ export default function AdminPage() {
                           const isUpdating = updatingStampId === stamp.id;
                           const editKey = stampKey(stamp.id);
                           const edit = stampEdits[editKey] || buildInitialStampEdit(stamp);
+                          const isUploadingEdit = stampEditUploadingId === stamp.id;
+                          const editFile = stampEditFiles[editKey] || null;
+                          const editInputKey = stampEditInputKeys[editKey] || 0;
 
                           return (
                             <Fragment key={`stamp-frag-${String(stamp.id)}`}>
@@ -1512,6 +1599,40 @@ export default function AdminPage() {
                                           required
                                         />
                                       </label>
+                                      <div className="field stamp-edit-upload">
+                                        <span>画像アップロード</span>
+                                        <input
+                                          key={`stamp-edit-file-${String(stamp.id)}-${editInputKey}`}
+                                          type="file"
+                                          accept="image/png,image/jpeg,image/webp"
+                                          onChange={(event) => handleEditStampFileChange(stamp, event)}
+                                          disabled={isUpdating || isUploadingEdit}
+                                        />
+                                        <div className="stamp-upload-row">
+                                          <button
+                                            type="button"
+                                            className="btn ghost small"
+                                            onClick={() => handleUploadEditStampImage(stamp)}
+                                            disabled={isUpdating || isUploadingEdit || !editFile}
+                                          >
+                                            {isUploadingEdit ? "アップロード中..." : "アップロード"}
+                                          </button>
+                                          {editFile && (
+                                            <span className="stamp-upload-note">
+                                              選択中: {editFile.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {edit.image_url && (
+                                          <div className="stamp-edit-preview">
+                                            <img
+                                              className="stamp-table-image"
+                                              src={edit.image_url}
+                                              alt={`${edit.name || stamp.name} preview`}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
                                       <label className="field">
                                         <span>表示順（任意）</span>
                                         <input
@@ -1549,7 +1670,7 @@ export default function AdminPage() {
                                         type="button"
                                         className="btn primary small"
                                         onClick={() => handleUpdateStamp(stamp)}
-                                        disabled={isUpdating}
+                                        disabled={isUpdating || isUploadingEdit}
                                       >
                                         {isUpdating ? "保存中..." : "保存"}
                                       </button>
@@ -1557,7 +1678,7 @@ export default function AdminPage() {
                                         type="button"
                                         className="btn ghost small"
                                         onClick={cancelEditStamp}
-                                        disabled={isUpdating}
+                                        disabled={isUpdating || isUploadingEdit}
                                       >
                                         キャンセル
                                       </button>
@@ -2164,6 +2285,21 @@ export default function AdminPage() {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 10px;
+        }
+        .stamp-edit-upload {
+          grid-column: 1 / -1;
+          border: 1px dashed rgba(11, 28, 42, 0.2);
+          border-radius: 12px;
+          padding: 10px;
+          background: rgba(255, 255, 255, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .stamp-edit-preview {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         .stamp-edit-actions {
           margin-top: 8px;
