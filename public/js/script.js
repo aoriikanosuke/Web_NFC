@@ -248,6 +248,10 @@ async function syncFromDB() {
   showTopNotice("同期中");
   try {
     const res = await fetch(`/api/stamps/acquire?userId=${encodeURIComponent(currentUser.id)}`);
+    if (res.status === 404) {
+      handleMissingAccount();
+      return;
+    }
     if (!res.ok) return;
 
     const data = await res.json();
@@ -270,6 +274,21 @@ async function syncFromDB() {
   } finally {
     hideTopNotice();
   }
+}
+
+function handleMissingAccount() {
+  currentUser = null;
+  localStorage.removeItem("user");
+  localStorage.removeItem(LS_PENDING_PROGRESS);
+  localStorage.removeItem(LS_PENDING_TOKEN);
+  localStorage.removeItem(LS_OPEN_AUTH);
+  stamps = structuredClone(DEFAULT_STAMPS);
+  saveStamps();
+  consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
+  updateOOP();
+  updateProfileStampSummary();
+  openSiteInfo({ locked: true, forced: true });
+  showModalMessage("アカウント", "アカウントが見つからないため、スタート画面に戻りました。");
 }
 
 

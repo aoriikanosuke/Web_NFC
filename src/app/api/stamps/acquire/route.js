@@ -34,6 +34,9 @@ export async function GET(request) {
       `SELECT points FROM users WHERE id = $1`,
       [userId]
     );
+    if (!pointsRes.rows.length) {
+      return NextResponse.json({ error: "user not found" }, { status: 404 });
+    }
     const points = pointsRes.rows[0]?.points ?? 0;
 
     return NextResponse.json({
