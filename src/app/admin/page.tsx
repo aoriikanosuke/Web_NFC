@@ -461,11 +461,11 @@ export default function AdminPage() {
                       )}
                       {!shopsLoading &&
                         shops.map((shop) => (
-                          <tr key={String(shop.id)}>
-                            <td>{shop.id}</td>
-                            <td>{shop.name}</td>
-                            <td>{shop.points ?? 0}</td>
-                            <td>
+                        <tr key={String(shop.id)}>
+                            <td data-label="ID">{shop.id}</td>
+                            <td data-label="店舗名">{shop.name}</td>
+                            <td data-label="ポイント">{shop.points ?? 0}</td>
+                            <td data-label="操作">
                               <button
                                 type="button"
                                 className="btn small"
@@ -532,8 +532,8 @@ export default function AdminPage() {
                               className={selected ? "selected" : ""}
                               onClick={() => setSelectedUserId(user.id)}
                             >
-                              <td>{displayUserName(user)}</td>
-                              <td>{user.points ?? 0}</td>
+                              <td data-label="ユーザー">{displayUserName(user)}</td>
+                              <td data-label="ポイント">{user.points ?? 0}</td>
                             </tr>
                           );
                         })}
@@ -618,8 +618,8 @@ export default function AdminPage() {
                               className={selected ? "selected" : ""}
                               onClick={() => setResetSelectedUserId(user.id)}
                             >
-                              <td>{displayUserName(user)}</td>
-                              <td>{user.points ?? 0}</td>
+                              <td data-label="ユーザー">{displayUserName(user)}</td>
+                              <td data-label="ポイント">{user.points ?? 0}</td>
                             </tr>
                           );
                         })}
@@ -992,6 +992,17 @@ export default function AdminPage() {
           .admin-root {
             padding: 24px 16px 64px;
           }
+          .admin-nav {
+            gap: 8px;
+            padding: 12px;
+            border-radius: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .admin-nav a {
+            white-space: nowrap;
+            flex: 0 0 auto;
+          }
           .admin-header {
             flex-direction: column;
             align-items: flex-start;
@@ -1000,11 +1011,61 @@ export default function AdminPage() {
             flex-direction: column;
             align-items: flex-start;
           }
+          .panel {
+            padding: 16px;
+          }
           .form-row {
             grid-template-columns: 1fr;
           }
+          .table-wrap {
+            overflow: visible;
+            border: none;
+          }
           .admin-table {
-            min-width: 560px;
+            min-width: 0;
+            border: 1px solid rgba(11, 28, 42, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+          }
+          .admin-table thead {
+            display: none;
+          }
+          .admin-table,
+          .admin-table tbody,
+          .admin-table tr,
+          .admin-table td {
+            display: block;
+            width: 100%;
+          }
+          .admin-table tbody tr {
+            padding: 12px 14px;
+            border-top: 1px solid rgba(11, 28, 42, 0.08);
+          }
+          .admin-table tbody tr:first-child {
+            border-top: none;
+          }
+          .admin-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            font-size: 14px;
+          }
+          .admin-table td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: rgba(11, 28, 42, 0.6);
+          }
+          .admin-table td:last-child {
+            padding-bottom: 0;
+          }
+          .admin-table.selectable tbody tr {
+            border-left: 4px solid transparent;
+          }
+          .admin-table.selectable tbody tr.selected {
+            border-left-color: #2b6cb0;
+            background: rgba(43, 108, 176, 0.08);
           }
           .toast-stack {
             right: 12px;

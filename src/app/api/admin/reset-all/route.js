@@ -23,9 +23,9 @@ export async function POST(request) {
 
     await client.query("BEGIN");
     await client.query("UPDATE shop SET points = 0");
-    await client.query("UPDATE users SET points = 0, bonus_claimed = false, bonus_claimed_at = NULL");
     await client.query("DELETE FROM user_stamps");
     await client.query("DELETE FROM point_logs");
+    await client.query("DELETE FROM users");
     await client.query("COMMIT");
 
     return NextResponse.json({ ok: true });
