@@ -1,12 +1,4 @@
-﻿// ====== 設定：スタンプ一覧（points/locationはUI用。裏の流れは同じ）======
-// token を追加（iPhone用：/tap?t=token でスタンプ特定）
-const DEBUG_SHOPS = [
-  { name: "A", uid: "04:18:b8:aa:96:20:90", token: "k9QmT2vN7xR_p4LdZsW-1aHc" },
-  { name: "B", uid: "04:18:b7:aa:96:20:90", token: "P3uXvG8n0Jt_y6KeRmQ-9fNd" },
-];
-
-
-const LS_STAMPS_CACHE = "stamps_cache_v3";
+﻿const LS_STAMPS_CACHE = "stamps_cache_v3";
 const LS_PENDING_TOKEN = "pending_nfc_token";
 const LS_OPEN_AUTH = "open_auth_modal";
 const LS_PENDING_BROADCAST = "pending_nfc_broadcast";
@@ -19,6 +11,9 @@ const RELOAD_TOKEN_SUPPRESS_MS = 10 * 60 * 1000;
 
 let stamps = loadStampsCache();
 let stampsLoaded = false;
+let debugShops = [];
+let debugShopsLoaded = false;
+let debugShopsLoading = false;
 let currentIndex = 0;
 let currentPage = "stamp";
 let $track = null;
@@ -501,6 +496,28 @@ async function fetchStampsFromDB(options) {
     return { error: true };
   } finally {
     if (!silent) hideTopNotice();
+  }
+}
+
+async function fetchDebugShopsFromDB() {
+  if (debugShopsLoading) return { loading: true };
+  debugShopsLoading = true;
+  try {
+    const res = await fetch("/api/shops", { credentials: "include" });
+    if (!res.ok) {
+      return { error: true, status: res.status };
+    }
+    const data = await res.json().catch(() => ({}));
+    const rows = Array.isArray(data?.shops) ? data.shops : [];
+    debugShops = rows;
+    debugShopsLoaded = true;
+    return { ok: true, count: rows.length };
+  } catch (error) {
+    console.error("fetchDebugShopsFromDB error:", error);
+    return { error: true };
+  } finally {
+    debugShopsLoading = false;
+    try { populateDebugPanel(); } catch {}
   }
 }
 
@@ -3045,12 +3062,49 @@ function populateDebugPanel(){
   payGroup.style.display = 'flex';
   payGroup.style.flexDirection = 'column';
   payGroup.style.gap = '6px';
-  DEBUG_SHOPS.forEach(s => {
-    const b = document.createElement('button');
-    b.textContent = `決済: ${s.name} をタッチ`;
-    b.addEventListener('click', () => simulatePayShopTouch(s.uid));
-    payGroup.appendChild(b);
-  });
+  const payHeading = document.createElement('div');
+  payHeading.textContent = '決済（DB）';
+  payHeading.style.fontWeight = '700';
+  payGroup.appendChild(payHeading);
+
+  if (!debugShopsLoaded && !debugShopsLoading) {
+    void fetchDebugShopsFromDB();
+  }
+
+  const shops = Array.isArray(debugShops) ? debugShops : [];
+  if (shops.length === 0) {
+    const empty = document.createElement('div');
+    empty.textContent = debugShopsLoading ? '店舗を読み込み中です。' : '店舗データがありません。';
+    payGroup.appendChild(empty);
+  } else {
+    const shopSelect = document.createElement('select');
+    shopSelect.style.padding = '6px';
+    shops.forEach((shop) => {
+      const opt = document.createElement('option');
+      opt.value = String(shop.id);
+      opt.textContent = `#${shop.id} ${shop.name}`;
+      shopSelect.appendChild(opt);
+    });
+    payGroup.appendChild(shopSelect);
+
+    const payTouchBtn = document.createElement('button');
+    payTouchBtn.textContent = '選択店舗をタッチ';
+    payTouchBtn.addEventListener('click', async () => {
+      const selectedId = String(shopSelect.value);
+      const shop = shops.find((row) => String(row?.id) === selectedId);
+      if (!shop) return;
+      if (shop.uid) {
+        await simulatePayShopTouch(shop.uid);
+        return;
+      }
+      if (shop.token) {
+        await handlePayTokenSelection(shop.token);
+        return;
+      }
+      showModalMessage('決済', 'この店舗はUID/Tokenが未設定です。');
+    });
+    payGroup.appendChild(payTouchBtn);
+  }
   panel.appendChild(payGroup);
 
 //進捗リセットボタン
@@ -3065,6 +3119,9 @@ function initDebugUI(){
   const toggle = document.getElementById('debugToggle');
   const panel = document.getElementById('debugPanel');
   if(!toggle || !panel) return;
+  if (!debugShopsLoaded && !debugShopsLoading) {
+    void fetchDebugShopsFromDB();
+  }
   toggle.addEventListener('click', () => {
     const open = panel.classList.toggle('is-open');
     panel.setAttribute('aria-hidden', !open);
@@ -3598,6 +3655,7 @@ async function initAfterDomReady(){
   const userId = getCurrentUserId();
   const syncResult = await fetchStampsFromDB({ userId, silent: !userId });
   if (syncResult?.missing) return;
+  void fetchDebugShopsFromDB();
 
   if (userId) {
     updateUIForLoggedInUser();
@@ -3728,6 +3786,7 @@ function logout() {
   localStorage.removeItem('user');
   location.reload(); // 状態リセットのためリロード
 }
+
 
 
 
