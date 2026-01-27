@@ -1519,7 +1519,7 @@ async function handleStampRecognized(payload) {
       render();
 
       await playStampAnimationWithFallback("owned");
-      showModalMessage("スタンプ", "すでに押印済みです");
+      showModalMessage("スタンプ", "このスタンプは既に押印済みです");
     }
 
     updateUserStampProgress(getStampedIdsFromFlags());

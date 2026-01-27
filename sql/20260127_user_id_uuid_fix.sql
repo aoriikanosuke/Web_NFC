@@ -9,10 +9,9 @@ BEGIN;
 -- DELETE FROM stamp_events;
 
 ALTER TABLE user_stamps
-  ALTER COLUMN user_id TYPE uuid USING user_id::uuid;
+  ALTER COLUMN user_id TYPE uuid USING user_id::text::uuid;
 
 ALTER TABLE stamp_events
-  ALTER COLUMN user_id TYPE uuid USING user_id::uuid;
+  ALTER COLUMN user_id TYPE uuid USING user_id::text::uuid;
 
 COMMIT;
-
