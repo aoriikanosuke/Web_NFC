@@ -1287,44 +1287,67 @@ function initPayUI() {
   updatePayAvailable();
 }
 
-function spawnPointsFloat(amount) {
-  if (!amount || !Number.isFinite(amount)) return;
+function spawnPointsDeltaBadge(amount) {
+  if (!amount || !Number.isFinite(amount)) return Promise.resolve();
   const target = $oopValue || $oopInfo;
-  if (!target) return;
+  if (!target) return Promise.resolve();
 
   const rect = target.getBoundingClientRect();
-  const startX = rect.left - 8;
+  const startX = rect.left - 14;
   const startY = rect.top + rect.height / 2;
   const endX = rect.left + rect.width / 2;
   const endY = rect.top + rect.height / 2;
 
   const el = document.createElement("div");
-  el.className = "points-merge";
-  el.textContent = `+${amount}P`;
+  el.className = "points-merge points-merge--delta";
+  el.textContent = `+${Math.trunc(amount)}P`;
   el.style.left = `${startX}px`;
   el.style.top = `${startY}px`;
   document.body.appendChild(el);
 
   const dx = endX - startX;
   const dy = endY - startY;
-  const anim = el.animate([
-    { transform: "translate(-100%, -50%)", opacity: 1, offset: 0 },
-    { transform: "translate(-100%, -50%)", opacity: 1, offset: 0.7 },
-    { transform: `translate(calc(-100% + ${dx}px), calc(-50% + ${dy}px))`, opacity: 0.15 }
-  ], { duration: 1400, easing: "cubic-bezier(.2,.9,.2,1)" });
-  anim.addEventListener("finish", () => { try { el.remove(); } catch {} }, { once: true });
+  const holdMs = 420;
+  const mergeMs = 520;
+  const duration = holdMs + mergeMs;
+
+  return new Promise((resolve) => {
+    const anim = el.animate(
+      [
+        { transform: "translate(-100%, -50%) scale(1)", opacity: 1, offset: 0 },
+        { transform: "translate(-100%, -50%) scale(1.02)", opacity: 1, offset: holdMs / duration },
+        {
+          transform: `translate(calc(-100% + ${dx}px), calc(-50% + ${dy}px)) scale(0.92)`,
+          opacity: 0.05,
+          offset: 1,
+        },
+      ],
+      { duration, easing: "cubic-bezier(.2,.9,.2,1)" }
+    );
+    anim.addEventListener(
+      "finish",
+      () => {
+        try {
+          el.remove();
+        } catch {}
+        resolve();
+      },
+      { once: true }
+    );
+  });
 }
 
-function animateOOPIncrease(from, to, delta) {
+async function animateOOPIncrease(from, to, delta) {
   if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return;
   oopAnimating = true;
   oopNeedsSync = false;
   setOOPValue(from);
-  spawnPointsFloat(delta);
 
-  const duration = 900;
-  const steps = Math.min(Math.max(to - from, 1), 18);
-  const stepMs = Math.max(30, Math.round(duration / steps));
+  await spawnPointsDeltaBadge(delta);
+
+  const duration = 820;
+  const steps = Math.min(Math.max(to - from, 1), 36);
+  const stepMs = Math.max(16, Math.round(duration / steps));
 
   for (let i = 1; i <= steps; i++) {
     const value = i === steps ? to : Math.round(from + ((to - from) * (i / steps)));
@@ -1570,6 +1593,7 @@ async function handleStampRecognized(payload) {
     try { openAuthModal(); } catch {}
     return { ok: false, needsAuth: true };
   }
+  const oopBefore = getDisplayedTotal();
 
   const recognitionKey = buildRecognitionKey({
     userId: userIdNum,
@@ -1667,8 +1691,10 @@ async function handleStampRecognized(payload) {
       if (currentUser && data?.points != null) {
         currentUser.points = Number(data.points || 0);
         persistCurrentUser();
-        updateOOP();
         updateProfileStampSummary();
+        const oopAfter = getDisplayedTotal();
+        const delta = Number(data?.delta || 0);
+        await animateOOPIncrease(oopBefore, oopAfter, delta);
       }
       vibrate(50);
     } else {

@@ -489,6 +489,11 @@ input, textarea, [contenteditable="true"]{
   z-index: 10000;
   white-space: nowrap;
 }
+.points-merge--delta{
+  font-size: 22px;
+  letter-spacing: 0.4px;
+  text-shadow: 0 6px 18px rgba(211, 47, 47, 0.35);
+}
 
 /* ===== Kiran shine effect ===== */
 .kiran-target{
