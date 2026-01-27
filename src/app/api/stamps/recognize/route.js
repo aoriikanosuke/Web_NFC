@@ -46,10 +46,9 @@ async function getTableColumns(client, tableName) {
 }
 
 function normalizeUserId(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return null;
-  const intVal = Math.trunc(num);
-  return intVal > 0 ? intVal : null;
+  if (value == null) return null;
+  const str = String(value).trim();
+  return str ? str : null;
 }
 
 function normalizeUid(value) {

@@ -28,10 +28,9 @@ async function getStampsColumns(client) {
 }
 
 function normalizeUserId(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return null;
-  const intVal = Math.trunc(num);
-  return intVal > 0 ? intVal : null;
+  if (value == null) return null;
+  const str = String(value).trim();
+  return str ? str : null;
 }
 
 export async function GET(request) {
@@ -121,4 +120,3 @@ export async function GET(request) {
     client.release();
   }
 }
-

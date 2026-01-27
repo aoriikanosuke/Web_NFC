@@ -375,10 +375,14 @@ function persistCurrentUser() {
 function getCurrentUserId() {
   const candidates = [currentUser?.id, currentUser?.user_id, currentUser?.userId];
   for (const value of candidates) {
-    const num = Number(value);
+    if (value == null) continue;
+    const str = String(value).trim();
+    if (!str) continue;
+    const num = Number(str);
     if (Number.isFinite(num) && num > 0) {
       return Math.trunc(num);
     }
+    return str;
   }
   return null;
 }
