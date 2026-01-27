@@ -191,10 +191,7 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("admin/stamps/create error:", error);
-    const detail =
-      process.env.NODE_ENV !== "production"
-        ? String(error?.message || error)
-        : "Failed to create stamp.";
+    const detail = String(error?.message || error || "Failed to create stamp.");
     return NextResponse.json(
       { ok: false, error: detail },
       { status: 500 }
