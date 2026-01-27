@@ -598,7 +598,7 @@ export default function Page() {
       </div>
 
       {/* app */}
-      <Script src="/js/script.js?v=20250115" strategy="afterInteractive" />
+      <Script src="/js/script.js?v=20260127-1" strategy="afterInteractive" />
     </>
   );
 }
