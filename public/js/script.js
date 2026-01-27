@@ -294,7 +294,7 @@ function saveStampsCache() {
 }
 
 async function fetchStampsFromDB(options) {
-  const userId = options?.userId ?? currentUser?.id ?? null;
+  const userId = options?.userId ?? getCurrentUserId();
   const silent = options?.silent === true;
 
   const qs = userId ? `?userId=${encodeURIComponent(userId)}` : "";
@@ -372,12 +372,30 @@ function persistCurrentUser() {
   localStorage.setItem("user", JSON.stringify(currentUser));
 }
 
+function getCurrentUserId() {
+  const candidates = [currentUser?.id, currentUser?.user_id, currentUser?.userId];
+  for (const value of candidates) {
+    const num = Number(value);
+    if (Number.isFinite(num) && num > 0) {
+      return Math.trunc(num);
+    }
+  }
+  return null;
+}
+
 function ensureLoggedInForToken(token) {
-  if (currentUser?.id) return true;
+  const existingId = getCurrentUserId();
+  if (existingId) {
+    if (currentUser && !currentUser.id) currentUser.id = existingId;
+    return true;
+  }
   try {
     const stored = JSON.parse(localStorage.getItem("user") || "null");
-    if (stored?.id) {
+    const storedId = Number(stored?.id ?? stored?.user_id ?? stored?.userId);
+    if (Number.isFinite(storedId) && storedId > 0) {
       currentUser = stored;
+      currentUser.id = Math.trunc(storedId);
+      persistCurrentUser();
       return true;
     }
   } catch {}
@@ -389,7 +407,7 @@ function ensureLoggedInForToken(token) {
 }
 
 async function syncFromDB(options) {
-  const userId = options?.userId ?? currentUser?.id ?? null;
+  const userId = options?.userId ?? getCurrentUserId();
   const silent = options?.silent === true;
   return fetchStampsFromDB({ userId, silent });
 }
@@ -653,13 +671,14 @@ function renderTransactionList(logs) {
 }
 
 async function fetchTransactionLogs(force) {
-  if (!currentUser?.id || transactionLoading) return;
+  const userId = getCurrentUserId();
+  if (!userId || transactionLoading) return;
   if (transactionLoaded && !force) return;
   transactionLoading = true;
   renderTransactionState("loading");
   if ($transactionList) $transactionList.innerHTML = "";
   try {
-    const res = await fetch(`/api/point-logs?userId=${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`/api/point-logs?userId=${encodeURIComponent(userId)}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data?.ok) {
       renderTransactionState("error", data?.error || "読み込みに失敗しました。");
@@ -676,7 +695,7 @@ async function fetchTransactionLogs(force) {
 }
 
 function openTransactionModal() {
-  if (!currentUser?.id) {
+  if (!getCurrentUserId()) {
     showModalMessage("取引ログ", "ログインすると取引ログが表示されます。");
     return;
   }
@@ -701,10 +720,11 @@ function allStampsCollected() {
 }
 
 async function fetchBonusStatus() {
-  if (!currentUser?.id) return { ok: false };
+  const userId = getCurrentUserId();
+  if (!userId) return { ok: false };
 
   try {
-    const url = `/api/bonus?userId=${encodeURIComponent(currentUser.id)}`;
+    const url = `/api/bonus?userId=${encodeURIComponent(userId)}`;
     const res = await fetch(url, { method: "GET" });
     const data = await res.json().catch(() => ({}));
 
@@ -732,7 +752,7 @@ function isBonusClaimed() {
 
 function showCompleteOverlay() {
   if (!$completeOverlay) return;
-  if (!currentUser?.id) return; // ログアウト中は出さない
+  if (!getCurrentUserId()) return; // ログアウト中は出さない
   if (isBonusClaimed()) return; // 受け取り済みは出さない
 
   $completeOverlay.classList.add("is-open");
@@ -754,7 +774,7 @@ function updateCompleteOverlay() {
     return;
   }
 
-  if (!currentUser?.id) {
+  if (!getCurrentUserId()) {
     if (typeof hideCompleteOverlay === "function") hideCompleteOverlay();
     return;
   }
@@ -770,7 +790,8 @@ function updateCompleteOverlay() {
 async function claimCompletionBonus() {
   if (bonusClaiming) return;
 
-  if (!currentUser?.id) {
+  const userId = getCurrentUserId();
+  if (!userId) {
     showModalMessage("ボーナス", "ログインが必要です。");
     try { openAuthModal(); } catch {}
     return;
@@ -787,7 +808,7 @@ async function claimCompletionBonus() {
     const res = await fetch("/api/bonus", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id }),
+      body: JSON.stringify({ userId }),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -1052,7 +1073,8 @@ function applyPayKey(key) {
 
 async function handlePayConfirm() {
   if (payBusy) return;
-  if (!currentUser?.id) {
+  const userId = getCurrentUserId();
+  if (!userId) {
     showModalMessage("決済", "ログインが必要です。");
     try { openAuthModal(); } catch {}
     return;
@@ -1075,7 +1097,8 @@ async function handlePayConfirm() {
 
 async function handlePayCommit() {
   if (payBusy || payAmount <= 0) return;
-  if (!currentUser?.id) {
+  const userId = getCurrentUserId();
+  if (!userId) {
     showModalMessage("決済", "ログインが必要です。");
     return;
   }
@@ -1093,7 +1116,7 @@ async function handlePayCommit() {
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: userIdNum, shopId: selectedShop.id, amount: payAmount }),
+      body: JSON.stringify({ userId, shopId: selectedShop.id, amount: payAmount }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -1305,7 +1328,7 @@ function updateSlidePosition(withAnim) {
 // ================== Stamp Recognition (DB-driven) ==================
 async function ensureStampsLoaded() {
   if (stampsLoaded && Array.isArray(stamps) && stamps.length > 0) return;
-  await fetchStampsFromDB({ userId: currentUser?.id ?? null, silent: true });
+  await fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
 }
 
 function findStampIndexById(stampId) {
@@ -1419,8 +1442,8 @@ async function handleStampRecognized(payload) {
     return { ok: false, needsAuth: true };
   }
 
-  const userIdNum = Number(currentUser?.id);
-  if (!Number.isFinite(userIdNum) || userIdNum <= 0) {
+  const userIdNum = getCurrentUserId();
+  if (!userIdNum) {
     showModalMessage("NFC", "ログインしてください");
     try { openAuthModal(); } catch {}
     return { ok: false, needsAuth: true };
@@ -1496,7 +1519,7 @@ async function handleStampRecognized(payload) {
     }
 
     updateUserStampProgress(getStampedIdsFromFlags());
-    void fetchStampsFromDB({ userId: currentUser?.id ?? null, silent: true });
+    void fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
 
     return { ok: true, kind: "stamp", acquired: !!data.acquired, stamp };
   } catch (error) {
@@ -2202,7 +2225,7 @@ function showModalConfirm(title, body, okText, cancelText) {
 }
 
 function showUsageGuide(options) {
-  if (!currentUser?.id) return;
+  if (!getCurrentUserId()) return;
   const wrap = document.createElement("div");
   wrap.className = "usage-guide";
 
@@ -2269,7 +2292,7 @@ function setPage(name) {
     clearPaySuccessBlur();
     stopPaySprite();
   }
-  if (currentUser?.id) closeSiteInfo();
+  if (getCurrentUserId()) closeSiteInfo();
 }
 
 function updatePayHeaderOffset() {
@@ -2987,13 +3010,16 @@ async function resetProgressAndGoStamp() {
       ? currentUser
       : JSON.parse(localStorage.getItem("user") || "null");
 
-  if (u?.id) {
+  const userIdFromU = Number(u?.id ?? u?.user_id ?? u?.userId);
+  const userId = getCurrentUserId() || (Number.isFinite(userIdFromU) && userIdFromU > 0 ? Math.trunc(userIdFromU) : null);
+
+  if (userId) {
     showTopNotice("進捗リセット中");
     try {
       const r = await fetch("/api/stamps/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: u.id }),
+        body: JSON.stringify({ userId }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -3040,7 +3066,7 @@ async function resetProgressAndGoStamp() {
   updateOOP();
 
   setPage("stamp"); // ← 常に戻す
-  await fetchStampsFromDB({ userId: currentUser?.id ?? null, silent: true });
+  await fetchStampsFromDB({ userId: getCurrentUserId(), silent: true });
 }
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
@@ -3068,7 +3094,7 @@ $siteInfoOverlay?.addEventListener("click", () => {
   closeSiteInfo();
 });
 $siteInfoStartBtn?.addEventListener("click", () => {
-  if (currentUser?.id) {
+  if (getCurrentUserId()) {
     closeSiteInfo();
     return;
   }
@@ -3194,14 +3220,15 @@ if(toggleBtnEl) toggleBtnEl.addEventListener('click', toggleGolden);
   if(goldenActive) startGoldenSparks();
   updateOOP();
 
-  if (!currentUser?.id) {
+  const userId = getCurrentUserId();
+  if (!userId) {
     openSiteInfo({ locked: true, forced: true });
   } else if (!localStorage.getItem(LS_SITEINFO_SEEN)) {
     openSiteInfo({ locked: false, forced: false });
   }
 
   (async () => {
-   if (currentUser?.id) {
+   if (userId) {
     await fetchBonusStatus();
    }
  })();
@@ -3292,7 +3319,7 @@ function initAuthEnterShortcuts() {
 
 // 初期化：ログイン状態ならUIを更新
 async function initAfterDomReady(){
-  const userId = currentUser?.id ?? null;
+  const userId = getCurrentUserId();
   const syncResult = await fetchStampsFromDB({ userId, silent: !userId });
   if (syncResult?.missing) return;
 
@@ -3328,7 +3355,7 @@ function openAuthModal() {
 
 function closeAuthModal() {
   if (!authModal) return;
-  if (!currentUser?.id) return;
+  if (!getCurrentUserId()) return;
   authModal.classList.remove('is-open');
   authModal.setAttribute('aria-hidden', 'true');
   showAuthChoice();
@@ -3425,6 +3452,8 @@ function logout() {
   localStorage.removeItem('user');
   location.reload(); // 状態リセットのためリロード
 }
+
+
 
 
 
