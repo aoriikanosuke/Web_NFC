@@ -70,6 +70,9 @@ export default function AdminPage() {
   const [createdStamp, setCreatedStamp] = useState<Stamp | null>(null);
   const [createdStampUrl, setCreatedStampUrl] = useState("");
   const [stampFileInputKey, setStampFileInputKey] = useState(0);
+  const [stamps, setStamps] = useState<Stamp[]>([]);
+  const [stampsLoading, setStampsLoading] = useState(false);
+  const [deletingStampId, setDeletingStampId] = useState<Stamp["id"] | null>(null);
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -179,9 +182,29 @@ export default function AdminPage() {
     }
   };
 
+  const loadStamps = async () => {
+    setStampsLoading(true);
+    try {
+      const res = await fetch("/api/admin/stamps", { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "スタンプ一覧の取得に失敗しました。");
+      }
+      setStamps(Array.isArray(data.stamps) ? data.stamps : []);
+    } catch (error) {
+      pushToast(
+        "error",
+        error instanceof Error ? error.message : "スタンプ一覧の取得に失敗しました。"
+      );
+    } finally {
+      setStampsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (authStatus === "authed") {
       loadShops();
+      loadStamps();
     }
   }, [authStatus]);
 
@@ -233,6 +256,8 @@ export default function AdminPage() {
       setCreatedStamp(null);
       setCreatedStampUrl("");
       setStampFileInputKey((prev) => prev + 1);
+      setStamps([]);
+      setDeletingStampId(null);
     }
   };
 
@@ -524,6 +549,8 @@ export default function AdminPage() {
 
       const nextToken = generateTokenClient();
       setStampCreateToken(nextToken || "");
+
+      await loadStamps();
     } catch (error) {
       pushToast("error", error instanceof Error ? error.message : "スタンプの登録に失敗しました。");
     } finally {
@@ -541,6 +568,46 @@ export default function AdminPage() {
       pushToast("success", "スタンプURLをコピーしました。");
     } catch {
       pushToast("error", "クリップボードへのコピーに失敗しました。");
+    }
+  };
+
+  const getStampPoints = (stamp: Stamp) => {
+    const raw = stamp?.points ?? stamp?.value ?? 0;
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const getStampImage = (stamp: Stamp) => {
+    const src = stamp?.image_url || stamp?.image || "/images/default.png";
+    return String(src);
+  };
+
+  const handleDeleteStamp = async (stamp: Stamp) => {
+    const confirmed = window.confirm(
+      `スタンプ「${stamp.name}」（ID: ${stamp.id}）を削除します。\nこのスタンプの進捗と関連ログも削除されます。よろしいですか？`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingStampId(stamp.id);
+    try {
+      const res = await fetch("/api/admin/stamps/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ stampId: stamp.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "スタンプの削除に失敗しました。");
+      }
+      setStamps((prev) => prev.filter((row) => row.id !== stamp.id));
+      pushToast("success", "スタンプを削除しました。");
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "スタンプの削除に失敗しました。");
+    } finally {
+      setDeletingStampId(null);
     }
   };
 
@@ -755,6 +822,7 @@ export default function AdminPage() {
               <a href="#shops">店舗ポイント管理</a>
               <a href="#shop-manage">店舗 追加・削除</a>
               <a href="#stamps">スタンプ 新規登録</a>
+              <a href="#stamps-manage">スタンプ 一覧・削除</a>
               <a href="#charge">現金チャージ</a>
               <a href="#user-reset">進捗リセット</a>
               <a href="#reset">全データリセット</a>
@@ -1136,6 +1204,96 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </section>
+
+              <section id="stamps-manage" className="panel">
+                <div className="panel-head">
+                  <div>
+                    <h2 className="panel-title">スタンプ 一覧・削除</h2>
+                    <p className="panel-note">登録済みスタンプの確認と削除を行います。</p>
+                  </div>
+                  <div className="panel-actions">
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      onClick={loadStamps}
+                      disabled={stampsLoading}
+                    >
+                      {stampsLoading ? "更新中..." : "再読み込み"}
+                    </button>
+                  </div>
+                </div>
+                <div className="table-wrap">
+                  <table className="admin-table admin-table-stamps">
+                    <thead>
+                      <tr>
+                        <th>画像</th>
+                        <th>ID</th>
+                        <th>名前</th>
+                        <th>UID</th>
+                        <th>Token</th>
+                        <th>付与P</th>
+                        <th>場所</th>
+                        <th>作成日</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stampsLoading && (
+                        <tr>
+                          <td colSpan={9} className="empty">
+                            読み込み中...
+                          </td>
+                        </tr>
+                      )}
+                      {!stampsLoading && stamps.length === 0 && (
+                        <tr>
+                          <td colSpan={9} className="empty">
+                            スタンプデータがありません。
+                          </td>
+                        </tr>
+                      )}
+                      {!stampsLoading &&
+                        stamps.map((stamp) => {
+                          const createdAt = stamp.created_at
+                            ? new Date(stamp.created_at).toLocaleString("ja-JP")
+                            : "-";
+                          const points = getStampPoints(stamp);
+                          const imageSrc = getStampImage(stamp);
+                          const isDeleting = deletingStampId === stamp.id;
+
+                          return (
+                            <tr key={`stamp-${String(stamp.id)}`}>
+                              <td data-label="画像">
+                                <img className="stamp-table-image" src={imageSrc} alt={stamp.name} />
+                              </td>
+                              <td data-label="ID">{stamp.id}</td>
+                              <td data-label="名前">{stamp.name}</td>
+                              <td data-label="UID" className="mono-cell">
+                                {stamp.uid}
+                              </td>
+                              <td data-label="Token" className="mono-cell">
+                                {stamp.token}
+                              </td>
+                              <td data-label="付与P">{points}</td>
+                              <td data-label="場所">{stamp.location || "-"}</td>
+                              <td data-label="作成日">{createdAt}</td>
+                              <td data-label="操作">
+                                <button
+                                  type="button"
+                                  className="btn danger small"
+                                  onClick={() => handleDeleteStamp(stamp)}
+                                  disabled={isDeleting}
+                                >
+                                  {isDeleting ? "削除中..." : "削除"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
                 </div>
               </section>
 
@@ -1713,6 +1871,23 @@ export default function AdminPage() {
           padding: 12px 14px;
           text-align: left;
           font-size: 13px;
+        }
+        .admin-table-stamps th,
+        .admin-table-stamps td {
+          vertical-align: middle;
+        }
+        .stamp-table-image {
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          object-fit: cover;
+          border: 1px solid rgba(11, 28, 42, 0.12);
+          background: rgba(255, 255, 255, 0.7);
+        }
+        .mono-cell {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+          font-size: 12px;
+          word-break: break-all;
         }
         .admin-table tbody tr {
           border-top: 1px solid rgba(11, 28, 42, 0.08);
