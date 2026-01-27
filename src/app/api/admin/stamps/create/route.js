@@ -28,6 +28,28 @@ function parsePoints(body) {
   return { ok: true, value: num };
 }
 
+let stampsColumnsCache = null;
+let stampsColumnsCacheAt = 0;
+const STAMPS_COLUMNS_CACHE_MS = 60 * 1000;
+
+async function getStampsColumns(client) {
+  const now = Date.now();
+  if (stampsColumnsCache && now - stampsColumnsCacheAt < STAMPS_COLUMNS_CACHE_MS) {
+    return stampsColumnsCache;
+  }
+  const res = await client.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'stamps'
+    `
+  );
+  const cols = new Set(res.rows.map((row) => String(row.column_name)));
+  stampsColumnsCache = cols;
+  stampsColumnsCacheAt = now;
+  return cols;
+}
+
 export async function POST(request) {
   const session = getAdminSessionFromRequest(request);
   if (!session.ok) {
@@ -36,6 +58,7 @@ export async function POST(request) {
 
   const client = await pool.connect();
   try {
+    const columns = await getStampsColumns(client);
     const body = await request.json().catch(() => ({}));
     const name = body?.name ? String(body.name).trim() : "";
     const uid = body?.uid ? String(body.uid).trim() : "";
@@ -57,6 +80,32 @@ export async function POST(request) {
       );
     }
 
+    const pointsColumn = columns.has("value")
+      ? "value"
+      : columns.has("points")
+        ? "points"
+        : null;
+    if (!pointsColumn) {
+      return NextResponse.json(
+        { ok: false, error: "stamps table is missing value/points column." },
+        { status: 500 }
+      );
+    }
+
+    const imageColumn = columns.has("image_url")
+      ? "image_url"
+      : columns.has("image")
+        ? "image"
+        : null;
+    if (!imageColumn) {
+      return NextResponse.json(
+        { ok: false, error: "stamps table is missing image_url/image column." },
+        { status: 500 }
+      );
+    }
+
+    const canSetLocation = columns.has("location");
+
     const pointsResult = parsePoints(body);
     if (!pointsResult.ok) {
       return NextResponse.json({ ok: false, error: pointsResult.error }, { status: 400 });
@@ -72,13 +121,37 @@ export async function POST(request) {
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
+        const fields = ["name", "uid", "token", pointsColumn];
+        const values = [name, uid, token, pointsResult.value];
+
+        if (canSetLocation) {
+          fields.push("location");
+          values.push(location || null);
+        }
+
+        fields.push(imageColumn);
+        values.push(imageUrl);
+
+        const placeholders = fields.map((_, i) => `$${i + 1}`).join(", ");
+        const insertSql = `
+          INSERT INTO stamps (${fields.join(", ")})
+          VALUES (${placeholders})
+          RETURNING id, name, uid, token, ${
+            columns.has("value") ? "value" : "NULL::int AS value"
+          }, ${
+            columns.has("points") ? "points" : "NULL::int AS points"
+          }, ${
+            canSetLocation ? "location" : "NULL::text AS location"
+          }, ${
+            columns.has("image_url") ? "image_url" : "NULL::text AS image_url"
+          }, ${
+            columns.has("image") ? "image" : "NULL::text AS image"
+          }, created_at
+        `;
+
         const res = await client.query(
-          `
-          INSERT INTO stamps (name, uid, token, value, location, image_url)
-          VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6)
-          RETURNING id, name, uid, token, value, location, image_url, created_at
-          `,
-          [name, uid, token, pointsResult.value, location, imageUrl]
+          insertSql,
+          values
         );
 
         const stamp = res.rows[0];
@@ -118,12 +191,15 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("admin/stamps/create error:", error);
+    const detail =
+      process.env.NODE_ENV !== "production"
+        ? String(error?.message || error)
+        : "Failed to create stamp.";
     return NextResponse.json(
-      { ok: false, error: "Failed to create stamp." },
+      { ok: false, error: detail },
       { status: 500 }
     );
   } finally {
     client.release();
   }
 }
-
