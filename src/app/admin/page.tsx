@@ -59,10 +59,6 @@ export default function AdminPage() {
     () => resetUsers.find((user) => user.id === resetSelectedUserId) || null,
     [resetUsers, resetSelectedUserId]
   );
-  const isResettingSelectedUser =
-    resetSelectedUserId !== null &&
-    resettingUserId !== null &&
-    String(resettingUserId) === String(resetSelectedUserId);
 
   const pushToast = (type: Toast["type"], message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -103,11 +99,11 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/shops", { credentials: "include" });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "蠎苓・荳隕ｧ縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "店舗一覧の取得に失敗しました。");
       }
       setShops(data?.shops || []);
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "蠎苓・荳隕ｧ縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "店舗一覧の取得に失敗しました。");
     } finally {
       setShopsLoading(false);
     }
@@ -122,7 +118,7 @@ export default function AdminPage() {
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!loginPassword) {
-      pushToast("error", "繝代せ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・);
+      pushToast("error", "パスワードを入力してください。");
       return;
     }
     setLoginLoading(true);
@@ -135,13 +131,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝ｭ繧ｰ繧､繝ｳ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "ログインに失敗しました。");
       }
       setAuthStatus("authed");
       setLoginPassword("");
-      pushToast("success", "繝ｭ繧ｰ繧､繝ｳ縺励∪縺励◆縲・);
+      pushToast("success", "ログインしました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝ｭ繧ｰ繧､繝ｳ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "ログインに失敗しました。");
     } finally {
       setLoginLoading(false);
     }
@@ -171,21 +167,21 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "リセットに失敗しました。");
       }
       setShops((prev) =>
         prev.map((shop) => (shop.id === shopId ? { ...shop, points: 0 } : shop))
       );
-      pushToast("success", "蠎苓・繝昴う繝ｳ繝医ｒ繝ｪ繧ｻ繝・ヨ縺励∪縺励◆縲・);
+      pushToast("success", "店舗ポイントをリセットしました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "リセットに失敗しました。");
     } finally {
       setResettingShopId(null);
     }
   };
 
   const handleResetAllShops = async () => {
-    if (!window.confirm("蜈ｨ蠎苓・繝昴う繝ｳ繝医ｒ0縺ｫ縺励∪縺吶ゅｈ繧阪＠縺・〒縺吶°・・)) {
+    if (!window.confirm("全店舗ポイントを0にします。よろしいですか？")) {
       return;
     }
     setResettingAllShops(true);
@@ -198,12 +194,12 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "蜈ｨ蠎苓・繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "全店舗リセットに失敗しました。");
       }
       setShops((prev) => prev.map((shop) => ({ ...shop, points: 0 })));
-      pushToast("success", "蜈ｨ蠎苓・繝昴う繝ｳ繝医ｒ繝ｪ繧ｻ繝・ヨ縺励∪縺励◆縲・);
+      pushToast("success", "全店舗ポイントをリセットしました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "蜈ｨ蠎苓・繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "全店舗リセットに失敗しました。");
     } finally {
       setResettingAllShops(false);
     }
@@ -223,12 +219,12 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝ｦ繝ｼ繧ｶ繝ｼ讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "ユーザー検索に失敗しました。");
       }
       setUsers(data?.users || []);
       setSelectedUserId(null);
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝ｦ繝ｼ繧ｶ繝ｼ讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "ユーザー検索に失敗しました。");
     } finally {
       setUsersLoading(false);
     }
@@ -248,12 +244,12 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝ｦ繝ｼ繧ｶ繝ｼ讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "ユーザー検索に失敗しました。");
       }
       setResetUsers(data?.users || []);
       setResetSelectedUserId(null);
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝ｦ繝ｼ繧ｶ繝ｼ讀懃ｴ｢縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "ユーザー検索に失敗しました。");
     } finally {
       setResetUsersLoading(false);
     }
@@ -261,12 +257,12 @@ export default function AdminPage() {
 
   const handleCharge = async () => {
     if (!selectedUserId) {
-      pushToast("error", "繝ｦ繝ｼ繧ｶ繝ｼ繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・);
+      pushToast("error", "ユーザーを選択してください。");
       return;
     }
     const amount = Number(chargeAmount);
     if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-      pushToast("error", "繝√Ε繝ｼ繧ｸ驥上・豁｣縺ｮ謨ｴ謨ｰ縺ｧ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・);
+      pushToast("error", "チャージ量は正の整数で入力してください。");
       return;
     }
     setChargeLoading(true);
@@ -279,23 +275,23 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝√Ε繝ｼ繧ｸ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "チャージに失敗しました。");
       }
       setUsers((prev) =>
         prev.map((user) =>
           user.id === selectedUserId ? { ...user, points: data?.points ?? user.points } : user
         )
       );
-      pushToast("success", "繝√Ε繝ｼ繧ｸ縺悟ｮ御ｺ・＠縺ｾ縺励◆縲・);
+      pushToast("success", "チャージが完了しました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝√Ε繝ｼ繧ｸ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "チャージに失敗しました。");
     } finally {
       setChargeLoading(false);
     }
   };
 
   const handleResetUser = async (userId: UserRow["id"]) => {
-    if (!window.confirm("縺薙・繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ騾ｲ謐励・繝昴う繝ｳ繝医ｒ繝ｪ繧ｻ繝・ヨ縺励∪縺吶ゅｈ繧阪＠縺・〒縺吶°・・)) {
+    if (!window.confirm("このユーザーの進捗・ポイントをリセットします。よろしいですか？")) {
       return;
     }
     setResettingUserId(userId);
@@ -308,7 +304,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "繝ｦ繝ｼ繧ｶ繝ｼ繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "ユーザーリセットに失敗しました。");
       }
       setUsers((prev) =>
         prev.map((user) =>
@@ -320,9 +316,9 @@ export default function AdminPage() {
           user.id === userId ? { ...user, points: data?.points ?? 0 } : user
         )
       );
-      pushToast("success", "繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ騾ｲ謐励ｒ繝ｪ繧ｻ繝・ヨ縺励∪縺励◆縲・);
+      pushToast("success", "ユーザーの進捗をリセットしました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "繝ｦ繝ｼ繧ｶ繝ｼ繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "ユーザーリセットに失敗しました。");
     } finally {
       setResettingUserId(null);
     }
@@ -330,7 +326,7 @@ export default function AdminPage() {
 
   const handleResetAllData = async () => {
     if (!resetConfirmChecked || resetConfirmText !== "RESET") {
-      pushToast("error", "遒ｺ隱肴擅莉ｶ繧呈ｺ縺溘＠縺ｦ縺上□縺輔＞縲・);
+      pushToast("error", "確認条件を満たしてください。");
       return;
     }
     setResetAllLoading(true);
@@ -343,13 +339,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+        throw new Error(data?.error || "全データリセットに失敗しました。");
       }
       setShops((prev) => prev.map((shop) => ({ ...shop, points: 0 })));
       setUsers((prev) => prev.map((user) => ({ ...user, points: 0 })));
-      pushToast("success", "蜈ｨ繝・・繧ｿ繧偵Μ繧ｻ繝・ヨ縺励∪縺励◆縲・);
+      pushToast("success", "全データをリセットしました。");
     } catch (error) {
-      pushToast("error", error instanceof Error ? error.message : "蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・);
+      pushToast("error", error instanceof Error ? error.message : "全データリセットに失敗しました。");
     } finally {
       setResetAllLoading(false);
     }
@@ -365,50 +361,50 @@ export default function AdminPage() {
         <header className="admin-header">
           <div>
             <p className="admin-eyebrow">Admin Console</p>
-            <h1 className="admin-title">邂｡逅・ム繝・す繝･繝懊・繝・/h1>
+            <h1 className="admin-title">管理ダッシュボード</h1>
             <p className="admin-subtitle">
-              蠎苓・繝昴う繝ｳ繝医・迴ｾ驥代メ繝｣繝ｼ繧ｸ繝ｻ蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ繧偵∪縺ｨ繧√※謫堺ｽ懊＠縺ｾ縺吶・
+              店舗ポイント・現金チャージ・全データリセットをまとめて操作します。
             </p>
           </div>
           {authStatus === "authed" && (
             <button type="button" className="btn ghost" onClick={handleLogout}>
-              繝ｭ繧ｰ繧｢繧ｦ繝・
+              ログアウト
             </button>
           )}
         </header>
 
         {authStatus === "checking" && (
           <div className="panel soft">
-            <p>繧ｻ繝・す繝ｧ繝ｳ遒ｺ隱堺ｸｭ...</p>
+            <p>セッション確認中...</p>
           </div>
         )}
 
         {authStatus === "guest" && (
           <div className="login-grid">
             <div className="panel">
-              <h2 className="panel-title">邂｡逅・・Ο繧ｰ繧､繝ｳ</h2>
-              <p className="panel-note">邂｡逅・・ヱ繧ｹ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・/p>
+              <h2 className="panel-title">管理者ログイン</h2>
+              <p className="panel-note">管理者パスワードを入力してください。</p>
               <form onSubmit={handleLogin} className="form-stack">
                 <label className="field">
-                  <span>繝代せ繝ｯ繝ｼ繝・/span>
+                  <span>パスワード</span>
                   <input
                     type="password"
                     value={loginPassword}
                     onChange={(event) => setLoginPassword(event.target.value)}
-                    placeholder="窶｢窶｢窶｢窶｢窶｢窶｢窶｢窶｢"
+                    placeholder="••••••••"
                   />
                 </label>
                 <button type="submit" className="btn primary" disabled={loginLoading}>
-                  {loginLoading ? "繝ｭ繧ｰ繧､繝ｳ荳ｭ..." : "繝ｭ繧ｰ繧､繝ｳ"}
+                  {loginLoading ? "ログイン中..." : "ログイン"}
                 </button>
               </form>
             </div>
             <div className="panel soft">
-              <h3 className="panel-title">繧ｻ繧ｭ繝･繝ｪ繝・ぅ豕ｨ諢・/h3>
+              <h3 className="panel-title">セキュリティ注意</h3>
               <ul className="panel-list">
-                <li>縺薙・逕ｻ髱｢縺ｯ邂｡逅・・・縺ｿ菴ｿ逕ｨ縺励※縺上□縺輔＞縲・/li>
-                <li>謫堺ｽ懊Ο繧ｰ縺ｨ繝昴う繝ｳ繝域ｮ矩ｫ倥・遒ｺ隱阪ｒ蠕ｹ蠎輔＠縺ｦ縺上□縺輔＞縲・/li>
-                <li>蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ縺ｯ蜿悶ｊ豸医○縺ｾ縺帙ｓ縲・/li>
+                <li>この画面は管理者のみ使用してください。</li>
+                <li>操作ログとポイント残高の確認を徹底してください。</li>
+                <li>全データリセットは取り消せません。</li>
               </ul>
             </div>
           </div>
@@ -417,17 +413,17 @@ export default function AdminPage() {
         {authStatus === "authed" && (
           <div className="admin-grid">
             <aside className="admin-nav">
-              <a href="#shops">蠎苓・繝昴う繝ｳ繝育ｮ｡逅・/a>
-              <a href="#charge">迴ｾ驥代メ繝｣繝ｼ繧ｸ</a>
-              <a href="#user-reset">騾ｲ謐励Μ繧ｻ繝・ヨ</a>
-              <a href="#reset">蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ</a>
+              <a href="#shops">店舗ポイント管理</a>
+              <a href="#charge">現金チャージ</a>
+              <a href="#user-reset">進捗リセット</a>
+              <a href="#reset">全データリセット</a>
             </aside>
             <main className="admin-main">
               <section id="shops" className="panel">
                 <div className="panel-head">
                   <div>
-                    <h2 className="panel-title">蠎苓・繝昴う繝ｳ繝育ｮ｡逅・/h2>
-                    <p className="panel-note">蠎苓・縺斐→縺ｮ繝昴う繝ｳ繝域ｮ矩ｫ倥ｒ遒ｺ隱阪・繝ｪ繧ｻ繝・ヨ縺ｧ縺阪∪縺吶・/p>
+                    <h2 className="panel-title">店舗ポイント管理</h2>
+                    <p className="panel-note">店舗ごとのポイント残高を確認・リセットできます。</p>
                   </div>
                   <button
                     type="button"
@@ -435,7 +431,7 @@ export default function AdminPage() {
                     onClick={handleResetAllShops}
                     disabled={resettingAllShops}
                   >
-                    {resettingAllShops ? "繝ｪ繧ｻ繝・ヨ荳ｭ..." : "蜈ｨ蠎苓・繝ｪ繧ｻ繝・ヨ"}
+                    {resettingAllShops ? "リセット中..." : "全店舗リセット"}
                   </button>
                 </div>
                 <div className="table-wrap">
@@ -443,23 +439,23 @@ export default function AdminPage() {
                     <thead>
                       <tr>
                         <th>ID</th>
-                        <th>蠎苓・蜷・/th>
-                        <th>繝昴う繝ｳ繝・/th>
-                        <th>謫堺ｽ・/th>
+                        <th>店舗名</th>
+                        <th>ポイント</th>
+                        <th>操作</th>
                       </tr>
                     </thead>
                     <tbody>
                       {shopsLoading && (
                         <tr>
                           <td colSpan={4} className="empty">
-                            隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ...
+                            読み込み中...
                           </td>
                         </tr>
                       )}
                       {!shopsLoading && shops.length === 0 && (
                         <tr>
                           <td colSpan={4} className="empty">
-                            蠎苓・繝・・繧ｿ縺後≠繧翫∪縺帙ｓ縲・
+                            店舗データがありません。
                           </td>
                         </tr>
                       )}
@@ -467,16 +463,16 @@ export default function AdminPage() {
                         shops.map((shop) => (
                         <tr key={String(shop.id)}>
                             <td data-label="ID">{shop.id}</td>
-                            <td data-label="蠎苓・蜷・>{shop.name}</td>
-                            <td data-label="繝昴う繝ｳ繝・>{shop.points ?? 0}</td>
-                            <td data-label="謫堺ｽ・>
+                            <td data-label="店舗名">{shop.name}</td>
+                            <td data-label="ポイント">{shop.points ?? 0}</td>
+                            <td data-label="操作">
                               <button
                                 type="button"
                                 className="btn small"
                                 onClick={() => handleResetShop(shop.id)}
                                 disabled={resettingShopId === shop.id}
                               >
-                                {resettingShopId === shop.id ? "蜃ｦ逅・ｸｭ..." : "繝ｪ繧ｻ繝・ヨ"}
+                                {resettingShopId === shop.id ? "処理中..." : "リセット"}
                               </button>
                             </td>
                           </tr>
@@ -489,8 +485,8 @@ export default function AdminPage() {
               <section id="charge" className="panel">
                 <div className="panel-head">
                   <div>
-                    <h2 className="panel-title">迴ｾ驥代メ繝｣繝ｼ繧ｸ</h2>
-                    <p className="panel-note">繝ｦ繝ｼ繧ｶ繝ｼ繧呈､懃ｴ｢縺励※繝昴う繝ｳ繝医ｒ蜉邂励＠縺ｾ縺吶・/p>
+                    <h2 className="panel-title">現金チャージ</h2>
+                    <p className="panel-note">ユーザーを検索してポイントを加算します。</p>
                   </div>
                 </div>
                 <form onSubmit={handleSearchUsers} className="form-row">
@@ -498,32 +494,32 @@ export default function AdminPage() {
                     type="text"
                     value={userQuery}
                     onChange={(event) => setUserQuery(event.target.value)}
-                    placeholder="繝ｦ繝ｼ繧ｶ繝ｼ蜷阪〒讀懃ｴ｢"
+                    placeholder="ユーザー名で検索"
                   />
                   <button type="submit" className="btn primary" disabled={usersLoading}>
-                    {usersLoading ? "讀懃ｴ｢荳ｭ..." : "讀懃ｴ｢"}
+                    {usersLoading ? "検索中..." : "検索"}
                   </button>
                 </form>
                 <div className="table-wrap">
                   <table className="admin-table selectable">
                     <thead>
                       <tr>
-                        <th>繝ｦ繝ｼ繧ｶ繝ｼ</th>
-                        <th>繝昴う繝ｳ繝・/th>
+                        <th>ユーザー</th>
+                        <th>ポイント</th>
                       </tr>
                     </thead>
                     <tbody>
                       {usersLoading && (
                         <tr>
                           <td colSpan={2} className="empty">
-                            讀懃ｴ｢荳ｭ...
+                            検索中...
                           </td>
                         </tr>
                       )}
                       {!usersLoading && users.length === 0 && (
                         <tr>
                           <td colSpan={2} className="empty">
-                            讀懃ｴ｢邨先棡縺後≠繧翫∪縺帙ｓ縲・
+                            検索結果がありません。
                           </td>
                         </tr>
                       )}
@@ -536,8 +532,8 @@ export default function AdminPage() {
                               className={selected ? "selected" : ""}
                               onClick={() => setSelectedUserId(user.id)}
                             >
-                              <td data-label="繝ｦ繝ｼ繧ｶ繝ｼ">{displayUserName(user)}</td>
-                              <td data-label="繝昴う繝ｳ繝・>{user.points ?? 0}</td>
+                              <td data-label="ユーザー">{displayUserName(user)}</td>
+                              <td data-label="ポイント">{user.points ?? 0}</td>
                             </tr>
                           );
                         })}
@@ -546,11 +542,11 @@ export default function AdminPage() {
                 </div>
                 <div className="charge-box">
                   <div className="charge-info">
-                    <span className="charge-label">驕ｸ謚槭Θ繝ｼ繧ｶ繝ｼ</span>
-                    <strong>{selectedUser ? displayUserName(selectedUser) : "譛ｪ驕ｸ謚・}</strong>
+                    <span className="charge-label">選択ユーザー</span>
+                    <strong>{selectedUser ? displayUserName(selectedUser) : "未選択"}</strong>
                   </div>
                   <label className="field inline">
-                    <span>繝√Ε繝ｼ繧ｸ驥・/span>
+                    <span>チャージ量</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -558,7 +554,7 @@ export default function AdminPage() {
                       step={1}
                       value={chargeAmount}
                       onChange={(event) => setChargeAmount(event.target.value)}
-                      placeholder="萓・ 100"
+                      placeholder="例: 100"
                     />
                   </label>
                   <button
@@ -567,7 +563,7 @@ export default function AdminPage() {
                     onClick={handleCharge}
                     disabled={chargeLoading || !selectedUserId}
                   >
-                    {chargeLoading ? "繝√Ε繝ｼ繧ｸ荳ｭ..." : "繝√Ε繝ｼ繧ｸ螳溯｡・}
+                    {chargeLoading ? "チャージ中..." : "チャージ実行"}
                   </button>
                 </div>
               </section>
@@ -575,8 +571,8 @@ export default function AdminPage() {
               <section id="user-reset" className="panel">
                 <div className="panel-head">
                   <div>
-                    <h2 className="panel-title">騾ｲ謐励Μ繧ｻ繝・ヨ</h2>
-                    <p className="panel-note">繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ繧ｹ繧ｿ繝ｳ繝鈴ｲ謐励→繝昴う繝ｳ繝医ｒ蛻晄悄蛹悶＠縺ｾ縺吶・/p>
+                    <h2 className="panel-title">進捗リセット</h2>
+                    <p className="panel-note">ユーザーのスタンプ進捗とポイントを初期化します。</p>
                   </div>
                 </div>
                 <form onSubmit={handleSearchResetUsers} className="form-row">
@@ -584,32 +580,32 @@ export default function AdminPage() {
                     type="text"
                     value={resetQuery}
                     onChange={(event) => setResetQuery(event.target.value)}
-                    placeholder="繝ｦ繝ｼ繧ｶ繝ｼ蜷阪〒讀懃ｴ｢"
+                    placeholder="ユーザー名で検索"
                   />
                   <button type="submit" className="btn primary" disabled={resetUsersLoading}>
-                    {resetUsersLoading ? "讀懃ｴ｢荳ｭ..." : "讀懃ｴ｢"}
+                    {resetUsersLoading ? "検索中..." : "検索"}
                   </button>
                 </form>
                 <div className="table-wrap">
                   <table className="admin-table selectable">
                     <thead>
                       <tr>
-                        <th>繝ｦ繝ｼ繧ｶ繝ｼ</th>
-                        <th>繝昴う繝ｳ繝・/th>
+                        <th>ユーザー</th>
+                        <th>ポイント</th>
                       </tr>
                     </thead>
                     <tbody>
                       {resetUsersLoading && (
                         <tr>
                           <td colSpan={2} className="empty">
-                            讀懃ｴ｢荳ｭ...
+                            検索中...
                           </td>
                         </tr>
                       )}
                       {!resetUsersLoading && resetUsers.length === 0 && (
                         <tr>
                           <td colSpan={2} className="empty">
-                            讀懃ｴ｢邨先棡縺後≠繧翫∪縺帙ｓ縲・
+                            検索結果がありません。
                           </td>
                         </tr>
                       )}
@@ -622,8 +618,8 @@ export default function AdminPage() {
                               className={selected ? "selected" : ""}
                               onClick={() => setResetSelectedUserId(user.id)}
                             >
-                              <td data-label="繝ｦ繝ｼ繧ｶ繝ｼ">{displayUserName(user)}</td>
-                              <td data-label="繝昴う繝ｳ繝・>{user.points ?? 0}</td>
+                              <td data-label="ユーザー">{displayUserName(user)}</td>
+                              <td data-label="ポイント">{user.points ?? 0}</td>
                             </tr>
                           );
                         })}
@@ -632,8 +628,8 @@ export default function AdminPage() {
                 </div>
                 <div className="charge-box">
                   <div className="charge-info">
-                    <span className="charge-label">驕ｸ謚槭Θ繝ｼ繧ｶ繝ｼ</span>
-                    <strong>{resetSelectedUser ? displayUserName(resetSelectedUser) : "譛ｪ驕ｸ謚・}</strong>
+                    <span className="charge-label">選択ユーザー</span>
+                    <strong>{resetSelectedUser ? displayUserName(resetSelectedUser) : "未選択"}</strong>
                   </div>
                   <button
                     type="button"
@@ -642,12 +638,12 @@ export default function AdminPage() {
                       if (resetSelectedUserId) {
                         handleResetUser(resetSelectedUserId);
                       } else {
-                        pushToast("error", "繝ｦ繝ｼ繧ｶ繝ｼ繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・);
+                        pushToast("error", "ユーザーを選択してください。");
                       }
                     }}
-                    disabled={resettingUserId !== null || resetSelectedUserId === null}
+                    disabled={resettingUserId !== null || !resetSelectedUserId}
                   >
-                    {isResettingSelectedUser ? "螳溯｡御ｸｭ..." : "騾ｲ謐励ｒ繝ｪ繧ｻ繝・ヨ"}
+                    {resettingUserId === resetSelectedUserId ? "実行中..." : "進捗をリセット"}
                   </button>
                 </div>
               </section>
@@ -655,11 +651,9 @@ export default function AdminPage() {
               <section id="reset" className="panel danger-panel">
                 <div className="panel-head">
                   <div>
-                    <h2 className="panel-title">蜈ｨ繝・・繧ｿ繝ｪ繧ｻ繝・ヨ</h2>
+                    <h2 className="panel-title">全データリセット</h2>
                     <p className="panel-note">
-                      繧ｹ繧ｿ繝ｳ繝鈴ｲ謐励・繝昴う繝ｳ繝医・繝ｭ繧ｰ繧偵☆縺ｹ縺ｦ蛻晄悄蛹悶＠縺ｾ縺吶ょ叙繧頑ｶ医＠荳榊庄縺ｧ縺吶・
-                      アカウントもすべて削除されます。
-                      繧｢繧ｫ繧ｦ繝ｳ繝医も蜈ｨ繝ｦ繝ｼ繧ｶ繝ｼ繧呈忽縺ｫ縺ｪ縺ｾ縺励※蜈ｨ蜉帙＆繧後∪縺吶・
+                      スタンプ進捗・ポイント・ログをすべて初期化します。取り消し不可です。
                     </p>
                   </div>
                 </div>
@@ -670,15 +664,15 @@ export default function AdminPage() {
                       checked={resetConfirmChecked}
                       onChange={(event) => setResetConfirmChecked(event.target.checked)}
                     />
-                    <span>繝ｪ繧ｹ繧ｯ繧堤炊隗｣縺励∪縺励◆</span>
+                    <span>リスクを理解しました</span>
                   </label>
                   <label className="field">
-                    <span>遒ｺ隱榊・蜉・/span>
+                    <span>確認入力</span>
                     <input
                       type="text"
                       value={resetConfirmText}
                       onChange={(event) => setResetConfirmText(event.target.value)}
-                      placeholder="RESET 縺ｨ蜈･蜉・
+                      placeholder="RESET と入力"
                     />
                   </label>
                   <button
@@ -687,7 +681,7 @@ export default function AdminPage() {
                     onClick={handleResetAllData}
                     disabled={resetAllLoading || !resetConfirmChecked || resetConfirmText !== "RESET"}
                   >
-                    {resetAllLoading ? "螳溯｡御ｸｭ..." : "蜈ｨ繝・・繧ｿ繧偵Μ繧ｻ繝・ヨ"}
+                    {resetAllLoading ? "実行中..." : "全データをリセット"}
                   </button>
                 </div>
               </section>
@@ -1086,5 +1080,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-
