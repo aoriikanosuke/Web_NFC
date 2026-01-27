@@ -36,7 +36,6 @@ export default function AdminPage() {
   const [shopsLoading, setShopsLoading] = useState(false);
   const [resettingShopId, setResettingShopId] = useState<Shop["id"] | null>(null);
   const [resettingAllShops, setResettingAllShops] = useState(false);
-  const [showShopCreate, setShowShopCreate] = useState(false);
   const [shopCreateName, setShopCreateName] = useState("");
   const [shopCreateUid, setShopCreateUid] = useState("");
   const [shopCreateToken, setShopCreateToken] = useState("");
@@ -44,6 +43,7 @@ export default function AdminPage() {
   const [shopCreateLoading, setShopCreateLoading] = useState(false);
   const [createdShopUrl, setCreatedShopUrl] = useState("");
   const [createdShopToken, setCreatedShopToken] = useState("");
+  const [deletingShopId, setDeletingShopId] = useState<Shop["id"] | null>(null);
 
   const [userQuery, setUserQuery] = useState("");
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -120,14 +120,14 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!showShopCreate || shopCreateToken) {
+    if (authStatus !== "authed" || shopCreateToken) {
       return;
     }
     const nextToken = generateTokenClient();
     if (nextToken) {
       setShopCreateToken(nextToken);
     }
-  }, [showShopCreate, shopCreateToken, generateTokenClient]);
+  }, [authStatus, shopCreateToken, generateTokenClient]);
 
   const loadShops = async () => {
     setShopsLoading(true);
@@ -241,10 +241,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleShopCreate = () => {
-    setShowShopCreate((prev) => !prev);
-  };
-
   const handleGenerateShopToken = () => {
     const nextToken = generateTokenClient();
     if (!nextToken) {
@@ -305,6 +301,34 @@ export default function AdminPage() {
       pushToast("error", error instanceof Error ? error.message : "店舗の登録に失敗しました。");
     } finally {
       setShopCreateLoading(false);
+    }
+  };
+
+  const handleDeleteShop = async (shopId: Shop["id"], shopName: string) => {
+    const confirmed = window.confirm(
+      `店舗「${shopName}」（ID: ${shopId}）を削除します。よろしいですか？`
+    );
+    if (!confirmed) {
+      return;
+    }
+    setDeletingShopId(shopId);
+    try {
+      const res = await fetch("/api/admin/shops/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ shopId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "店舗の削除に失敗しました。");
+      }
+      setShops((prev) => prev.filter((shop) => shop.id !== shopId));
+      pushToast("success", "店舗を削除しました。");
+    } catch (error) {
+      pushToast("error", error instanceof Error ? error.message : "店舗の削除に失敗しました。");
+    } finally {
+      setDeletingShopId(null);
     }
   };
 
@@ -530,7 +554,7 @@ export default function AdminPage() {
           <div className="admin-grid">
             <aside className="admin-nav">
               <a href="#shops">店舗ポイント管理</a>
-              <a href="#shop-create">店舗 新規登録</a>
+              <a href="#shop-manage">店舗 追加・削除</a>
               <a href="#charge">現金チャージ</a>
               <a href="#user-reset">進捗リセット</a>
               <a href="#reset">全データリセット</a>
@@ -542,26 +566,73 @@ export default function AdminPage() {
                     <h2 className="panel-title">店舗ポイント管理</h2>
                     <p className="panel-note">店舗ごとのポイント残高を確認・リセットできます。</p>
                   </div>
-                  <div className="panel-actions">
-                    <button
-                      type="button"
-                      className="btn primary"
-                      onClick={handleToggleShopCreate}
-                    >
-                      {showShopCreate ? "登録フォームを閉じる" : "店舗 新規登録"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn warning"
-                      onClick={handleResetAllShops}
-                      disabled={resettingAllShops}
-                    >
-                      {resettingAllShops ? "リセット中..." : "全店舗リセット"}
-                    </button>
+                  <button
+                    type="button"
+                    className="btn warning"
+                    onClick={handleResetAllShops}
+                    disabled={resettingAllShops}
+                  >
+                    {resettingAllShops ? "リセット中..." : "全店舗リセット"}
+                  </button>
+                </div>
+                <div className="table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>店舗名</th>
+                        <th>UID</th>
+                        <th>ポイント</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shopsLoading && (
+                        <tr>
+                          <td colSpan={5} className="empty">
+                            読み込み中...
+                          </td>
+                        </tr>
+                      )}
+                      {!shopsLoading && shops.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="empty">
+                            店舗データがありません。
+                          </td>
+                        </tr>
+                      )}
+                      {!shopsLoading &&
+                        shops.map((shop) => (
+                        <tr key={String(shop.id)}>
+                            <td data-label="ID">{shop.id}</td>
+                            <td data-label="店舗名">{shop.name}</td>
+                            <td data-label="UID">{shop.uid || "-"}</td>
+                            <td data-label="ポイント">{shop.points ?? 0}</td>
+                            <td data-label="操作">
+                              <button
+                                type="button"
+                                className="btn small"
+                                onClick={() => handleResetShop(shop.id)}
+                                disabled={resettingShopId === shop.id}
+                              >
+                                {resettingShopId === shop.id ? "処理中..." : "リセット"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section id="shop-manage" className="panel">
+                <div className="panel-head">
+                  <div>
+                    <h2 className="panel-title">店舗 追加・削除</h2>
+                    <p className="panel-note">新規登録と個別削除をここにまとめています。</p>
                   </div>
                 </div>
-                <div id="shop-create" className="shop-create-anchor" />
-                {showShopCreate && (
+                <div className="shop-manage-grid">
                   <div className="shop-create-box">
                     <div className="shop-create-head">
                       <div>
@@ -640,54 +711,52 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
-                )}
-                <div className="table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>店舗名</th>
-                        <th>UID</th>
-                        <th>ポイント</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shopsLoading && (
+                  <div className="table-wrap">
+                    <table className="admin-table">
+                      <thead>
                         <tr>
-                          <td colSpan={5} className="empty">
-                            読み込み中...
-                          </td>
+                          <th>ID</th>
+                          <th>店舗名</th>
+                          <th>UID</th>
+                          <th>操作</th>
                         </tr>
-                      )}
-                      {!shopsLoading && shops.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="empty">
-                            店舗データがありません。
-                          </td>
-                        </tr>
-                      )}
-                      {!shopsLoading &&
-                        shops.map((shop) => (
-                        <tr key={String(shop.id)}>
-                            <td data-label="ID">{shop.id}</td>
-                            <td data-label="店舗名">{shop.name}</td>
-                            <td data-label="UID">{shop.uid || "-"}</td>
-                            <td data-label="ポイント">{shop.points ?? 0}</td>
-                            <td data-label="操作">
-                              <button
-                                type="button"
-                                className="btn small"
-                                onClick={() => handleResetShop(shop.id)}
-                                disabled={resettingShopId === shop.id}
-                              >
-                                {resettingShopId === shop.id ? "処理中..." : "リセット"}
-                              </button>
+                      </thead>
+                      <tbody>
+                        {shopsLoading && (
+                          <tr>
+                            <td colSpan={4} className="empty">
+                              読み込み中...
                             </td>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                        )}
+                        {!shopsLoading && shops.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="empty">
+                              店舗データがありません。
+                            </td>
+                          </tr>
+                        )}
+                        {!shopsLoading &&
+                          shops.map((shop) => (
+                            <tr key={`manage-${String(shop.id)}`}>
+                              <td data-label="ID">{shop.id}</td>
+                              <td data-label="店舗名">{shop.name}</td>
+                              <td data-label="UID">{shop.uid || "-"}</td>
+                              <td data-label="操作">
+                                <button
+                                  type="button"
+                                  className="btn danger small"
+                                  onClick={() => handleDeleteShop(shop.id, shop.name)}
+                                  disabled={deletingShopId === shop.id}
+                                >
+                                  {deletingShopId === shop.id ? "削除中..." : "削除"}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </section>
 
@@ -1037,8 +1106,11 @@ export default function AdminPage() {
           grid-template-columns: 1fr auto;
           gap: 12px;
         }
-        .shop-create-anchor {
-          height: 1px;
+        .shop-manage-grid {
+          display: grid;
+          grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+          gap: 16px;
+          align-items: start;
         }
         .shop-create-box {
           border: 1px solid rgba(43, 108, 176, 0.18);
@@ -1263,6 +1335,9 @@ export default function AdminPage() {
             position: static;
             flex-direction: row;
             flex-wrap: wrap;
+          }
+          .shop-manage-grid {
+            grid-template-columns: 1fr;
           }
           .charge-box {
             grid-template-columns: 1fr;
