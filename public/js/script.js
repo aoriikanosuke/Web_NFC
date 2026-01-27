@@ -1494,11 +1494,14 @@ async function applyToken(token) {
   const t = String(token || "").trim();
   if (!t) return false;
 
+  const stampBefore = findStampByToken(t);
+  const wasOwnedLocal = !!stampBefore?.flag;
+
   const result = await redeemToken(t, { deferApply: true });
   if (!result || !result.ok) return false;
 
   try { showNfcRipple(); } catch {}
-  const variant = result.alreadyOwned ? "owned" : "new";
+  const variant = (result.alreadyOwned || wasOwnedLocal) ? "owned" : "new";
   try { await showStampAni(STAMP_ANI_DURATION, variant); } catch {}
   await waitAfterStampAni(variant);
 
@@ -1623,6 +1626,16 @@ async function consumeTokenFromUrlAndPending() {
 
   if (t) {
     processedToken = t;
+    // セキュリティ＆安定化のため、処理前にURLからtokenを消す
+    try {
+      const cleaned = new URL(url.toString());
+      cleaned.searchParams.delete("t");
+      const next = cleaned.searchParams.toString();
+      const nextUrl = next
+        ? `${cleaned.pathname}?${next}${cleaned.hash || ""}`
+        : `${cleaned.pathname}${cleaned.hash || ""}`;
+      try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
+    } catch {}
     const transferred = await broadcastTokenToOtherTabs(t);
     // 以前は他タブが受け取ったらローカル処理をスキップしていたが、
     // それだとアニメーションや即時反映が起きないので常に自タブでも処理する。
@@ -1632,10 +1645,6 @@ async function consumeTokenFromUrlAndPending() {
       if (result.ok) localStorage.removeItem(LS_PENDING_TOKEN);
       else if (!result.blocked) localStorage.setItem(LS_PENDING_TOKEN, t);
     }
-    url.searchParams.delete("t");
-    const next = url.searchParams.toString();
-    const nextUrl = next ? `${url.pathname}?${next}${url.hash || ""}` : `${url.pathname}${url.hash || ""}`;
-    try { targetWindow.history.replaceState(null, "", nextUrl); } catch {}
   }
 
   const pending = localStorage.getItem(LS_PENDING_TOKEN);
