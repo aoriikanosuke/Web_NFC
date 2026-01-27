@@ -1270,6 +1270,7 @@ function renderIndicator() {
 }
 
 function syncChipsModalContent() {
+  if (!locationModalActive) return;
   const s = stamps[currentIndex];
   $modalTitle.textContent = "ロケーション";
   if (!s) {
@@ -2155,9 +2156,11 @@ async function startPayScan() {
 // ================== Modal ==================
 let modalResolve = null;
 let modalBlurActive = false;
+let locationModalActive = false;
 
 function openModal(custom) {
   if (custom) {
+    locationModalActive = custom.mode === "location";
     $modalTitle.textContent = custom.title;
     if (custom.bodyNode) {
       $modalBody.innerHTML = "";
@@ -2174,10 +2177,21 @@ function openModal(custom) {
   $modal.classList.add("is-open");
   $modal.setAttribute("aria-hidden", "false");
 }
+
+function openLocationModal() {
+  locationModalActive = true;
+  const s = stamps[currentIndex];
+  const body = !s
+    ? "スタンプを読み込み中です。"
+    : (s.location || "location情報が未設定です。");
+  openModal({ title: "ロケーション", body, mode: "location" });
+}
+
 function closeModal(result) {
   $modal.classList.remove("is-open");
   $modal.setAttribute("aria-hidden", "true");
   modalBlurActive = false;
+  locationModalActive = false;
   if ($app) $app.classList.remove("is-modal-blur");
   document.querySelectorAll(".app").forEach(app => {
     app.classList.remove("is-modal-blur");
@@ -3075,7 +3089,7 @@ async function resetProgressAndGoStamp() {
 
 document.getElementById("resetBtn").addEventListener("click", resetProgressAndGoStamp);
 
-if ($chipsBtn) $chipsBtn.addEventListener("click", () => openModal());
+if ($chipsBtn) $chipsBtn.addEventListener("click", () => openLocationModal());
 if ($oopInfo) {
   $oopInfo.addEventListener("click", () => {
     openModal({
