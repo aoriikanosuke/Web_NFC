@@ -32,6 +32,7 @@ let $pageOverlay = null;
 let swipeBound = false;
 let isFlipping = false;
 let flipTimer = 0;
+let totalStampsCount = Array.isArray(stamps) ? stamps.length : DEFAULT_STAMPS.length;
 const TAB_ID = (() => {
   const existing = sessionStorage.getItem(LS_TAB_ID);
   if (existing) return existing;
@@ -184,6 +185,27 @@ function updateScanToggleUI() {
 
 function normalizeUid(value) {
   return String(value || "").replace(/[^0-9a-f]/gi, "").toUpperCase();
+}
+
+function setTotalStampsCount(nextCount) {
+  const parsed = Number(nextCount);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    totalStampsCount = Array.isArray(stamps) && stamps.length > 0 ? stamps.length : DEFAULT_STAMPS.length;
+  } else {
+    totalStampsCount = Math.max(0, Math.floor(parsed));
+  }
+
+  const unitEl = document.querySelector(".profile-stamp-unit");
+  if (unitEl) {
+    unitEl.textContent = `/ ${totalStampsCount}`;
+  }
+}
+
+function getTotalStampsCount() {
+  if (Array.isArray(stamps) && stamps.length > 0) {
+    return stamps.length;
+  }
+  return totalStampsCount || DEFAULT_STAMPS.length;
 }
 
 
@@ -340,6 +362,13 @@ async function syncFromDB() {
       });
     }
 
+    const totalCountFromApi = Number(data?.totalStamps);
+    if (Number.isFinite(totalCountFromApi) && totalCountFromApi > 0) {
+      setTotalStampsCount(totalCountFromApi);
+    } else {
+      setTotalStampsCount(Array.isArray(stamps) ? stamps.length : DEFAULT_STAMPS.length);
+    }
+
     saveStamps();
     render();
     return { ok: true };
@@ -355,6 +384,7 @@ function handleMissingAccount() {
   localStorage.removeItem(LS_PENDING_TOKEN);
   localStorage.removeItem(LS_OPEN_AUTH);
   stamps = structuredClone(DEFAULT_STAMPS);
+  setTotalStampsCount(stamps.length);
   saveStamps();
   consumedPoints = Number(localStorage.getItem(LS_CONSUMED) || 0);
   updateOOP();
@@ -3360,15 +3390,17 @@ function updateProfileStampSummary() {
   const listEl = document.getElementById('profileStampList');
   const countEl = document.getElementById('profileStampCount');
   if (!listEl || !countEl) return;
-  const maxIcons = 6;
+  const totalCount = Math.max(0, getTotalStampsCount());
+  const iconCount = Math.min(totalCount || 0, 24);
   const stampCount = Array.isArray(stamps) ? stamps.filter(s => s.flag).length : 0;
-  const icons = Array.from({ length: maxIcons }).map((_, i) => {
+  const icons = Array.from({ length: iconCount }).map((_, i) => {
     const active = i < stampCount ? "is-active" : "";
     return `<img class="ranking-stamp ${active}" src="./images/stamp.png" alt="">`;
   }).join("");
   listEl.innerHTML = icons;
-  listEl.setAttribute("aria-label", `スタンプ所持数 ${stampCount}`);
+  listEl.setAttribute("aria-label", `スタンプ所持数 ${stampCount} / ${totalCount}`);
   countEl.textContent = String(stampCount);
+  setTotalStampsCount(totalCount);
 }
 
 async function handleLogoutClick() {

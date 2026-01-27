@@ -85,6 +85,7 @@ export async function GET(request) {
       stamps: stampsRes.rows,
       acquiredUids: stampsRes.rows.map((r) => r.uid),
       allStamps: allStampsRes.rows,
+      totalStamps: allStampsRes.rows.length,
     });
   } catch (e) {
     return NextResponse.json({ error: "サーバーエラーが発生しました。" }, { status: 500 });
