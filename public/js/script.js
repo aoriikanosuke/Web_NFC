@@ -1546,7 +1546,10 @@ function nextFrame() {
 async function playStampAnimationWithFallback(variant) {
   if (!stampAniEl || !stampAniSprite) initStampAni();
   const duration = STAMP_ANI_DURATION;
-  const fallbackMs = Math.max(1600, duration + STAMP_ANI_HOLD + STAMP_ANI_TAIL_HOLD + 800);
+  const fallbackMs =
+    variant === "owned"
+      ? Math.max(9000, STAMP_ANI3_FLYOUT_MS + STAMP_ANI_START_DELAY + STAMP_ANI_HOLD + 800)
+      : Math.max(1600, duration + STAMP_ANI_HOLD + STAMP_ANI_TAIL_HOLD + 800);
   return new Promise((resolve) => {
     let done = false;
     let timer = 0;
@@ -1563,9 +1566,11 @@ async function playStampAnimationWithFallback(variant) {
 
     const onAnimEnd = () => finish();
 
-    try {
-      stampAniSprite?.addEventListener("animationend", onAnimEnd, { once: true });
-    } catch {}
+    if (variant !== "owned") {
+      try {
+        stampAniSprite?.addEventListener("animationend", onAnimEnd, { once: true });
+      } catch {}
+    }
 
     timer = window.setTimeout(finish, fallbackMs);
 
