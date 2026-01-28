@@ -636,6 +636,11 @@ input, textarea, [contenteditable="true"]{
   margin-top: 0;
 }
 
+/* Android only: lift bottom nav by 10px */
+html.is-android .bottom-nav{
+  transform: translate(-50%, -10px);
+}
+
 /* ===== Profile layout refresh ===== */
 #page-profile .profile-shell{
   width: 100%;

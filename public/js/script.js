@@ -9,6 +9,18 @@ const LS_LAST_TOKEN_HANDLED = "last_token_handled_v1";
 const RECENT_RECOGNITION_WINDOW_MS = 1_500;
 const RELOAD_TOKEN_SUPPRESS_MS = 10 * 60 * 1000;
 
+const IS_ANDROID = /Android/i.test(navigator.userAgent || "");
+function applyAndroidClass() {
+  const root = document.documentElement;
+  if (root) root.classList.toggle("is-android", IS_ANDROID);
+  if (document.body) document.body.classList.toggle("is-android", IS_ANDROID);
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", applyAndroidClass, { once: true });
+} else {
+  applyAndroidClass();
+}
+
 let stamps = loadStampsCache();
 let stampsLoaded = false;
 let debugShops = [];
