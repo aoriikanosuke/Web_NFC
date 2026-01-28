@@ -638,7 +638,7 @@ input, textarea, [contenteditable="true"]{
 
 /* Android only: lift bottom nav by 10px */
 html.is-android .bottom-nav{
-  transform: translate(-50%, -10px);
+  transform: translate(-50%, -40px);
 }
 
 /* ===== Profile layout refresh ===== */
