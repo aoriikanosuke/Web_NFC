@@ -560,6 +560,74 @@ function persistCurrentUser() {
   localStorage.setItem("user", JSON.stringify(currentUser));
 }
 
+function resolveDisplayName(user) {
+  if (!user) return "LINEユーザー";
+  const candidates = [user.username, user.line_name, user.name];
+  for (const value of candidates) {
+    const str = value == null ? "" : String(value).trim();
+    if (str) return str;
+  }
+  return "LINEユーザー";
+}
+
+async function hydrateUserFromSession() {
+  try {
+    const res = await fetch("/api/me", { credentials: "include" });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    const user = data?.user || data;
+    if (!user?.id) return null;
+    const displayName = resolveDisplayName(user);
+    currentUser = { ...(currentUser || {}), ...user, username: displayName };
+    persistCurrentUser();
+    localStorage.setItem("nfc_siteinfo_seen", "1");
+    return currentUser;
+  } catch {
+    return null;
+  }
+}
+
+function stripLoginQueryParam() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("login")) return;
+    url.searchParams.delete("login");
+    const query = url.searchParams.toString();
+    const next = url.pathname + (query ? `?${query}` : "") + url.hash;
+    history.replaceState(null, "", next);
+  } catch {}
+}
+
+async function handleLineLoginRedirect() {
+  const url = new URL(window.location.href);
+  const loginStatus = url.searchParams.get("login");
+
+  if (loginStatus === "ok") {
+    showTopNotice("ログイン確認中");
+    const user = await hydrateUserFromSession();
+    hideTopNotice();
+    if (user) {
+      updateUIForLoggedInUser();
+      closeSiteInfo();
+      showUsageGuide({ greeting: "LINEログインしました" });
+    } else {
+      showModalMessage("ログイン", "ログインに失敗しました。");
+    }
+    stripLoginQueryParam();
+    return;
+  }
+
+  if (loginStatus === "failed") {
+    showModalMessage("ログイン", "ログインに失敗しました。");
+    stripLoginQueryParam();
+    return;
+  }
+
+  if (!getCurrentUserId()) {
+    await hydrateUserFromSession();
+  }
+}
+
 function getCurrentUserId() {
   const candidates = [currentUser?.id, currentUser?.user_id, currentUser?.userId];
   for (const value of candidates) {
@@ -3664,6 +3732,7 @@ function initAuthEnterShortcuts() {
 
 // 初期化：ログイン状態ならUIを更新
 async function initAfterDomReady(){
+  await handleLineLoginRedirect();
   const userId = getCurrentUserId();
   const syncResult = await fetchStampsFromDB({ userId, silent: !userId });
   if (syncResult?.missing) return;
@@ -3766,7 +3835,11 @@ function updateUIForLoggedInUser() {
   const ui = document.getElementById('user-info');
   if (ui) ui.style.display = 'flex';
   const du = document.getElementById('display-username');
-  if (du) du.innerText = currentUser.username;
+  if (du) du.innerText = resolveDisplayName(currentUser);
+  if (currentUser && !currentUser.username) {
+    currentUser.username = resolveDisplayName(currentUser);
+    persistCurrentUser();
+  }
   updateProfileStampSummary();
   closeSiteInfo();
   syncSiteInfoBlur();
@@ -3794,7 +3867,10 @@ async function handleLogoutClick() {
   if (ok) logout();
 }
 
-function logout() {
+async function logout() {
+  try {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  } catch {}
   localStorage.removeItem('user');
   location.reload(); // 状態リセットのためリロード
 }

@@ -2115,6 +2115,7 @@ body.force-unblur .bg-layer{
   border: 1px solid rgba(255,255,255,0.55);
   background: rgba(255,255,255,0.18);
   color: #fff;
+  text-decoration: none;
   font-weight: 900;
   letter-spacing: .4px;
   box-shadow: 0 12px 30px rgba(0,0,0,.25);
@@ -2138,6 +2139,8 @@ body.force-unblur .bg-layer{
   transform: translateY(8px);
   transition: opacity 320ms ease, transform 320ms ease;
   pointer-events: none;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .site-info-actions .site-info-btn{
   margin-top: 0;
@@ -3211,6 +3214,7 @@ html, body{
   border-radius: 10px;
   padding: 10px 16px;
   cursor:pointer;
+  text-decoration: none;
 }
 .chips-btn.danger{
   background: #ff4d4d;
