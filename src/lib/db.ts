@@ -1,5 +1,8 @@
 import "server-only";
 import { Pool } from "pg";
+import { sql } from "@vercel/postgres";
+
+export { sql };
 
 export type UserRow = {
   id: number;

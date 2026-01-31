@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Script from 'next/script';
 
@@ -25,7 +25,7 @@ export default function Page() {
                 <span id="topNoticeText" className="top-notice-text">読み込み中</span>
               </div>
             </div>
-            {/* 背景�E�ガラス映え用�E�E*/}
+            {/* 背景（ガラス映え用） */}
             <div id="bg-wrap" aria-hidden="true">
               <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
                 <defs>
@@ -157,7 +157,7 @@ export default function Page() {
                 <img className="title-png" src="/images/NEW_title.png" alt="NFCスタンプラリー" />
               </div>
 
-              <button id="oopInfo" className="oop-pill glass" type="button" aria-label="ポイント�E説明を表示">
+              <button id="oopInfo" className="oop-pill glass" type="button" aria-label="ポイントの説明を表示">
                 <span id="oopValue" className="oop-value">
                   0
                 </span>
@@ -178,13 +178,13 @@ export default function Page() {
             {/* Pages (no reload) */}
             <main className="main">
               {/* Stamp */}
-              <section id="page-stamp" className="page is-active" aria-label="スタンチE>
+              <section id="page-stamp" className="page is-active" aria-label="スタンプ">
                 <div className="stamp-card glass">
                   <div id="stampCarousel" className="stamp-carousel" aria-label="スタンプ押印エリア">
                     <div className="stamp-track"></div>
                   </div>
 
-                  <div id="indicator" className="indicator" aria-label="ペ�Eジインジケータ"></div>
+                  <div id="indicator" className="indicator" aria-label="ページインジケータ"></div>
 
                   <div className="below-row inside-card">
                     <button id="chipsBtn" className="chips-btn glass" type="button">
@@ -199,12 +199,12 @@ export default function Page() {
               </section>
 
               {/* Pay */}
-              <section id="page-pay" className="page" aria-label="決渁E>
+              <section id="page-pay" className="page" aria-label="決済">
                 <div className="pay-shell glass">
                   <div id="payRotator" className="pay-rotator" aria-live="polite">
                     <div className="pay-view pay-view--customer">
                       <div className="pay-header">
-                        <div className="pay-title">ポイント決渁E/div>
+                        <div className="pay-title">ポイント決済</div>
                         <div className="pay-balance">
                           利用可能 <span id="payAvailable">0</span>P
                         </div>
@@ -216,10 +216,10 @@ export default function Page() {
                               <div id="paySprite" className="pay-sprite"></div>
                             </div>
                             <div className="pay-select-copy">
-                              <p className="pay-step-title">店�Eを選抁E/p>
+                              <p className="pay-step-title">店舗を選択</p>
                               <div className="pay-select-hint">
                                 <span className="pay-select-dot"></span>
-                                <span className="pay-select-hint-text">端末をかざすと自動で認識しまぁE/span>
+                                <span className="pay-select-hint-text">端末をかざすと自動で認識します</span>
                               </div>
                             </div>
                           </div>
@@ -228,10 +228,10 @@ export default function Page() {
 
                       <div id="payAmountStep" className="pay-step pay-step--amount">
                         <div id="payShopInfo" className="pay-shop-info glass">
-                          <div id="payShopName" className="pay-shop-name">未選抁E/div>
+                          <div id="payShopName" className="pay-shop-name">未選択</div>
                           <div id="payShopLocation" className="pay-shop-location"></div>
                           <div className="pay-shop-points">
-                            店�EポインチE<span id="payShopPoints">0</span>P
+                            店舗ポイント <span id="payShopPoints">0</span>P
                           </div>
                         </div>
 
@@ -242,7 +242,7 @@ export default function Page() {
                           <div className="pay-currency">P</div>
                         </div>
 
-                        <div id="payKeypad" className="pay-keypad" aria-label="金額�E力テンキー">
+                        <div id="payKeypad" className="pay-keypad" aria-label="金額入力テンキー">
                           <button className="pay-key glass" data-paykey="1" type="button">
                             1
                           </button>
@@ -277,13 +277,13 @@ export default function Page() {
                             0
                           </button>
                           <button className="pay-key glass" data-paykey="back" type="button">
-                            ↁE
+                            ←
                           </button>
                         </div>
 
                         <div className="pay-actions">
                           <button id="payConfirmBtn" className="pay-primary pay-primary--wide" type="button">
-                            決宁E
+                            決定
                           </button>
                         </div>
                       </div>
@@ -298,7 +298,7 @@ export default function Page() {
                       </div>
                       <div className="pay-actions pay-actions--staff">
                         <button id="payCommitBtn" className="pay-primary pay-primary--staff" type="button">
-                          決済確宁E
+                          決済確定
                         </button>
                         <button id="payBackBtn" className="pay-action pay-action--staff glass" type="button">
                           キャンセル
@@ -336,7 +336,7 @@ export default function Page() {
                         ランキング
                       </button>
                       <button id="logout-btn" className="profile-action-btn chips-btn danger" type="button">
-                        ログアウチE
+                        ログアウト
                       </button>
                     </div>
                   </div>
@@ -364,7 +364,7 @@ export default function Page() {
                         type="button"
                         onClick={() => callGlobal('closeAuthModal')}
                       >
-                        ✁E
+                        ✕
                       </button>
                     </div>
                     <div className="modal-body auth-form">
@@ -381,8 +381,8 @@ export default function Page() {
                       </div>
                       <div id="auth-form" hidden>
                         <div className="auth-input-group">
-                          <input type="text" id="auth-username" className="glass" placeholder="ユーザー吁E />
-                          <input type="password" id="auth-password" className="glass" placeholder="パスワーチE />
+                          <input type="text" id="auth-username" className="glass" placeholder="ユーザー名" />
+                          <input type="password" id="auth-password" className="glass" placeholder="パスワード" />
                         </div>
                         <div className="auth-actions">
                           <button
@@ -391,7 +391,7 @@ export default function Page() {
                             type="button"
                             onClick={() => callGlobal('handleAuth')}
                           >
-                            実衁E
+                            実行
                           </button>
                         </div>
                         <p
@@ -399,7 +399,7 @@ export default function Page() {
                           className="auth-toggle-btn"
                           onClick={() => callGlobal('toggleAuthMode')}
                         >
-                          新規登録はこちめE
+                          新規登録はこちら
                         </p>
                       </div>
                     </div>
@@ -420,7 +420,7 @@ export default function Page() {
                 <div className="ranking-head">
                   <div className="ranking-title">ランキング</div>
                   <button className="modal-close" type="button" data-close="1">
-                    ✁E
+                    ✕
                   </button>
                 </div>
                 <div id="rankingList" className="ranking-list"></div>
@@ -438,7 +438,7 @@ export default function Page() {
                 <div className="transaction-head">
                   <div className="transaction-title">取引履歴</div>
                   <button className="modal-close" type="button" data-close="1">
-                    ✁E
+                    ✕
                   </button>
                 </div>
                 <div className="transaction-body">
@@ -457,14 +457,14 @@ export default function Page() {
 
             {/* Bottom Nav */}
             <nav className="bottom-nav glass-nav" aria-label="ボトムナビゲーション">
-              <button className="nav-btn is-active" data-target="stamp" aria-label="スタンチE>
+              <button className="nav-btn is-active" data-target="stamp" aria-label="スタンプ">
                 <span className="nav-ico">
-                  <img className="nav-ico-img" src="/images/stamp.png" alt="スタンチE />
+                  <img className="nav-ico-img" src="/images/stamp.png" alt="スタンプ" />
                 </span>
               </button>
-              <button className="nav-btn" data-target="pay" aria-label="決渁E>
+              <button className="nav-btn" data-target="pay" aria-label="決済">
                 <span className="nav-ico">
-                  <img className="nav-ico-img" src="/images/pay.png" alt="決渁E />
+                  <img className="nav-ico-img" src="/images/pay.png" alt="決済" />
                 </span>
               </button>
               <button className="nav-btn" data-target="profile" aria-label="プロフィール">
@@ -477,13 +477,13 @@ export default function Page() {
             {/* Modal */}
             <div id="modal" className="modal" aria-hidden="true">
               <div className="modal-backdrop" data-close="1"></div>
-              <div className="modal-panel glass" role="dialog" aria-modal="true" aria-label="location惁E��">
+              <div className="modal-panel glass" role="dialog" aria-modal="true" aria-label="location情報">
                 <div className="modal-head">
                   <div id="modalTitle" className="modal-title">
                     location
                   </div>
                   <button className="modal-close" type="button" data-close="1">
-                    ✁E
+                    ✕
                   </button>
                 </div>
                 <div id="modalBody" className="modal-body"></div>
@@ -492,14 +492,14 @@ export default function Page() {
 
             <div id="paySuccess" className="pay-success" aria-hidden="true">
               <div className="pay-success-card">
-                <div className="pay-success-title">決済完亁E/div>
+                <div className="pay-success-title">決済完了</div>
                 <div className="pay-success-amount">
                   <span id="paySuccessAmount">0</span>
                   <span className="pay-success-unit">P</span>
                 </div>
-                <div className="pay-success-sub">ご利用ありがとぁE��ざいました</div>
+                <div className="pay-success-sub">ご利用ありがとうございました</div>
                 <div className="pay-success-consumed">
-                  消費ポインチE<span id="paySuccessConsumed">0</span>P
+                  消費ポイント <span id="paySuccessConsumed">0</span>P
                 </div>
               </div>
             </div>
@@ -507,9 +507,9 @@ export default function Page() {
             <div id="completeOverlay" className="complete-overlay" aria-hidden="true">
               <div className="complete-card glass">
                 <div className="complete-title">congratulation!!</div>
-                <div className="complete-text">全てのスタンプを獲得しました、E/div>
+                <div className="complete-text">全てのスタンプを獲得しました。</div>
                 <button id="completeBonusBtn" className="pay-primary" type="button">
-                  100Pを受け取めE
+                  100Pを受け取る
                 </button>
               </div>
             </div>
@@ -518,18 +518,18 @@ export default function Page() {
               <div className="site-info-top">
                 <img className="site-info-title" src="/images/NEW_title.png" alt="NFCスタンプラリー" />
                 <p className="site-info-text">
-                  NFCスタンプを雁E��てポイントをため、E
+                  NFCスタンプを集めてポイントをため、
                   <br />
-                  決済で使えるスタンプラリーアプリです、E
+                  決済で使えるスタンプラリーアプリです。
                 </p>
               </div>
 
               <div className="site-info-flow">
                 <button id="siteInfoStartBtn" className="site-info-btn site-info-btn--start" type="button">
-                  はじめめE
+                  はじめる
                 </button>
 
-                <div className="site-info-actions" aria-label="ログインまた�E会員登録">
+                <div className="site-info-actions" aria-label="ログインまたは会員登録">
                   <button id="siteInfoLoginBtn" className="site-info-btn" type="button">
                     ログイン
                   </button>
@@ -537,7 +537,7 @@ export default function Page() {
                     会員登録
                   </button>
                   <a href="/api/auth/line/start" className="site-info-btn">
-                    LINE�Ń��O�C��
+                    LINEでログイン
                   </a>
                 </div>
 
@@ -545,8 +545,8 @@ export default function Page() {
                   <div id="siteInfoFormTitle" className="site-info-form-title" aria-hidden="true"></div>
 
                   <div className="site-info-form-fields">
-                    <input id="siteInfoUsername" className="site-info-input" type="text" placeholder="ユーザー吁E />
-                    <input id="siteInfoPassword" className="site-info-input" type="password" placeholder="パスワーチE />
+                    <input id="siteInfoUsername" className="site-info-input" type="text" placeholder="ユーザー名" />
+                    <input id="siteInfoPassword" className="site-info-input" type="password" placeholder="パスワード" />
                   </div>
 
                   <button id="siteInfoSubmitBtn" className="site-info-btn site-info-btn--submit" type="button">
@@ -554,7 +554,7 @@ export default function Page() {
                   </button>
 
                   <button id="siteInfoToggleLink" className="site-info-link" type="button">
-                    会員登録の場合�EこちめE
+                    会員登録の場合はこちら
                   </button>
 
                   <div id="siteInfoFormError" className="site-info-error" aria-live="polite"></div>
@@ -563,30 +563,30 @@ export default function Page() {
 
               <div className="site-usage glass">
                 <div className="site-usage-head">
-                  <div className="site-usage-title">使ぁE��ガイチE/div>
+                  <div className="site-usage-title">使い方ガイド</div>
                   <p className="site-usage-lead">
-                    NFCスタンプ�E、タチE��するだけで雁E��られます、E
+                    NFCスタンプは、タッチするだけで集められます。
                   </p>
                 </div>
                 <div className="site-usage-body">
                   <div className="site-usage-card">
-                    <h4>利用方況E/h4>
-                    <p>端末のスキャンエリアにNFCスタンプをタチE��してスタンプを取得します、E/p>
+                    <h4>利用方法</h4>
+                    <p>端末のスキャンエリアにNFCスタンプをタッチしてスタンプを取得します。</p>
                   </div>
                   <div className="site-usage-card">
                     <h4>iPhoneの方</h4>
-                    <p>タチE��後に表示される通知を開き、�Eージを�E読み込みしてください、E/p>
-                    <img className="site-usage-image" src="/images/iPhone_banner.png" alt="iPhoneの通知侁E />
+                    <p>タッチ後に表示される通知を開き、ページを再読み込みしてください。</p>
+                    <img className="site-usage-image" src="/images/iPhone_banner.png" alt="iPhoneの通知例" />
                   </div>
                   <div className="site-usage-card">
                     <h4>Androidの方</h4>
-                    <p>こ�Eままでも使えますが、Web NFCをONにするとより快適にご利用できます。！EPhoneは非対応！E/p>
-                    <img className="site-usage-image" src="/images/Web NFC_toggle.png" alt="Web NFCの設定侁E />
+                    <p>このままでも使えますが、Web NFCをONにするとより快適にご利用できます。（iPhoneは非対応）</p>
+                    <img className="site-usage-image" src="/images/Web NFC_toggle.png" alt="Web NFCの設定例" />
                   </div>
                 </div>
                 <div className="site-usage-actions">
                   <button id="siteUsageStartBtn" className="site-info-btn site-info-btn--start" type="button">
-                    はじめめE
+                    はじめる
                   </button>
                 </div>
               </div>
@@ -594,10 +594,10 @@ export default function Page() {
           </div>
         </div>
 
-        {/* チE��チE��UI�E�デスクトップ時のみ表示�E�E*/}
+        {/* デバッグUI（デスクトップ時のみ表示） */}
         <div className="debug-tools" aria-hidden="true">
           <button id="debugToggle" className="glass debug-toggle-btn" type="button">
-            チE��チE��モーチE
+            デバッグモード
           </button>
           <div id="debugPanel" className="debug-panel glass" aria-hidden="true"></div>
         </div>
@@ -608,4 +608,3 @@ export default function Page() {
     </>
   );
 }
-
