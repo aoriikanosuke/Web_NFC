@@ -3511,7 +3511,7 @@ $siteInfoStartBtn?.addEventListener("click", () => {
     closeSiteInfo();
     return;
   }
-  showSiteInfoAuthChoice();
+  location.assign("/api/auth/line/start");
 });
 $siteInfoLoginBtn?.addEventListener("click", () => {
   showSiteInfoForm("login");
@@ -3762,10 +3762,7 @@ if (document.readyState === 'loading') {
 
 
 function openAuthModal() {
-  if (!authModal) return;
-  authModal.classList.add('is-open');
-  authModal.setAttribute('aria-hidden', 'false');
-  showAuthChoice();
+  location.assign("/api/auth/line/start");
 }
 
 function closeAuthModal() {

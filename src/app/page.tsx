@@ -341,14 +341,9 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <button
-                    id="auth-trigger-btn"
-                    className="profile-login-btn chips-btn glass"
-                    type="button"
-                    onClick={() => callGlobal('openAuthModal')}
-                  >
-                    ????/??????
-                  </button>
+                  <a href="/api/auth/line/start" className="profile-login-btn chips-btn glass">
+                    LINEでログイン
+                  </a>
                 </div>
 
 
@@ -372,35 +367,6 @@ export default function Page() {
                         <a href="/api/auth/line/start" className="chips-btn glass">
                           LINEでログイン
                         </a>
-                        <button id="auth-login-choice" className="chips-btn glass" type="button">
-                          ログイン
-                        </button>
-                        <button id="auth-register-choice" className="chips-btn glass" type="button">
-                          新規会員登録
-                        </button>
-                      </div>
-                      <div id="auth-form" hidden>
-                        <div className="auth-input-group">
-                          <input type="text" id="auth-username" className="glass" placeholder="ユーザー名" />
-                          <input type="password" id="auth-password" className="glass" placeholder="パスワード" />
-                        </div>
-                        <div className="auth-actions">
-                          <button
-                            id="auth-submit-btn"
-                            className="chips-btn glass"
-                            type="button"
-                            onClick={() => callGlobal('handleAuth')}
-                          >
-                            実行
-                          </button>
-                        </div>
-                        <p
-                          id="auth-toggle-text"
-                          className="auth-toggle-btn"
-                          onClick={() => callGlobal('toggleAuthMode')}
-                        >
-                          新規登録はこちら
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -529,35 +495,10 @@ export default function Page() {
                   はじめる
                 </button>
 
-                <div className="site-info-actions" aria-label="ログインまたは会員登録">
-                  <button id="siteInfoLoginBtn" className="site-info-btn" type="button">
-                    ログイン
-                  </button>
-                  <button id="siteInfoSignupBtn" className="site-info-btn" type="button">
-                    会員登録
-                  </button>
+                <div className="site-info-actions" aria-label="LINEログイン">
                   <a href="/api/auth/line/start" className="site-info-btn">
                     LINEでログイン
                   </a>
-                </div>
-
-                <div id="siteInfoForm" className="site-info-form" aria-hidden="true">
-                  <div id="siteInfoFormTitle" className="site-info-form-title" aria-hidden="true"></div>
-
-                  <div className="site-info-form-fields">
-                    <input id="siteInfoUsername" className="site-info-input" type="text" placeholder="ユーザー名" />
-                    <input id="siteInfoPassword" className="site-info-input" type="password" placeholder="パスワード" />
-                  </div>
-
-                  <button id="siteInfoSubmitBtn" className="site-info-btn site-info-btn--submit" type="button">
-                    ログイン
-                  </button>
-
-                  <button id="siteInfoToggleLink" className="site-info-link" type="button">
-                    会員登録の場合はこちら
-                  </button>
-
-                  <div id="siteInfoFormError" className="site-info-error" aria-live="polite"></div>
                 </div>
               </div>
 
