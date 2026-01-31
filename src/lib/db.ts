@@ -59,16 +59,20 @@ export async function createUserFromLine(params: {
   passwordHash?: string | null;
 }): Promise<UserRow | null> {
   const { lineSub, lineName, linePicture, username, passwordHash } = params;
-  const result = await pool.query(
-    `
-    INSERT INTO users (line_sub, line_name, line_picture, username, password_hash)
-    VALUES ($1, $2, $3, $4, $5)
-    ON CONFLICT (line_sub) DO UPDATE
-      SET line_name = COALESCE(EXCLUDED.line_name, users.line_name),
-          line_picture = COALESCE(EXCLUDED.line_picture, users.line_picture)
-    RETURNING id, username, line_sub, line_name, line_picture, points
-    `,
-    [lineSub, lineName ?? null, linePicture ?? null, username ?? null, passwordHash ?? null]
-  );
-  return result.rows[0] ?? null;
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO users (line_sub, line_name, line_picture, username, password_hash)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, username, line_sub, line_name, line_picture, points
+      `,
+      [lineSub, lineName ?? null, linePicture ?? null, username ?? null, passwordHash ?? null]
+    );
+    return result.rows[0] ?? null;
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      return await findUserByLineSub(lineSub);
+    }
+    throw error;
+  }
 }
