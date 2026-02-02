@@ -316,7 +316,7 @@ export default function Page() {
                   <div id="user-info" className="profile-info" style={{ display: 'none' }}>
                     <div className="profile-hero">
                       <div className="profile-line-badge" aria-hidden="true">
-                        <img src="/images/line-icon.svg" alt="" />
+                        <img id="profileLineAvatar" src="/images/line-icon.svg" alt="" />
                       </div>
                       <div className="profile-name">
                         <span id="display-username"></span>

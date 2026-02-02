@@ -3833,6 +3833,11 @@ function updateUIForLoggedInUser() {
   if (ui) ui.style.display = 'flex';
   const du = document.getElementById('display-username');
   if (du) du.innerText = resolveDisplayName(currentUser);
+  const avatar = document.getElementById('profileLineAvatar');
+  if (avatar) {
+    const src = currentUser?.line_picture || "/images/line-icon.svg";
+    avatar.src = src;
+  }
   if (currentUser && !currentUser.username) {
     currentUser.username = resolveDisplayName(currentUser);
     persistCurrentUser();
