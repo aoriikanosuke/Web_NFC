@@ -666,6 +666,21 @@ html.is-android .bottom-nav{
   position: relative;
   overflow: hidden;
 }
+#page-profile .profile-line-badge{
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 22px rgba(6,24,40,0.18);
+}
+#page-profile .profile-line-badge img{
+  width: 56px;
+  height: 56px;
+  display: block;
+  border-radius: 50%;
+}
 #page-profile .profile-hero::after{
   content: "";
   position: absolute;

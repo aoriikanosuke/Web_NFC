@@ -315,6 +315,9 @@ export default function Page() {
                 <div className="profile-shell glass">
                   <div id="user-info" className="profile-info" style={{ display: 'none' }}>
                     <div className="profile-hero">
+                      <div className="profile-line-badge" aria-hidden="true">
+                        <img src="/images/line-icon.svg" alt="" />
+                      </div>
                       <div className="profile-name">
                         <span id="display-username"></span>
                       </div>
