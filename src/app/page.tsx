@@ -341,9 +341,6 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <a href="/api/auth/line/start" className="profile-login-btn chips-btn glass">
-                    LINEでログイン
-                  </a>
                 </div>
 
 

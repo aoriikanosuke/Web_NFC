@@ -798,7 +798,7 @@ async function openRankingModal() {
       return;
     }
     $rankingList.innerHTML = list.map((row, idx) => {
-      const name = row.username || "user";
+      const name = row.display_name || row.username || "user";
       const points = Number(row.points || 0);
       const stampCount = Number(row.stamp_count || 0);
       const iconCount = Math.max(0, Math.min(6, stampCount));
@@ -3511,7 +3511,7 @@ $siteInfoStartBtn?.addEventListener("click", () => {
     closeSiteInfo();
     return;
   }
-  location.assign("/api/auth/line/start");
+  showSiteInfoAuthChoice();
 });
 $siteInfoLoginBtn?.addEventListener("click", () => {
   showSiteInfoForm("login");

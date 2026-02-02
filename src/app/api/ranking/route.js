@@ -10,6 +10,7 @@ export async function GET() {
     const result = await pool.query(
       `
       SELECT
+        COALESCE(NULLIF(u.line_name, ''), NULLIF(u.username, ''), CONCAT('user_', u.id::text)) AS display_name,
         u.username,
         COALESCE(u.points, 0) AS points,
         COALESCE(s.stamp_count, 0) AS stamp_count
@@ -19,7 +20,7 @@ export async function GET() {
         FROM user_stamps
         GROUP BY user_id
       ) s ON s.user_id = u.id
-      ORDER BY stamp_count DESC, points DESC, username ASC
+      ORDER BY stamp_count DESC, points DESC, display_name ASC
       LIMIT 50
       `
     );
