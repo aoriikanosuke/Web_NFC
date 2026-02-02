@@ -40,13 +40,13 @@ export async function findUserByLineSub(lineSub: string): Promise<UserRow | null
   return result.rows[0] ?? null;
 }
 
-export async function findUserById(id: number): Promise<UserRow | null> {
+export async function findUserById(id: number | string): Promise<UserRow | null> {
   const result = await pool.query(
     `SELECT id, username, line_sub, line_name, line_picture, points
      FROM users
-     WHERE id = $1
+     WHERE id::text = $1
      LIMIT 1`,
-    [id]
+    [String(id)]
   );
   return result.rows[0] ?? null;
 }

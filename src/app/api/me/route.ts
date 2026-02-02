@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
     return res;
   }
 
-  const uidNum = Number(session.payload.uid);
-  if (!Number.isFinite(uidNum) || uidNum <= 0) {
+  const uidRaw = String(session.payload.uid ?? "").trim();
+  if (!uidRaw) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const user = await findUserById(Math.trunc(uidNum));
+  const user = await findUserById(uidRaw);
   if (!user) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
