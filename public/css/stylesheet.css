@@ -1790,6 +1790,7 @@ html.is-android .bottom-nav{
   border-radius: 12px;
   background: rgba(255,255,255,.8);
   font-weight: 800;
+  font-size: 12px;
 }
 .ranking-item.rank-1{
   background: linear-gradient(140deg, rgba(255,248,220,0.95), rgba(255,226,140,0.8));
@@ -1800,7 +1801,7 @@ html.is-android .bottom-nav{
 .ranking-item.rank-3{
   background: linear-gradient(140deg, rgba(255,240,228,0.95), rgba(225,185,150,0.82));
 }
-.ranking-rank{ min-width: 3ch; flex: 0 0 auto; }
+.ranking-rank{ min-width: 3ch; flex: 0 0 auto; font-size: 12px; }
 .ranking-name{ flex: 1 1 auto; min-width: 0; position: relative; }
 .ranking-name-text{
   position: relative;
@@ -1808,10 +1809,14 @@ html.is-android .bottom-nav{
   max-width: 100%;
 }
 .ranking-name-label{
-  display: block;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
+  font-size: 12px;
 }
 .ranking-crown{
   position: absolute;
@@ -1855,6 +1860,7 @@ html.is-android .bottom-nav{
   text-align: right;
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
+  font-size: 12px;
 }
 
 body.is-transaction-open{
